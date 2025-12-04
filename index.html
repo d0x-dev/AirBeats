@@ -213,6 +213,7 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            text-decoration: none !important;
         }
 
         .btn::after {
@@ -742,7 +743,7 @@
             <p class="hero-subtitle">Experience sound like never before. Immerse yourself in crystal-clear audio, personalized playlists, and intuitive controls designed for true music lovers.</p>
 
             <div class="btns">
-                <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk" class="btn btn-primary" id="downloadBtn">
+                <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk" class="btn btn-primary" id="downloadBtn" style="text-decoration: none;">
                     <i class="bi bi-download"></i> Download APK
                 </a>
                 <button class="btn btn-secondary" id="copyLinkBtn">
@@ -954,7 +955,7 @@
         const visualizer = document.getElementById('visualizer');
 
         // App Configuration
-        const APK_LINK = "YOUR_DOWNLOAD_LINK.apk";
+        const APK_LINK = "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk";
 
         // Theme Management
         function setTheme(theme) {
@@ -1000,10 +1001,12 @@
             }
         });
 
-        // Copy link button
+        // Copy APK link button
         copyLinkBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(window.location.href)
-                .then(() => showToast('Link copied to clipboard!', 'success'))
+            const apkLink = "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk";
+            
+            navigator.clipboard.writeText(apkLink)
+                .then(() => showToast('APK download link copied!', 'success'))
                 .catch(() => showToast('Failed to copy link', 'error'));
         });
 
