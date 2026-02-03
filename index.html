@@ -23,7 +23,7 @@
             "priceCurrency": "USD"
         },
         "softwareVersion": "3.1.0",
-        "downloadUrl": "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/app-release-signed-v2.0.apk",
+        "downloadUrl": "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_v3.1.0_signed.apk",
         "author": {
             "@type": "Organization",
             "name": "AirBeats Team"
@@ -199,7 +199,7 @@
             margin: 0 auto 2.5rem;
         }
         
-        /* Buttons - Blue ripple effect removed */
+        /* Buttons */
         .btns {
             display: flex;
             justify-content: center;
@@ -223,11 +223,6 @@
             position: relative;
             overflow: hidden;
             text-decoration: none !important;
-        }
-        
-        /* Blue ripple effect removed */
-        .btn::after {
-            display: none;
         }
         
         .btn-primary {
@@ -367,6 +362,165 @@
             font-size: 1.3rem;
             margin-bottom: 0.8rem;
         }
+        
+        /* ========== EXACT SAME VERSION DROPDOWN AS PM SHREE ========== */
+        /* --- Changelog / Version History --- */
+        .changelog-section {
+            margin-top: 2rem;
+        }
+        
+        .accordion {
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            box-shadow: var(--shadow);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .accordion-item + .accordion-item {
+            border-top: 1px solid var(--border);
+        }
+        
+        .accordion-header {
+            cursor: pointer;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            user-select: none;
+            background: var(--surface);
+            transition: all 0.3s ease;
+        }
+        
+        .accordion-header:hover {
+            background: var(--surface-light);
+        }
+        
+        .accordion-header .version-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        
+        .version-tag {
+            background: var(--gradient);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .version-title {
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+        
+        .version-date {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .accordion-header i {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: var(--primary);
+        }
+        
+        .accordion-item.open .accordion-header i {
+            transform: rotate(180deg);
+        }
+        
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0 1.5rem;
+            background: var(--surface);
+        }
+        
+        .accordion-item.open .accordion-content {
+            padding: 0 1.5rem 1.5rem;
+        }
+        
+        .version-content {
+            padding-top: 1rem;
+        }
+        
+        .version-features-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin-bottom: 1.5rem;
+        }
+        
+        .version-features-list li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.8rem;
+            position: relative;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+        
+        .version-features-list li:before {
+            content: "✓";
+            color: var(--accent);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .version-download-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border);
+        }
+        
+        .version-size {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .version-download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1.5rem;
+            background: var(--gradient);
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .version-download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 17, 120, 0.3);
+        }
+        
+        .version-download-btn.outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .version-download-btn.outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+        /* ========== END EXACT SAME VERSION DROPDOWN ========== */
         
         /* Developer Section */
         .dev-section {
@@ -628,135 +782,6 @@
             margin: 0;
         }
         
-        /* Version History Styles */
-        .version-history {
-            max-width: 800px;
-            margin: 3rem auto 0;
-        }
-        
-        .version-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            border-left: 4px solid var(--primary);
-            transition: all 0.3s;
-            animation: slideIn 0.5s ease-out forwards;
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        
-        .version-card:hover {
-            transform: translateX(5px);
-            box-shadow: var(--shadow);
-        }
-        
-        .version-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        
-        .version-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-        
-        .version-date {
-            background: var(--surface-light);
-            color: var(--text-muted);
-            padding: 0.3rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .version-features {
-            color: var(--text-muted);
-            margin-bottom: 1rem;
-        }
-        
-        .version-features ul {
-            list-style-type: none;
-            padding-left: 0;
-        }
-        
-        .version-features li {
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-        
-        .version-features li:before {
-            content: "•";
-            color: var(--primary);
-            font-weight: bold;
-            position: absolute;
-            left: 0;
-        }
-        
-        .version-download-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.6rem 1.2rem;
-            background: var(--surface-light);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-        
-        .version-download-btn:hover {
-            background: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .latest-badge {
-            background: var(--gradient);
-            color: white;
-            padding: 0.3rem 1rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
-        
-        /* Toggle for version history */
-        .version-toggle {
-            text-align: center;
-            margin-top: 2rem;
-        }
-        
-        .toggle-btn {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            padding: 0.8rem 2rem;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .toggle-btn:hover {
-            background: var(--primary);
-            color: white;
-        }
-        
-        .version-history.hidden {
-            display: none;
-        }
-        
         /* Custom Animations */
         @keyframes slideIn {
             to {
@@ -949,6 +974,19 @@
             .version-date {
                 align-self: flex-start;
             }
+            
+            .accordion-header {
+                padding: 1rem 1.2rem;
+            }
+            
+            .version-download-area {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .version-size {
+                margin-bottom: 0.5rem;
+            }
         }
     </style>
 </head>
@@ -1067,70 +1105,78 @@
         </div>
     </section>
     
-    <!-- Version History Section -->
+    <!-- ========== EXACT SAME VERSION HISTORY AS PM SHREE ========== -->
+    <!-- Version History -->
     <section id="versions">
         <div class="container">
             <h2 class="features-title reveal">Version History</h2>
-            <div class="version-history" id="versionHistory">
-                <!-- Version 3.1.0 (Latest) -->
-                <div class="version-card reveal">
-                    <div class="version-header">
-                        <div>
-                            <span class="version-title">v3.1.0 - Enhanced Performance</span>
-                            <span class="latest-badge">LATEST</span>
+            
+            <div class="changelog-section">
+                <div class="accordion reveal" id="versionAccordion">
+                    <!-- Latest Version -->
+                    <div class="accordion-item open">
+                        <div class="accordion-header">
+                            <div class="version-info">
+                                <span class="version-tag">v3.1.0</span>
+                                <span class="version-title">Enhanced Performance Update</span>
+                                <span class="version-date">February 2026</span>
+                            </div>
+                            <i class="bi bi-chevron-down"></i>
                         </div>
-                        <span class="version-date">February 2026</span>
+                        <div class="accordion-content">
+                            <div class="version-content">
+                                <ul class="version-features-list">
+                                    <li>Improved offline cache management system</li>
+                                    <li>Optimized memory usage for smoother playback</li>
+                                    <li>Enhanced audio processing algorithms</li>
+                                    <li>Bug fixes and stability improvements</li>
+                                </ul>
+                                <div class="version-download-area">
+                                    <div class="version-size">
+                                        <i class="bi bi-hdd"></i> APK Size: 8.5 MB
+                                    </div>
+                                    <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_v3.1.0_signed.apk" class="version-download-btn">
+                                        <i class="bi bi-download"></i> Download v3.1.0
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="version-features">
-                        <ul>
-                            <li>Improved offline cache management</li>
-                            <li>Optimized memory usage for smoother playback</li>
-                            <li>Enhanced audio processing algorithms</li>
-                            <li>Bug fixes and stability improvements</li>
-                        </ul>
+                    
+                    <!-- Version 2.0.10 -->
+                    <div class="accordion-item">
+                        <div class="accordion-header">
+                            <div class="version-info">
+                                <span class="version-tag">v2.0.10</span>
+                                <span class="version-title">Previous Stable Release</span>
+                                <span class="version-date">December 2025</span>
+                            </div>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="accordion-content">
+                            <div class="version-content">
+                                <ul class="version-features-list">
+                                    <li>Basic offline caching system</li>
+                                    <li>Improved playlist management</li>
+                                    <li>Enhanced audio codec support</li>
+                                    <li>Minor bug fixes and improvements</li>
+                                </ul>
+                                <div class="version-download-area">
+                                    <div class="version-size">
+                                        <i class="bi bi-hdd"></i> APK Size: 38.8 MB
+                                    </div>
+                                    <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk" class="version-download-btn outline">
+                                        <i class="bi bi-download"></i> Download v2.0.10
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_v3.1.0_signed.apk" class="version-download-btn">
-                        <i class="bi bi-download"></i> Download v3.1.0
-                    </a>
-                </div>
-                
-                <!-- Version 2.0.10 (Old Version) -->
-                <div class="version-card reveal">
-                    <div class="version-header">
-                        <span class="version-title">v2.0.10 - Previous Stable</span>
-                        <span class="version-date">December 2025</span>
-                    </div>
-                    <div class="version-features">
-                        <ul>
-                            <li>Basic offline caching system</li>
-                            <li>Improved playlist management</li>
-                            <li>Enhanced audio codec support</li>
-                            <li>Minor bug fixes and improvements</li>
-                        </ul>
-                    </div>
-                    <a href="https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk" class="version-download-btn">
-                        <i class="bi bi-download"></i> Download v2.0.10
-                    </a>
                 </div>
             </div>
         </div>
     </section>
-    
-    <!-- Screenshot -->
-    <section id="screenshot">
-        <div class="container">
-            <h2 class="features-title reveal">App Preview</h2>
-            <div class="screenshot-section">
-                <div class="screenshot-container reveal">
-                    <div class="screenshot-frame">
-                        <img src="https://raw.githubusercontent.com/drkvenom786/Airbeats/ad1fb647dc8d5661f793d973b901ecffbf48c21a/sc.png" alt="AirBeats App Interface" loading="lazy">
-                    </div>
-                    <div class="screenshot-label">AirBeats Music Player Interface</div>
-                </div>
-            </div>
-        </div>
-    </section>
-    
+    <!-- ========== END EXACT SAME VERSION HISTORY ========== -->
     <!-- Installation Steps -->
     <section id="installation">
         <div class="container">
@@ -1163,6 +1209,21 @@
                         <h4>Launch & Enjoy</h4>
                         <p>Open AirBeats from your app drawer and start enjoying premium music experience!</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Screenshot -->
+    <section id="screenshot">
+        <div class="container">
+            <h2 class="features-title reveal">App Preview</h2>
+            <div class="screenshot-section">
+                <div class="screenshot-container reveal">
+                    <div class="screenshot-frame">
+                        <img src="https://raw.githubusercontent.com/drkvenom786/Airbeats/ad1fb647dc8d5661f793d973b901ecffbf48c21a/sc.png" alt="AirBeats App Interface" loading="lazy">
+                    </div>
+                    <div class="screenshot-label">AirBeats Music Player Interface</div>
                 </div>
             </div>
         </div>
@@ -1255,14 +1316,12 @@
         
         // App Configuration
         const LATEST_APK_LINK = "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_v3.1.0_signed.apk";
-        const OLD_APK_LINK = "https://pub-7a8e5324b36d4aab9880ac5b50e5d126.r2.dev/AirBeats_signed.apk";
         const LATEST_VERSION = "3.1.0";
-        const OLD_VERSION = "2.0.10";
         
         // Audio State
         let isPlaying = false;
         let audioLoaded = false;
-        let isLooping = true; // Set to true for continuous loop
+        let isLooping = true;
         let hideButtonTimeout = null;
         
         // Theme Management
@@ -1301,7 +1360,6 @@
         // Download button click
         downloadBtn.addEventListener('click', (e) => {
             if (downloadBtn.getAttribute('href') === LATEST_APK_LINK) {
-                // Show toast
                 showToast(`Downloading AirBeats v${LATEST_VERSION}...`, 'info');
             }
         });
@@ -1349,6 +1407,39 @@
             }
         });
         
+        // ========== EXACT SAME ACCORDION LOGIC AS PM SHREE ==========
+        // Accordion logic for version history
+        document.querySelectorAll('.accordion').forEach(acc => {
+            acc.querySelectorAll('.accordion-item').forEach(item => {
+                const header = item.querySelector('.accordion-header');
+                const content = item.querySelector('.accordion-content');
+                header.addEventListener('click', () => {
+                    const isOpen = item.classList.contains('open');
+                    if (!isOpen) {
+                        // close others
+                        acc.querySelectorAll('.accordion-item.open').forEach(o => {
+                            o.classList.remove('open');
+                            o.querySelector('.accordion-content').style.maxHeight = 0;
+                        });
+                        item.classList.add('open');
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    } else {
+                        item.classList.remove('open');
+                        content.style.maxHeight = 0;
+                    }
+                });
+
+                // Open first by default (just like PM SHREE)
+                if (acc.id === 'versionAccordion' && item === acc.querySelector('.accordion-item')) {
+                    setTimeout(() => {
+                        item.classList.add('open');
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }, 200);
+                }
+            });
+        });
+        // ========== END EXACT SAME ACCORDION LOGIC ==========
+        
         // Audio Functions
         function loadAudio() {
             if (!audioLoaded) {
@@ -1374,7 +1465,7 @@
             setTimeout(() => {
                 rhythmPlayer.classList.remove('show', 'playing', 'looping');
                 rhythmPlayer.classList.remove('hiding');
-            }, 500); // Match CSS transition time
+            }, 500);
         }
         
         function scheduleHideButton() {
@@ -1387,7 +1478,7 @@
                 if (!isPlaying) {
                     hideRhythmPlayer();
                 }
-            }, 5000); // 5 seconds
+            }, 5000);
         }
         
         function playRhythm() {
@@ -1637,7 +1728,7 @@
             // ? for help
             if (e.key === '?') {
                 e.preventDefault();
-                showToast('Shortcuts: T (theme), D (download), Space/R (play), P (pause), L (loop toggle), ? (help)', 'info');
+                showToast('Shortcuts: T (theme), D (download), Space/R (play), P (pause), L (loop), ? (help)', 'info');
             }
             
             // S for screenshot zoom
@@ -1725,6 +1816,14 @@
         
         visualizer.addEventListener('mouseleave', () => {
             visualizer.style.boxShadow = 'none';
+        });
+        
+        // Add download functionality to version buttons
+        document.querySelectorAll('.version-download-btn.outline').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                showToast('This version is archived. Download the latest version for best experience.', 'info');
+            });
         });
     </script>
 </body>
