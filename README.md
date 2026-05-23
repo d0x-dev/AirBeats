@@ -35,6 +35,7 @@ We are a group of developers dedicated to bringing you the best music experience
 
 ### 🎨 UI/UX Specialist
 * **Venom**
+  * **GitHub Profile**: [@drkvenom786](https://github.com/drkvenom786)
   * **Website**: [venomx.pro](http://venomx.pro)
   * **Web Portfolio**: [venomx portfolio](https://drkvenom786.github.io/webpage/)
   * **Avatar**: 
