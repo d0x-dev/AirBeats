@@ -1,7 +1,6 @@
 # AirBeats 亗
 
 <div align="center">
-  <img src="https://github.com/d0x-dev/AirBeats/raw/main/fastlane/metadata/android/en-US/images/featureGraphic.png" alt="AirBeats Banner" width="100%"/>
   
   ### Advanced YouTube Music Client with Material Design 3 for Android
   
