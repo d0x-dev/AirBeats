@@ -243,16 +243,25 @@ For detailed information about configuration, advanced features, and usage guide
 </tr>
 </table>
 
-### Firebase Configuration (google-services.json)
+### Firebase & Google API Key Configuration
 
 > [!IMPORTANT]
-> For security and privacy reasons, the official `google-services.json` configuration file is not included in this repository. To compile and run the application, you must configure your own Firebase project:
-> 
-> 1. Open the [Firebase Console](https://console.firebase.google.com/).
-> 2. Create a new Firebase project (or use an existing one) and click **Add app** (Android).
-> 3. Register your app using the package name **`com.darkxvenom.airbeats`**.
-> 4. Download the generated **`google-services.json`** file.
-> 5. Place the **`google-services.json`** file directly in the **`app/`** folder of this project (i.e., `AirBeats/app/google-services.json`).
+> For security and privacy reasons, the official `google-services.json` configuration file and Google API Key are not included in this repository. To compile and run the application, you must configure them:
+
+#### A. Firebase Configuration (google-services.json)
+1. Open the [Firebase Console](https://console.firebase.google.com/).
+2. Create a new Firebase project (or use an existing one) and click **Add app** (Android).
+3. Register your app using the package name **`com.darkxvenom.airbeats`**.
+4. Download the generated **`google-services.json`** file.
+5. Place the **`google-services.json`** file directly in the **`app/`** folder of this project (i.e., `AirBeats/app/google-services.json`).
+
+#### B. Google API Key Configuration (local.properties)
+To enable YouTube PoToken generation (WebView-based BotGuard client):
+1. Open the **`local.properties`** file in the root directory of this project.
+2. Add your Google API Key under the property name `google.api.key`:
+   ```properties
+   google.api.key=YOUR_GOOGLE_API_KEY_HERE
+   ```
 
 ### Environment Setup
 

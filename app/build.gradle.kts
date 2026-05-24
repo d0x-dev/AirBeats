@@ -11,6 +11,17 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val googleApiKey = localProperties.getProperty("google.api.key") ?: ""
+
 android {
     namespace = "com.darkxvenom.airbeats"
     //noinspection GradleDependency
@@ -23,6 +34,7 @@ android {
         versionCode = 128
         versionName = "4.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GOOGLE_API_KEY", "\"$googleApiKey\"")
     }
 
     buildTypes {

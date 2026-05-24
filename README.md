@@ -53,12 +53,12 @@ To compile and build AirBeats on your own, please follow this step-by-step build
 - **Android Studio**: Android Studio (Ladybug or newer recommended).
 - **Git**: Installed on your development environment.
 
-### 2. Firebase Configuration (Crucial Step)
+### 2. Firebase & Google API Key Configuration (Crucial Step)
 
 > [!IMPORTANT]
-> The Firebase configuration file (`google-services.json`) is **not** included in the repository for security reasons. You must add your own Firebase configuration to build the project.
+> The Firebase configuration file (`google-services.json`) and the Google API Key are **not** included in this repository for security reasons. You must add them manually to build the project.
 
-**Step-by-step instructions to get your Firebase configuration:**
+#### A. Firebase Configuration (google-services.json)
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Click **Create a project** (or select an existing project).
 3. Once the project is created, click the **Android** icon on the dashboard to register an app.
@@ -68,6 +68,14 @@ To compile and build AirBeats on your own, please follow this step-by-step build
 5. Click **Register app**.
 6. Download the generated **`google-services.json`** file.
 7. Move the `google-services.json` file directly into the **`app/`** directory of the project (i.e. `AirBeats/app/google-services.json`).
+
+#### B. Google API Key Configuration (local.properties)
+To enable YouTube PoToken generation (WebView-based BotGuard client):
+1. Open the **`local.properties`** file in the root directory of this project.
+2. Add your Google API Key under the property name `google.api.key`:
+   ```properties
+   google.api.key=YOUR_GOOGLE_API_KEY_HERE
+   ```
 
 ### 3. Cloning & Building
 
