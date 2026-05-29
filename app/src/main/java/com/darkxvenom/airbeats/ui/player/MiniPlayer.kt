@@ -434,16 +434,29 @@ fun MiniPlayer(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    val likeScale by animateFloatAsState(
-                        targetValue = if (currentSong?.song?.liked == true) 1.15f else 1f,
-                        label = "likeScale"
-                    )
+                    val likeScale = remember { Animatable(1f) }
 
                     IconButton(
-                        onClick = { playerConnection.toggleLike() },
+                        onClick = {
+                            val willBeLiked = currentSong?.song?.liked != true
+
+                            playerConnection.toggleLike()
+
+                            coroutineScope.launch {
+                                likeScale.animateTo(
+                                    targetValue = if (willBeLiked) 1.25f else 0.85f,
+                                    animationSpec = tween(120)
+                                )
+
+                                likeScale.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(120)
+                                )
+                            }
+                        },
                         modifier = Modifier
                             .size(36.dp)
-                            .scale(likeScale)
+                            .scale(likeScale.value)
                     ) {
                         Icon(
                             painter = painterResource(
