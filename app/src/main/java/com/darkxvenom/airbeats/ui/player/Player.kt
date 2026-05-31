@@ -70,6 +70,7 @@ import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.material3.IconButton
 import com.darkxvenom.airbeats.db.MusicDatabase
 import androidx.compose.foundation.lazy.LazyColumn
@@ -3214,19 +3215,23 @@ fun LiquidPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF0F1B5F).copy(alpha = 0.5f),
-                            Color.Transparent
+                .drawBehind {
+                    val w = size.width
+                    val h = size.height
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFF0055FF).copy(alpha = 0.5f),
+                                Color(0xFF0F1B5F).copy(alpha = 0.25f),
+                                Color.Transparent
+                            ),
+                            center = Offset(w / 2f, h * 0.92f),
+                            radius = w * 0.9f
                         ),
-                        center = Offset(
-                            x = LocalConfiguration.current.screenWidthDp.dp.value * 1.5f,
-                            y = LocalConfiguration.current.screenHeightDp.dp.value * 2.8f
-                        ),
-                        radius = 450.dp.value
+                        center = Offset(w / 2f, h * 0.92f),
+                        radius = w * 0.9f
                     )
-                )
+                }
         )
 
         Column(
@@ -3330,9 +3335,9 @@ fun LiquidPlayer(
                     modifier = Modifier
                         .weight(1f)
                         .graphicsLayer {
-                            rotationZ = -18f
-                            translationY = 20.dp.toPx()
-                            translationX = -6.dp.toPx()
+                            rotationZ = -22f
+                            translationY = 24.dp.toPx()
+                            translationX = -12.dp.toPx()
                         },
                     contentAlignment = Alignment.CenterEnd
                 ) {
@@ -3413,9 +3418,9 @@ fun LiquidPlayer(
                     modifier = Modifier
                         .weight(1f)
                         .graphicsLayer {
-                            rotationZ = 18f
-                            translationY = 20.dp.toPx()
-                            translationX = 6.dp.toPx()
+                            rotationZ = 22f
+                            translationY = 24.dp.toPx()
+                            translationX = 12.dp.toPx()
                         },
                     contentAlignment = Alignment.CenterStart
                 ) {
@@ -3487,7 +3492,7 @@ fun LiquidPlayer(
                             ),
                             contentDescription = null,
                             tint = if (playerConnection.currentSong.collectAsState(initial = null).value?.song?.liked == true)
-                                Color(0xFF2979FF)
+                                Color(0xFF00E5FF)
                             else
                                 Color.White.copy(alpha = 0.85f),
                             modifier = Modifier.size(24.dp)
@@ -3499,9 +3504,11 @@ fun LiquidPlayer(
                     // Time position/duration
                     Text(
                         text = "${makeTimeString(position)} / ${makeTimeString(duration)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.85f)
+                        ),
                         fontFamily = SpotifyFontFamily
                     )
                 }
@@ -3510,10 +3517,8 @@ fun LiquidPlayer(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(start = 32.dp, bottom = 48.dp)
-                        .size(46.dp)
-                        .background(Color.White.copy(alpha = 0.05f), CircleShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                        .padding(start = 38.dp, bottom = 44.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .clickable(onClick = onShuffle),
                     contentAlignment = Alignment.Center
@@ -3521,8 +3526,8 @@ fun LiquidPlayer(
                     Icon(
                         painter = painterResource(R.drawable.shuffle),
                         contentDescription = null,
-                        tint = if (shuffleModeEnabled) Color(0xFF2979FF) else Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(20.dp)
+                        tint = if (shuffleModeEnabled) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.size(22.dp)
                     )
                 }
 
@@ -3530,10 +3535,8 @@ fun LiquidPlayer(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 32.dp, bottom = 48.dp)
-                        .size(46.dp)
-                        .background(Color.White.copy(alpha = 0.05f), CircleShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                        .padding(end = 38.dp, bottom = 44.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .clickable(onClick = onRepeat),
                     contentAlignment = Alignment.Center
@@ -3543,8 +3546,8 @@ fun LiquidPlayer(
                             if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat
                         ),
                         contentDescription = null,
-                        tint = if (repeatMode != Player.REPEAT_MODE_OFF) Color(0xFF2979FF) else Color.White.copy(alpha = 0.85f),
-                        modifier = Modifier.size(20.dp)
+                        tint = if (repeatMode != Player.REPEAT_MODE_OFF) Color(0xFF00E5FF) else Color.White.copy(alpha = 0.6f),
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -3603,25 +3606,46 @@ fun LiquidPlayer(
 
                 // Centered Pulsing Glowing waves and Play/Pause Button
                 Box(
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .offset(y = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     ConcentricGlowRings(isPlaying = isPlaying)
 
+                    // Neon glowing ring container
                     Box(
                         modifier = Modifier
-                            .size(62.dp)
-                            .background(Color.White, CircleShape)
-                            .clip(CircleShape)
-                            .clickable(onClick = onPlayPause),
+                            .size(76.dp)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFF00E5FF),
+                                        Color(0xFF0055FF).copy(alpha = 0.2f),
+                                        Color.Transparent
+                                    )
+                                ),
+                                shape = CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
-                        )
+                        // White circle play button (guaranteed circle ratio)
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .aspectRatio(1f)
+                                .background(Color.White, CircleShape)
+                                .clip(CircleShape)
+                                .clickable(onClick = onPlayPause),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -3687,18 +3711,18 @@ fun CurvedProgressSlider(
             val center = Offset(size.width / 2f, size.height / 2f)
             val rect = Rect(center.x - radius, center.y - radius, center.x + radius, center.y + radius)
 
-            // 1. Draw background arc track
+            // 1. Draw background arc track (thick glowing blue)
             drawArc(
-                color = Color.White.copy(alpha = 0.12f),
+                color = Color(0xFF0F1B5F).copy(alpha = 0.55f),
                 startAngle = startAngle,
                 sweepAngle = sweepAngle,
                 useCenter = false,
                 topLeft = rect.topLeft,
                 size = rect.size,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
             )
 
-            // 2. Draw active progress track
+            // 2. Draw active progress track (white)
             drawArc(
                 color = Color.White,
                 startAngle = startAngle,
@@ -3706,7 +3730,7 @@ fun CurvedProgressSlider(
                 useCenter = false,
                 topLeft = rect.topLeft,
                 size = rect.size,
-                style = Stroke(width = strokeWidth + 1.dp.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = 3.5.dp.toPx(), cap = StrokeCap.Round)
             )
 
             // 3. Draw white thumb dot at the end of progress
@@ -3754,18 +3778,18 @@ fun ConcentricGlowRings(
     val transition = rememberInfiniteTransition(label = "rings")
     val pulseScale1 by transition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.6f,
+        targetValue = 2.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearOutSlowInEasing),
+            animation = tween(durationMillis = 2400, easing = LinearOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring1Scale"
     )
     val pulseAlpha1 by transition.animateFloat(
-        initialValue = 0.6f,
+        initialValue = 0.75f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearOutSlowInEasing),
+            animation = tween(durationMillis = 2400, easing = LinearOutSlowInEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring1Alpha"
@@ -3773,72 +3797,78 @@ fun ConcentricGlowRings(
 
     val pulseScale2 by transition.animateFloat(
         initialValue = 1f,
-        targetValue = 1.6f,
+        targetValue = 2.1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearOutSlowInEasing),
-            initialStartOffset = StartOffset(1000),
+            animation = tween(durationMillis = 2400, easing = LinearOutSlowInEasing),
+            initialStartOffset = StartOffset(1200),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring2Scale"
     )
     val pulseAlpha2 by transition.animateFloat(
-        initialValue = 0.6f,
+        initialValue = 0.75f,
         targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = LinearOutSlowInEasing),
-            initialStartOffset = StartOffset(1000),
+            animation = tween(durationMillis = 2400, easing = LinearOutSlowInEasing),
+            initialStartOffset = StartOffset(1200),
             repeatMode = RepeatMode.Restart
         ),
         label = "ring2Alpha"
     )
 
     Box(
-        modifier = modifier.size(160.dp),
+        modifier = modifier.size(180.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Outer pulsing ring 1
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .graphicsLayer {
-                    scaleX = if (isPlaying) pulseScale1 else 1f
-                    scaleY = if (isPlaying) pulseScale1 else 1f
-                    alpha = if (isPlaying) pulseAlpha1 else 0f
-                }
-                .border(
-                    width = 2.dp,
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFF2979FF), Color.Transparent),
-                    ),
-                    shape = CircleShape
-                )
-        )
+        if (isPlaying) {
+            // Outer pulsing ring 1
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .graphicsLayer {
+                        scaleX = pulseScale1
+                        scaleY = pulseScale1
+                        alpha = pulseAlpha1
+                    }
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF00E5FF), Color(0xFF0055FF).copy(alpha = 0.1f), Color.Transparent),
+                        ),
+                        shape = CircleShape
+                    )
+            )
 
-        // Outer pulsing ring 2
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .graphicsLayer {
-                    scaleX = if (isPlaying) pulseScale2 else 1f
-                    scaleY = if (isPlaying) pulseScale2 else 1f
-                    alpha = if (isPlaying) pulseAlpha2 else 0f
-                }
-                .border(
-                    width = 2.dp,
-                    brush = Brush.radialGradient(
-                        colors = listOf(Color(0xFF2979FF), Color.Transparent),
-                    ),
-                    shape = CircleShape
-                )
-        )
+            // Outer pulsing ring 2
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .graphicsLayer {
+                        scaleX = pulseScale2
+                        scaleY = pulseScale2
+                        alpha = pulseAlpha2
+                    }
+                    .border(
+                        width = 1.5.dp,
+                        brush = Brush.radialGradient(
+                            colors = listOf(Color(0xFF00E5FF), Color(0xFF0055FF).copy(alpha = 0.1f), Color.Transparent),
+                        ),
+                        shape = CircleShape
+                    )
+            )
+        }
 
         // Static glowing base ring
         Box(
             modifier = Modifier
-                .size(96.dp)
+                .size(100.dp)
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(Color(0xFF2979FF).copy(alpha = 0.25f), Color.Transparent),
+                        colors = listOf(
+                            Color(0xFF0055FF).copy(alpha = 0.3f),
+                            Color(0xFF0F1B5F).copy(alpha = 0.05f),
+                            Color.Transparent
+                        ),
                     ),
                     shape = CircleShape
                 )
