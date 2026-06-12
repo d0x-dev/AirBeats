@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,6 +82,7 @@ fun LibraryMixScreen(
     navController: NavController,
     filterContent: @Composable () -> Unit,
     onLocalClick: () -> Unit = {},
+    onImportPlaylistClick: (() -> Unit)? = null,
     viewModel: LibraryMixViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
@@ -87,6 +90,8 @@ fun LibraryMixScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+
+    var showSpotifyImportDialog by remember { mutableStateOf(false) }
 
     var viewType by rememberEnumPreference(AlbumViewTypeKey, LibraryViewType.GRID)
     val (sortType, onSortTypeChange) = rememberEnumPreference(
@@ -142,6 +147,16 @@ fun LibraryMixScreen(
             playlist = PlaylistEntity(
                 id = UUID.randomUUID().toString(),
                 name = stringResource(R.string.filter_local)
+            ),
+            songCount = 0,
+            thumbnails = emptyList(),
+        )
+
+    val importPlaylist =
+        Playlist(
+            playlist = PlaylistEntity(
+                id = UUID.randomUUID().toString(),
+                name = "Import Playlist"
             ),
             songCount = 0,
             thumbnails = emptyList(),
@@ -353,6 +368,28 @@ fun LibraryMixScreen(
                                     .animateItem(),
                         )
                     }
+
+                    item(
+                        key = "importPlaylist",
+                        contentType = { CONTENT_TYPE_PLAYLIST },
+                    ) {
+                        PlaylistListItem(
+                            playlist = importPlaylist,
+                            autoPlaylist = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (onImportPlaylistClick != null) {
+                                            onImportPlaylistClick()
+                                        } else {
+                                            showSpotifyImportDialog = true
+                                        }
+                                    }
+                                    .animateItem(),
+                        )
+                    }
+
 
                     items(
                         items = allItems,
@@ -625,6 +662,32 @@ fun LibraryMixScreen(
                         )
                     }
 
+                    item(
+                        key = "importPlaylist",
+                        contentType = { CONTENT_TYPE_PLAYLIST },
+                    ) {
+                        PlaylistGridItem(
+                            playlist = importPlaylist,
+                            fillMaxWidth = true,
+                            autoPlaylist = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (onImportPlaylistClick != null) {
+                                                onImportPlaylistClick()
+                                            } else {
+                                                showSpotifyImportDialog = true
+                                            }
+                                        },
+                                    )
+                                    .animateItem(),
+                            context = LocalContext.current // Pasamos el contexto actual para obtener la URI de la miniatura
+                        )
+                    }
+
+
                     items(
                         items = allItems,
                         key = { it.id },
@@ -718,5 +781,8 @@ fun LibraryMixScreen(
                     }
                 }
         }
+    }
+    if (showSpotifyImportDialog) {
+        SpotifyImportDialog(onDismiss = { showSpotifyImportDialog = false })
     }
 }

@@ -337,6 +337,9 @@ fun SpotifySearchScreen(
                 onSearch = { q ->
                     val encoded = URLEncoder.encode(q, "UTF-8")
                     navController.navigate("search/$encoded")
+                },
+                onMicClick = {
+                    navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute)
                 }
             )
         }
@@ -843,7 +846,8 @@ private fun SpotifySearchPill(text: String, onClick: () -> Unit) {
 private fun SpotifySearchInput(
     query: String,
     onQueryChange: (String) -> Unit,
-    onSearch: (String) -> Unit
+    onSearch: (String) -> Unit,
+    onMicClick: () -> Unit
 ) {
     val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
 
@@ -859,6 +863,15 @@ private fun SpotifySearchInput(
             ) 
         },
         leadingIcon = { Icon(painterResource(R.drawable.search), contentDescription = null, tint = Color.Black) },
+        trailingIcon = {
+            androidx.compose.material3.IconButton(onClick = onMicClick) {
+                Icon(
+                    painter = painterResource(R.drawable.mic),
+                    contentDescription = "Music Recognition",
+                    tint = Color.Black
+                )
+            }
+        },
         colors = androidx.compose.material3.TextFieldDefaults.colors(
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,

@@ -645,6 +645,15 @@ fun AppleSearchScreen(
                     .padding(horizontal = 24.dp),
                 placeholder = { Text("Artists, Songs, Lyrics, and More", color = AppleText.copy(alpha = 0.5f)) },
                 leadingIcon = { Icon(painterResource(R.drawable.search), contentDescription = null, tint = AppleText.copy(alpha=0.5f)) },
+                trailingIcon = {
+                    IconButton(onClick = { navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) }) {
+                        Icon(
+                            painter = painterResource(R.drawable.mic),
+                            contentDescription = "Music Recognition",
+                            tint = AppleText.copy(alpha = 0.5f)
+                        )
+                    }
+                },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(

@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import com.google.firebase.messaging.FirebaseMessaging
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -297,12 +300,28 @@ constructor(
                 is AvatarSelection.DiceBear -> avatar.url
                 else -> null
             }
+
+        val fcmToken = try {
+            suspendCancellableCoroutine<String?> { continuation ->
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        continuation.resume(task.result)
+                    } else {
+                        continuation.resume(null)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+
         return LocalStatsUpload(
             userId = userId,
             name = name,
             profileUrl = profileUrl,
             totalListenMs = totalListenMs,
             weeklyListenMs = weeklyListenMs,
+            fcmToken = fcmToken,
         )
     }
 

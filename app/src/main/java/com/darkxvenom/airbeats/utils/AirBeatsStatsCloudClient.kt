@@ -1,6 +1,7 @@
 package com.darkxvenom.airbeats.utils
 
 import com.darkxvenom.airbeats.BuildConfig
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -19,6 +20,7 @@ data class GlobalStatsUser(
     val weeklyListenMs: Long,
     val lastUpdatedAt: Long,
     val rank: Int = 0,
+    val fcmToken: String? = null,
 )
 
 data class GlobalStatsBoard(
@@ -32,6 +34,7 @@ data class LocalStatsUpload(
     val profileUrl: String?,
     val totalListenMs: Long,
     val weeklyListenMs: Long,
+    val fcmToken: String? = null,
 )
 
 class AirBeatsStatsCloudClient {
@@ -74,6 +77,7 @@ class AirBeatsStatsCloudClient {
                 val configuredApiKey = requireApiKey()
                 val current = readBoard().getOrThrow()
                 val now = System.currentTimeMillis()
+                val existingUser = current.users.find { it.id == upload.userId }
                 val users =
                     (current.users.filterNot { it.id == upload.userId } +
                         GlobalStatsUser(
@@ -83,6 +87,7 @@ class AirBeatsStatsCloudClient {
                             totalListenMs = upload.totalListenMs.coerceAtLeast(0L),
                             weeklyListenMs = upload.weeklyListenMs.coerceAtLeast(0L),
                             lastUpdatedAt = now,
+                            fcmToken = upload.fcmToken ?: existingUser?.fcmToken,
                         ))
                         .sortedByDescending { it.totalListenMs }
                         .take(MAX_GLOBAL_USERS)
@@ -118,6 +123,7 @@ class AirBeatsStatsCloudClient {
                             weeklyListenMs = it.optLong("weeklyListenMs"),
                             lastUpdatedAt = it.optLong("lastUpdatedAt"),
                             rank = it.optInt("rank"),
+                            fcmToken = it.optString("fcmToken").takeIf(String::isNotBlank),
                         )
                     }
                 }
@@ -144,6 +150,7 @@ class AirBeatsStatsCloudClient {
                             .put("weeklyListenMs", user.weeklyListenMs)
                             .put("lastUpdatedAt", user.lastUpdatedAt)
                             .put("rank", user.rank)
+                            .put("fcmToken", user.fcmToken)
                     },
                 ),
             )

@@ -638,4 +638,19 @@
     <string name="changing_language">Changing language…</string>
     <string name="auto_scroll">Auto scroll</string>
     <string name="tertiary_color_style">Tertiary color</string>
+
+    <string name="music_recognition">Music Recognition</string>
+    <string name="music_recognition_tap_to_listen">Tap to listen</string>
+    <string name="music_recognition_listening">Listening…</string>
+    <string name="music_recognition_processing">Processing…</string>
+    <string name="music_recognition_listen_again">Listen again</string>
+    <string name="music_recognition_no_match">No match found</string>
+    <string name="music_recognition_signature_failed">Couldn\'t generate a signature</string>
+    <string name="music_recognition_recognition_failed">Recognition failed</string>
+    <string name="music_recognition_open_shazam">Open Shazam</string>
+    <string name="music_recognition_lyrics_preview">Lyrics preview</string>
+    <string name="music_recognition_permission_title">Microphone permission</string>
+    <string name="music_recognition_permission_desc">Allow microphone access to recognize nearby music.</string>
+    <string name="music_recognition_permission_action">Allow</string>
+    <string name="music_recognition_error">Something went wrong</string>
 </resources>

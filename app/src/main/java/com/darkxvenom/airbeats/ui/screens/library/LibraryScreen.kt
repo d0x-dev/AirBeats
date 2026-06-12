@@ -20,11 +20,9 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
-import com.darkxvenom.airbeats.constants.ChipSortTypeKey
 import com.darkxvenom.airbeats.constants.LibraryFilter
 import com.darkxvenom.airbeats.ui.component.ChipsRow
 import com.darkxvenom.airbeats.ui.component.VerticalFastScroller
-import com.darkxvenom.airbeats.utils.rememberEnumPreference
 
 @Composable
 fun LibraryScreen(navController: NavController) {
@@ -34,6 +32,7 @@ fun LibraryScreen(navController: NavController) {
 
     var filterType by remember { mutableStateOf(LibraryFilter.LIBRARY) }
     val lazyListState = rememberLazyListState()
+    var showSpotifyDialog by remember { mutableStateOf(false) }
 
     val filterContent = @Composable {
         Row {
@@ -127,7 +126,8 @@ fun LibraryScreen(navController: NavController) {
                     LibraryMixScreen(
                         navController = navController,
                         filterContent = filterContent,
-                        onLocalClick = { filterType = LibraryFilter.LOCAL }
+                        onLocalClick = { filterType = LibraryFilter.LOCAL },
+                        onImportPlaylistClick = { showSpotifyDialog = true }
                     )
 
                 LibraryFilter.PLAYLISTS ->
@@ -159,6 +159,10 @@ fun LibraryScreen(navController: NavController) {
                 LibraryFilter.LOCAL ->
                     LocalSongsScreen(navController = navController)
             }
+        }
+
+        if (showSpotifyDialog) {
+            SpotifyImportDialog(onDismiss = { showSpotifyDialog = false })
         }
     }
 }

@@ -52,6 +52,7 @@ fun NeonLibraryScreen(
     val topSize by viewModel.topValue.collectAsState(initial = 50)
     
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+    var showSpotifyImportDialog by remember { mutableStateOf(false) }
 
     if (showCreatePlaylistDialog) {
         CreatePlaylistDialog(
@@ -202,8 +203,16 @@ fun NeonLibraryScreen(
                 LibraryBigCard(Modifier.weight(1f), "Cached", "auto", R.drawable.sync, listOf(Color(0xFF11998E), Color(0xFF38EF7D))) {
                     navController.navigate("cache_playlist/cached")
                 }
+                LibraryBigCard(
+                    modifier = Modifier.weight(1f),
+                    title = "Import Playlist",
+                    subtitle = "Spotify URL",
+                    iconRes = R.drawable.playlist_import,
+                    gradientColors = listOf(Color(0xFF1DB954), Color(0xFF191414)),
+                    onClick = { showSpotifyImportDialog = true }
+                )
                 // Placeholder to align
-                Box(modifier = Modifier.weight(2f).height(120.dp))
+                Box(modifier = Modifier.weight(1f).height(120.dp))
             }
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -281,6 +290,9 @@ fun NeonLibraryScreen(
             
             Spacer(modifier = Modifier.height(100.dp))
         }
+    }
+    if (showSpotifyImportDialog) {
+        SpotifyImportDialog(onDismiss = { showSpotifyImportDialog = false })
     }
 }
 

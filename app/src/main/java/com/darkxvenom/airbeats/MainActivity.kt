@@ -909,7 +909,8 @@ class MainActivity : ComponentActivity() {
                                                 },
                                                 trailingIcon = {
                                                     Row(
-                                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         if (active) {
                                                             if (query.text.isNotEmpty()) {
@@ -949,6 +950,12 @@ class MainActivity : ComponentActivity() {
                                                                     ),
                                                                 )
                                                             }
+                                                        }
+                                                        IconButton(onClick = { navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) }) {
+                                                            Icon(
+                                                                painter = painterResource(R.drawable.mic),
+                                                                contentDescription = "Music Recognition"
+                                                            )
                                                         }
                                                     }
                                                 },

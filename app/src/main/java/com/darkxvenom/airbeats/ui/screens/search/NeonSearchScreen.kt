@@ -124,11 +124,25 @@ fun NeonSearchScreen(
                     )
                 },
                 trailingIcon = {
-                    if (query.isNotEmpty()) {
-                        IconButton(onClick = { query = "" }) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(end = 4.dp)
+                    ) {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.close),
+                                    contentDescription = "Clear",
+                                    tint = if (isDarkTheme) Color.Gray else Color.DarkGray,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        IconButton(onClick = { navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) }) {
                             Icon(
-                                painter = painterResource(R.drawable.close),
-                                contentDescription = "Clear",
+                                painter = painterResource(R.drawable.mic),
+                                contentDescription = "Music Recognition",
                                 tint = if (isDarkTheme) Color.Gray else Color.DarkGray,
                                 modifier = Modifier.size(20.dp)
                             )

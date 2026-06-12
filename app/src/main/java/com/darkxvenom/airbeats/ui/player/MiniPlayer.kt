@@ -10,6 +10,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -65,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -84,6 +86,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.DarkModeKey
@@ -376,7 +379,10 @@ fun MiniPlayer(
                         ) {
                             mediaMetadata?.let { metadata ->
                                 AsyncImage(
-                                    model = metadata.thumbnailUrl?.highQualityThumbnail(),
+                                    model = ImageRequest.Builder(LocalView.current.context)
+                                        .data(metadata.thumbnailUrl?.highQualityThumbnail())
+                                        .crossfade(true)
+                                        .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
@@ -424,7 +430,10 @@ fun MiniPlayer(
                         mediaMetadata?.let { metadata ->
                             AnimatedContent(
                                 targetState = metadata.title,
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                transitionSpec = {
+                                fadeIn(animationSpec = tween(180)) togetherWith
+                                    fadeOut(animationSpec = tween(120))
+                            },
                                 label = "",
                             ) { title ->
                                 Text(
@@ -441,7 +450,10 @@ fun MiniPlayer(
                             if (metadata.artists.any { it.name.isNotBlank() }) {
                                 AnimatedContent(
                                     targetState = metadata.artists.joinToString { it.name },
-                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    transitionSpec = {
+                                fadeIn(animationSpec = tween(180)) togetherWith
+                                    fadeOut(animationSpec = tween(120))
+                            },
                                     label = "",
                                 ) { artists ->
                                     Text(
@@ -473,28 +485,68 @@ fun MiniPlayer(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    val favoriteTint by animateColorAsState(
+                        targetValue = if (currentSong?.song?.liked == true) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        },
+                        label = "favoriteTint"
+                    )
+
+                    val likeScale = remember { Animatable(1f) }
+                    val skipScale = remember { Animatable(1f) }
+
                     IconButton(
-                        onClick = { playerConnection.toggleLike() },
-                        modifier = Modifier.size(36.dp)
+                        onClick = {
+                            val willBeLiked = currentSong?.song?.liked != true
+
+                            playerConnection.toggleLike()
+
+                            coroutineScope.launch {
+                                likeScale.animateTo(
+                                    targetValue = if (willBeLiked) 1.25f else 0.85f,
+                                    animationSpec = tween(120)
+                                )
+
+                                likeScale.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(120)
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .scale(likeScale.value)
                     ) {
                         Icon(
                             painter = painterResource(
                                 if (currentSong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border
                             ),
                             contentDescription = if (currentSong?.song?.liked == true) "Unlike" else "Like",
-                            tint = if (currentSong?.song?.liked == true) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                themeContrastSecondaryColor
-                            },
+                            tint = favoriteTint,
                             modifier = Modifier.size(18.dp)
                         )
                     }
 
                     IconButton(
                         enabled = canSkipNext,
-                        onClick = { playerConnection.player.seekToNext() },
-                        modifier = Modifier.size(36.dp)
+                        onClick = {
+                            coroutineScope.launch {
+                                skipScale.animateTo(
+                                    targetValue = 0.9f,
+                                    animationSpec = tween(80)
+                                )
+                                skipScale.animateTo(
+                                    targetValue = 1f,
+                                    animationSpec = tween(80)
+                                )
+                            }
+                            playerConnection.player.seekToNext()
+                        },
+                        modifier = Modifier
+                            .size(36.dp)
+                            .scale(skipScale.value)
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.skip_next),
@@ -521,7 +573,14 @@ fun MiniPlayer(
                     tint = MaterialTheme.colorScheme.primary.copy(
                         alpha = (offsetXAnimatable.value.absoluteValue / autoSwipeThreshold).coerceIn(0f, 1f)
                     ),
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(24.dp)
+                        .scale(
+                            0.8f + (
+                                offsetXAnimatable.value.absoluteValue /
+                                autoSwipeThreshold.toFloat()
+                            ).coerceIn(0f, 1f) * 0.4f
+                        )
                 )
             }
         }

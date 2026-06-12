@@ -162,6 +162,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("listen_together") {
         ListenTogetherScreen(navController, scrollBehavior)
     }
+    composable(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) {
+        com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionScreen(navController)
+    }
 
 
 

@@ -155,6 +155,18 @@ fun LibraryPlaylistsScreen(
             thumbnails = emptyList(),
         )
 
+    val importPlaylist =
+        Playlist(
+            playlist = PlaylistEntity(
+                id = UUID.randomUUID().toString(),
+                name = "Import Playlist"
+            ),
+            songCount = 0,
+            thumbnails = emptyList(),
+        )
+
+    var showSpotifyImportDialog by remember { mutableStateOf(false) }
+
     val lazyListState = rememberLazyListState()
     val lazyGridState = rememberLazyGridState()
 
@@ -357,6 +369,23 @@ fun LibraryPlaylistsScreen(
                         )
                     }
 
+                    item(
+                        key = "importPlaylist",
+                        contentType = { CONTENT_TYPE_PLAYLIST },
+                    ) {
+                        PlaylistListItem(
+                            playlist = importPlaylist,
+                            autoPlaylist = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        showSpotifyImportDialog = true
+                                    }
+                                    .animateItem(),
+                        )
+                    }
+
                     playlists.let { playlists ->
                         if (playlists.isEmpty()) {
                             item {
@@ -518,6 +547,27 @@ fun LibraryPlaylistsScreen(
                         )
                     }
 
+                    item(
+                        key = "importPlaylist",
+                        contentType = { CONTENT_TYPE_PLAYLIST },
+                    ) {
+                        PlaylistGridItem(
+                            playlist = importPlaylist,
+                            fillMaxWidth = true,
+                            autoPlaylist = true,
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .combinedClickable(
+                                        onClick = {
+                                            showSpotifyImportDialog = true
+                                        },
+                                    )
+                                    .animateItem(),
+                            context = LocalContext.current
+                        )
+                    }
+
                     playlists.let { playlists ->
                         if (playlists.isEmpty()) {
                             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -550,5 +600,8 @@ fun LibraryPlaylistsScreen(
                 )
             }
         }
+    }
+    if (showSpotifyImportDialog) {
+        SpotifyImportDialog(onDismiss = { showSpotifyImportDialog = false })
     }
 }

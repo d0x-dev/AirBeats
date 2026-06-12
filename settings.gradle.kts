@@ -39,3 +39,4 @@ include(":jossredconnect")
 //        substitute(module("com.github.teamnewpipe:NewPipeExtractor")).using(project(":extractor"))
 //    }
 //}
+include(":shazamkit")
