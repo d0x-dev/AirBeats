@@ -128,7 +128,12 @@ fun UserCard(
             .padding(horizontal = 6.dp, vertical = 8.dp)
             .height(240.dp)
             .scale(if (isPressed) 0.98f else 1f)
-            .shadow(12.dp, RoundedCornerShape(24.dp))
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = MaterialTheme.colorScheme.primary,
+                spotColor = MaterialTheme.colorScheme.primary
+            )
             .border(
                 width = 1.dp,
                 brush = borderBrush,
@@ -197,11 +202,21 @@ fun UserCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                Text(
-                    text = role,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = role,
+                        modifier = Modifier.padding(
+                            horizontal = 10.dp,
+                            vertical = 4.dp
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             // Social Badges Row at the bottom of the card
@@ -329,7 +344,20 @@ fun AboutScreen(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     val shimmerBrush = shimmerEffect()
+    var logoTapCount by remember { mutableIntStateOf(0) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "")
+    val logoScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = ""
+    )
 
     // Get player connection for album artwork
     val playerConnection = LocalPlayerConnection.current
@@ -463,6 +491,7 @@ fun AboutScreen(
                     Box(
                         modifier = Modifier
                             .size(90.dp)
+                            .scale(logoScale)
                             .clip(CircleShape)
                             .background(
                                 MaterialTheme.colorScheme.surfaceColorAtElevation(
@@ -479,7 +508,17 @@ fun AboutScreen(
                             ),
                             modifier = Modifier
                                 .matchParentSize()
-                                .clickable { }
+                                .clickable {
+                                    logoTapCount++
+                                    if (logoTapCount >= 7) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Built with ❤️ by AirBeats Team",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                        logoTapCount = 0
+                                    }
+                                }
                         )
 
                         Box(
@@ -579,6 +618,12 @@ fun AboutScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "3 Contributors",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
                     // Contributors Cards - SIDE-BY-SIDE VERTICAL CARDS
@@ -609,6 +654,49 @@ fun AboutScreen(
                             modifier = Modifier.weight(1f),
                             onClick = { uriHandler.openUri("https://drkvenom786.github.io/webpage/") }
                         )
+                    }
+
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        UserCard(
+                            imageUrl = "https://github.com/mizdrake7.png",
+                            name = "MAdMiZ",
+                            role = "Open Source Contributor",
+                            githubUrl = "https://github.com/mizdrake7",
+                            telegramUrl = "https://t.me/MAdMiZ",
+                            instagramUrl = "https://instagram.com/heart.breaker.kid",
+                            modifier = Modifier.weight(1f),
+                            onClick = { uriHandler.openUri("https://github.com/mizdrake7") }
+                        )
+
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Open Source Libraries", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(8.dp))
+                            Text("• Jetpack Compose")
+                            Text("• Media3")
+                            Text("• Coil")
+                            Text("• Room")
+                            Text("• Koin")
+                        }
                     }
 
                     Spacer(Modifier.height(24.dp))
