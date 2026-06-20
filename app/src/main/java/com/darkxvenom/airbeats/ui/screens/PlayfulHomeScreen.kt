@@ -53,6 +53,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -63,6 +66,9 @@ fun PlayfulHomeScreen(
     playerBottomSheetState: BottomSheetState,
     onSearchClick: () -> Unit
 ) {
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
+
     val quickPicks by viewModel.quickPicks.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
@@ -142,7 +148,14 @@ fun PlayfulHomeScreen(
             Scaffold(
                 containerColor = Color(0xFFFFD54F) // Bright yellow background
             ) { padding ->
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .pullToRefresh(
+                        state = pullRefreshState,
+                        isRefreshing = isRefreshing,
+                        onRefresh = viewModel::refresh
+                    )
+                ) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -501,6 +514,12 @@ fun PlayfulHomeScreen(
                             }
                         }
                     }
+                    
+                    Indicator(
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = padding.calculateTopPadding()),
+                        isRefreshing = isRefreshing,
+                        state = pullRefreshState
+                    )
                 }
             }
         }

@@ -11,6 +11,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,10 +91,18 @@ fun NeonHomeScreen(
     val bgColor = if (isDarkTheme) NeonDarkBg else MaterialTheme.colorScheme.background
     val textColor = if (isDarkTheme) Color.White else Color.Black
     
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullToRefreshState = rememberPullToRefreshState()
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(bgColor)
+            .pullToRefresh(
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                onRefresh = viewModel::refresh
+            )
     ) {
         Column(
             modifier = Modifier
@@ -395,5 +406,11 @@ fun NeonHomeScreen(
             
             Spacer(modifier = Modifier.height(100.dp)) // space for mini player and bottom nav
         }
+        
+        Indicator(
+            modifier = Modifier.align(Alignment.TopCenter),
+            isRefreshing = isRefreshing,
+            state = pullToRefreshState
+        )
     }
 }

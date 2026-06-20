@@ -278,21 +278,34 @@ fun AppleHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppleScaffold(
     title: String,
     navController: NavController,
     profileUrl: String? = null,
+    isRefreshing: Boolean? = null,
+    onRefresh: (() -> Unit)? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
 ) {
     val lazyListState = rememberLazyListState()
     val hazeState = remember { HazeState() }
+    val pullRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
     
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(AppleBg)
+                .let { modifier ->
+                    if (isRefreshing != null && onRefresh != null) {
+                        modifier.androidx.compose.material3.pulltorefresh.pullToRefresh(
+                            state = pullRefreshState,
+                            isRefreshing = isRefreshing,
+                            onRefresh = onRefresh
+                        )
+                    } else modifier
+                }
                 .haze(state = hazeState)
         ) {
             AppleMeshBackground()
@@ -308,6 +321,14 @@ fun AppleScaffold(
                 modifier = Modifier.fillMaxSize(),
                 content = content,
             )
+            
+            if (isRefreshing != null && onRefresh != null) {
+                androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 90.dp),
+                    isRefreshing = isRefreshing,
+                    state = pullRefreshState
+                )
+            }
         } 
         val isAtTop by remember {
             derivedStateOf {
@@ -459,11 +480,14 @@ fun AppleHomeScreen(
         "SAPISID" in com.darkxvenom.airbeats.innertube.utils.parseCookieString(innerTubeCookie)
     }
     val url = if (isLoggedIn) accountImageUrl else null
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     
     AppleScaffold(
         title = "Listen Now",
         navController = navController,
-        profileUrl = url
+        profileUrl = url,
+        isRefreshing = isRefreshing,
+        onRefresh = viewModel::refresh
     ) {
         quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
             item {
