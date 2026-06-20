@@ -37,13 +37,16 @@ android {
         versionName = "5.5.0 OPENED"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_API_KEY", googleApiKey.asBuildConfigString())
+        
+        // Strip out language resources from libraries that the app doesn't support
+        resConfigs("en", "af", "ar", "be", "bn", "ca", "cs", "da", "de", "el", "es", "fa", "fr", "hi", "hu", "id", "it", "iw", "ja", "ko", "ml", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "sr", "sv", "tr", "uk", "vi", "zh")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            isCrunchPngs = false
+            isCrunchPngs = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -100,6 +103,9 @@ android {
     }
 
     packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
         resources {
             excludes += "META-INF/CONTRIBUTORS.md"
             excludes += "META-INF/LICENSE.md"
