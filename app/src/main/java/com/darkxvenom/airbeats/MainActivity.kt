@@ -117,10 +117,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.darkxvenom.airbeats.ui.component.CircleIconButton
@@ -157,7 +155,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
-import kotlin.math.roundToInt
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -295,6 +292,7 @@ class MainActivity : ComponentActivity() {
     lateinit var namePreferenceManager: NamePreferenceManager
 
     private var playerConnection by mutableStateOf<PlayerConnection?>(null)
+    private var isServiceBound = false
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(
@@ -319,16 +317,22 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         com.darkxvenom.airbeats.playback.AppForegroundTracker.isForeground = true
         startService(Intent(this, MusicService::class.java))
-        bindService(
-            Intent(this, MusicService::class.java),
-            serviceConnection,
-            Context.BIND_AUTO_CREATE
-        )
+        if (!isServiceBound) {
+            bindService(
+                Intent(this, MusicService::class.java),
+                serviceConnection,
+                Context.BIND_AUTO_CREATE
+            )
+            isServiceBound = true
+        }
     }
 
     override fun onStop() {
         com.darkxvenom.airbeats.playback.AppForegroundTracker.isForeground = false
-        unbindService(serviceConnection)
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
         super.onStop()
     }
 
@@ -340,9 +344,8 @@ class MainActivity : ComponentActivity() {
             ) && playerConnection?.isPlaying?.value == true && isFinishing
         ) {
             stopService(Intent(this, MusicService::class.java))
-            unbindService(serviceConnection)
-            playerConnection = null
         }
+        playerConnection = null
     }
 
     override fun attachBaseContext(newBase: Context) {
@@ -370,7 +373,7 @@ class MainActivity : ComponentActivity() {
         // 🔥 Get FCM token
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                Log.d("FCM_TOKEN", task.result)
+                Log.d("FCM_TOKEN", "Token obtained")
             } else {
                 Log.e("FCM_TOKEN", "Token failed")
             }
@@ -675,19 +678,13 @@ class MainActivity : ComponentActivity() {
 
                             LaunchedEffect(navBackStackEntry) {
                                 if (navBackStackEntry?.destination?.route?.startsWith("search/") == true) {
+                                    val query = navBackStackEntry?.arguments?.getString("query") ?: return@LaunchedEffect
                                     val searchQuery =
                                         withContext(Dispatchers.IO) {
-                                            if (navBackStackEntry
-                                                    ?.arguments
-                                                    ?.getString("query")!!
-                                                    .contains("%")
-                                            ) {
-                                                navBackStackEntry?.arguments?.getString("query")!!
+                                            if (query.contains("%")) {
+                                                query
                                             } else {
-                                                URLDecoder.decode(
-                                                    navBackStackEntry?.arguments?.getString("query")!!,
-                                                    "UTF-8"
-                                                )
+                                                URLDecoder.decode(query, "UTF-8")
                                             }
                                         }
                                     onQueryChange(
@@ -1578,7 +1575,7 @@ class MainActivity : ComponentActivity() {
 
 val LocalDatabase = staticCompositionLocalOf<MusicDatabase> { error("No database provided") }
 val LocalPlayerConnection =
-    staticCompositionLocalOf<PlayerConnection?> { error("No PlayerConnection provided") }
+    compositionLocalOf<PlayerConnection?> { null }
 val LocalPlayerAwareWindowInsets =
     compositionLocalOf<WindowInsets> { error("No WindowInsets provided") }
 val LocalDownloadUtil = staticCompositionLocalOf<DownloadUtil> { error("No DownloadUtil provided") }

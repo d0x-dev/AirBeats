@@ -56,6 +56,12 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.Locale
 
+// Utility function for locale-aware sorting
+private fun <T> List<T>.sortedWithCollator(selector: (T) -> String): List<T> {
+    val collator = Collator.getInstance(Locale.getDefault()).apply { strength = Collator.PRIMARY }
+    return sortedWith(compareBy(collator, selector))
+}
+
 @Dao
 interface DatabaseDao {
     @Transaction
@@ -81,30 +87,14 @@ interface DatabaseDao {
         SongSortType.CREATE_DATE -> songsByCreateDateAsc()
         SongSortType.NAME ->
             songsByNameAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs.sortedWith(compareBy(collator) { it.song.title })
+                songs.sortedWithCollator { it.song.title }
             }
 
         SongSortType.ARTIST ->
             songsByRowIdAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs
-                    .sortedWith(
-                        compareBy(collator) { song ->
-                            song.artists.joinToString(
-                                "",
-                            ) { it.name }
-                        },
-                    ).groupBy { it.album?.title }
-                    .flatMap { (_, songsByAlbum) ->
-                        songsByAlbum.sortedBy { album ->
-                            album.artists.joinToString(
-                                "",
-                            ) { it.name }
-                        }
-                    }
+                songs.sortedWithCollator { song ->
+                    song.artists.joinToString("") { it.name }
+                }
             }
 
         SongSortType.PLAY_TIME -> songsByPlayTimeAsc()
@@ -133,30 +123,14 @@ interface DatabaseDao {
         SongSortType.CREATE_DATE -> likedSongsByCreateDateAsc()
         SongSortType.NAME ->
             likedSongsByNameAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs.sortedWith(compareBy(collator) { it.song.title })
+                songs.sortedWithCollator { it.song.title }
             }
 
         SongSortType.ARTIST ->
             likedSongsByRowIdAsc().map { songs ->
-                val collator = Collator.getInstance(Locale.getDefault())
-                collator.strength = Collator.PRIMARY
-                songs
-                    .sortedWith(
-                        compareBy(collator) { song ->
-                            song.artists.joinToString(
-                                "",
-                            ) { it.name }
-                        },
-                    ).groupBy { it.album?.title }
-                    .flatMap { (_, songsByAlbum) ->
-                        songsByAlbum.sortedBy { album ->
-                            album.artists.joinToString(
-                                "",
-                            ) { it.name }
-                        }
-                    }
+                songs.sortedWithCollator { song ->
+                    song.artists.joinToString("") { it.name }
+                }
             }
 
         SongSortType.PLAY_TIME -> likedSongsByPlayTimeAsc()

@@ -1551,15 +1551,17 @@ class MusicService :
 
                         try {
                             val response = client.newCall(request).execute()
-                            if (response.isSuccessful) {
-                                Timber.tag(JRlogTag)
-                                    .i("Using JossRed URL as fallback: $alternativeUrl")
-                                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                                return@Factory dataSpec.withUri(alternativeUrl.toUri())
-                            } else {
-                                Timber.tag(JRlogTag)
-                                    .w("JossRed URL unreachable (HTTP ${response.code}), throwing original error")
-                                throw e
+                            response.use {
+                                if (it.isSuccessful) {
+                                    Timber.tag(JRlogTag)
+                                        .i("Using JossRed URL as fallback: $alternativeUrl")
+                                    scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
+                                    return@Factory dataSpec.withUri(alternativeUrl.toUri())
+                                } else {
+                                    Timber.tag(JRlogTag)
+                                        .w("JossRed URL unreachable (HTTP ${it.code}), throwing original error")
+                                    throw e
+                                }
                             }
                         } catch (jrException: Exception) {
                             Timber.tag(JRlogTag).e(
@@ -1643,7 +1645,7 @@ class MusicService :
             }
             val PauseRemoteListenHistoryKey = booleanPreferencesKey("pauseRemoteListenHistory")
             if (!dataStore.get(PauseRemoteListenHistoryKey, false)) {
-                CoroutineScope(Dispatchers.IO).launch {
+                scope.launch(Dispatchers.IO) {
                     val playbackUrl = database.format(mediaItem.mediaId).first()?.playbackUrl
                         ?: YTPlayerUtils.playerResponseForMetadata(mediaItem.mediaId, null)
                             .getOrNull()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl

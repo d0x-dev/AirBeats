@@ -17,23 +17,47 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlin.properties.ReadOnlyProperty
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-operator fun <T> DataStore<Preferences>.get(key: Preferences.Key<T>): T? =
-    runBlocking(Dispatchers.IO) {
-        data.first()[key]
-    }
+// Cache for DataStore values to avoid blocking calls
+private val dataStoreCache = mutableMapOf<String, Any?>()
+
+operator fun <T> DataStore<Preferences>.get(key: Preferences.Key<T>): T? {
+    val cacheKey = key.name
+    @Suppress("UNCHECKED_CAST")
+    if (dataStoreCache.containsKey(cacheKey)) return dataStoreCache[cacheKey] as? T
+    return null
+}
 
 fun <T> DataStore<Preferences>.get(
     key: Preferences.Key<T>,
     defaultValue: T,
-): T =
-    runBlocking(Dispatchers.IO) {
-        data.first()[key] ?: defaultValue
+): T = get(key) ?: defaultValue
+
+// Suspend version for critical paths
+suspend fun <T> DataStore<Preferences>.getSuspend(key: Preferences.Key<T>): T? {
+    val cacheKey = key.name
+    @Suppress("UNCHECKED_CAST")
+    if (dataStoreCache.containsKey(cacheKey)) return dataStoreCache[cacheKey] as? T
+    val value = data.first()[key]
+    dataStoreCache[cacheKey] = value
+    return value
+}
+
+suspend fun <T> DataStore<Preferences>.getSuspend(
+    key: Preferences.Key<T>,
+    defaultValue: T,
+): T = getSuspend(key) ?: defaultValue
+
+// Initialize cache - call this from App.onCreate()
+suspend fun DataStore<Preferences>.initializeCache() {
+    val prefs = data.first()
+    prefs.asMap().forEach { (key, value) ->
+        dataStoreCache[key.name] = value
     }
+}
 
 fun <T> preference(
     context: Context,
@@ -67,6 +91,8 @@ fun <T> rememberPreference(
             override var value: T
                 get() = state.value
                 set(value) {
+                    // Update cache immediately
+                    dataStoreCache[key.name] = value
                     coroutineScope.launch {
                         context.dataStore.edit {
                             it[key] = value
@@ -102,6 +128,8 @@ inline fun <reified T : Enum<T>> rememberEnumPreference(
             override var value: T
                 get() = state.value
                 set(value) {
+                    // Update cache immediately
+                    dataStoreCache[key.name] = value.name
                     coroutineScope.launch {
                         context.dataStore.edit {
                             it[key] = value.name
