@@ -657,29 +657,7 @@ fun AboutScreen(
                     }
 
 
-                    Spacer(Modifier.height(12.dp))
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        UserCard(
-                            imageUrl = "https://github.com/mizdrake7.png",
-                            name = "MAdMiZ",
-                            role = "Open Source Contributor",
-                            githubUrl = "https://github.com/mizdrake7",
-                            telegramUrl = "https://t.me/MAdMiZ",
-                            instagramUrl = "https://instagram.com/heart.breaker.kid",
-                            modifier = Modifier.weight(1f),
-                            onClick = { uriHandler.openUri("https://github.com/mizdrake7") }
-                        )
-
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
 
                     Spacer(Modifier.height(16.dp))
 
