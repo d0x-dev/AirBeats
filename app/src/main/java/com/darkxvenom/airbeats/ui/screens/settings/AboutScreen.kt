@@ -3,6 +3,7 @@ package com.darkxvenom.airbeats.ui.screens.settings
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -85,7 +87,7 @@ fun SocialIconBadge(
 ) {
     Box(
         modifier = Modifier
-            .size(32.dp)
+            .size(30.dp)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), CircleShape)
@@ -195,6 +197,9 @@ fun UserCard(
                 // Text - Centered
                 Text(
                     text = name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Visible,
+                    modifier = Modifier.basicMarquee(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
@@ -208,7 +213,11 @@ fun UserCard(
                 ) {
                     Text(
                         text = role,
-                        modifier = Modifier.padding(
+                        maxLines = 1,
+                        overflow = TextOverflow.Visible,
+                        modifier = Modifier
+                            .basicMarquee()
+                            .padding(
                             horizontal = 10.dp,
                             vertical = 4.dp
                         ),
@@ -224,7 +233,7 @@ fun UserCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val contextUriHandler = LocalUriHandler.current
@@ -657,9 +666,22 @@ fun AboutScreen(
                     }
 
 
-
-
-
+                    Spacer(Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Open Source Libraries", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(8.dp))
+                            Text("• Jetpack Compose")
+                            Text("• Media3")
+                            Text("• Coil")
+                            Text("• Room")
+                            Text("• Koin")
+                        }
+                    }
 
                     Spacer(Modifier.height(24.dp))
                 }
