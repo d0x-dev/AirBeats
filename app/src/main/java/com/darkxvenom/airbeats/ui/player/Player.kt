@@ -14,6 +14,9 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -220,6 +223,31 @@ internal val SpotifyFontFamily = FontFamily(
     Font(R.font.poppins_medium, FontWeight.SemiBold),
     Font(R.font.poppins_bold, FontWeight.Bold),
 )
+
+
+private suspend fun Animatable<Float, AnimationVector1D>.bounceClick() {
+    animateTo(
+        0.82f,
+        tween(
+            durationMillis = 60,
+            easing = FastOutLinearInEasing
+        )
+    )
+    animateTo(
+        1.14f,
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+    animateTo(
+        1f,
+        spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -974,19 +1002,12 @@ fun BottomSheetPlayer(
         },
     ) {
         val controlsContent: @Composable ColumnScope.(MediaMetadata) -> Unit = { mediaMetadata ->
-            var prevBounce by remember { mutableIntStateOf(0) }
-            var nextBounce by remember { mutableIntStateOf(0) }
-            var playBounce by remember { mutableIntStateOf(0) }
-            var shuffleBounce by remember { mutableIntStateOf(0) }
-            var likeBounce by remember { mutableIntStateOf(0) }
-            var repeatBounce by remember { mutableIntStateOf(0) }
-
-            val prevScale by animateFloatAsState(if (prevBounce % 2 == 1) 1.22f else 1f, spring(), label = "prevBounce")
-            val nextScale by animateFloatAsState(if (nextBounce % 2 == 1) 1.22f else 1f, spring(), label = "nextBounce")
-            val playScale by animateFloatAsState(if (playBounce % 2 == 1) 1.15f else 1f, spring(), label = "playBounce")
-            val shuffleScale by animateFloatAsState(if (shuffleBounce % 2 == 1) 1.20f else 1f, spring(), label = "shuffleBounce")
-            val likeScale by animateFloatAsState(if (likeBounce % 2 == 1) 1.20f else 1f, spring(), label = "likeBounce")
-            val repeatScale by animateFloatAsState(if (repeatBounce % 2 == 1) 1.20f else 1f, spring(), label = "repeatBounce")
+            val prevScale = remember { Animatable(1f) }
+            val nextScale = remember { Animatable(1f) }
+            val playScale = remember { Animatable(1f) }
+            val shuffleScale = remember { Animatable(1f) }
+            val likeScale = remember { Animatable(1f) }
+            val repeatScale = remember { Animatable(1f) }
 
             val playPauseRoundness by animateDpAsState(
                 targetValue = if (isPlaying) 24.dp else 36.dp,
@@ -1437,9 +1458,12 @@ fun BottomSheetPlayer(
                         modifier =
                             Modifier
                                 .size(32.dp)
-                                .scale(prevScale)
+                                .graphicsLayer {
+            scaleX = prevScale.value
+            scaleY = prevScale.value
+        }
                                 .align(Alignment.Center),
-                        onClick = { prevBounce++; playerConnection.seekToPrevious() },
+                        onClick = { coroutineScope.launch { prevScale.bounceClick() }; playerConnection.seekToPrevious() },
                     )
                 }
 
@@ -1449,12 +1473,12 @@ fun BottomSheetPlayer(
                     modifier =
                         Modifier
                             .size(85.dp)
-                            .scale(playScale)
+                            .scale(playScale.value)
                             .rotate(if (isPlaying) playPauseRotation else 0f)
                             .clip(currentPlayPauseShape.toShape())
                             .background(textButtonColor)
                             .clickable {
-                                playBounce++
+                                coroutineScope.launch { playScale.bounceClick() }
                                 if (playbackState == STATE_ENDED) {
                                     playerConnection.player.seekTo(0, 0)
                                     playerConnection.player.playWhenReady = true
@@ -1496,9 +1520,9 @@ fun BottomSheetPlayer(
                         modifier =
                             Modifier
                                 .size(32.dp)
-                                .scale(nextScale)
+                                .scale(nextScale.value)
                                 .align(Alignment.Center),
-                        onClick = { nextBounce++; playerConnection.seekToNext() },
+                        onClick = { coroutineScope.launch { nextScale.bounceClick() }; playerConnection.seekToNext() },
                     )
                 }
             }
@@ -1516,9 +1540,9 @@ fun BottomSheetPlayer(
                 ResizableIconButton(
                     icon = if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle,
                     color = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else TextBackgroundColor,
-                    modifier = Modifier.size(32.dp).padding(4.dp).scale(shuffleScale),
+                    modifier = Modifier.size(32.dp).padding(4.dp).scale(shuffleScale.value),
                     onClick = {
-                        shuffleBounce++
+                        coroutineScope.launch { shuffleScale.bounceClick() }
                         playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
                     }
                 )
@@ -1526,8 +1550,8 @@ fun BottomSheetPlayer(
                 ResizableIconButton(
                     icon = if (currentSong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border,
                     color = if (currentSong?.song?.liked == true) MaterialTheme.colorScheme.error else TextBackgroundColor,
-                    modifier = Modifier.size(32.dp).padding(4.dp).scale(likeScale),
-                    onClick = { likeBounce++; playerConnection.toggleLike() },
+                    modifier = Modifier.size(32.dp).padding(4.dp).scale(likeScale.value),
+                    onClick = { coroutineScope.launch { likeScale.bounceClick() }; playerConnection.toggleLike() },
                 )
 
                 ResizableIconButton(
@@ -1540,10 +1564,10 @@ fun BottomSheetPlayer(
                     modifier = Modifier
                         .size(32.dp)
                         .padding(4.dp)
-                        .scale(repeatScale)
+                        .scale(repeatScale.value)
                         .alpha(if (repeatMode == Player.REPEAT_MODE_OFF) 0.5f else 1f),
                     onClick = {
-                        repeatBounce++
+                        coroutineScope.launch { repeatScale.bounceClick() }
                         playerConnection.player.toggleRepeatMode()
                     },
                 )
@@ -4118,4 +4142,3 @@ fun LiquidControlBarBackground(
         )
     }
 }
-
