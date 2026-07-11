@@ -22,6 +22,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.platform.LocalContext
 import com.darkxvenom.airbeats.ui.component.NamePreferenceManager
 import com.darkxvenom.airbeats.utils.GoogleAuthManager
@@ -29,7 +33,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun OnboardingScreen(
-    navController: NavController
+    navController: NavController,
+    backupRestoreViewModel: BackupRestoreViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -42,13 +47,30 @@ fun OnboardingScreen(
             val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(result.data)
             try {
                 val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
-                // Name and email from account
                 val name = account.displayName ?: "Google User"
+                
                 coroutineScope.launch {
-                    namePrefManager.saveUserName(name)
+                    // Try to restore from Google Drive
+                    val restored = backupRestoreViewModel.restoreFromDrive(context, account)
+                    if (!restored) {
+                        // If no backup exists, do an initial backup
+                        namePrefManager.saveUserName(name)
+                        backupRestoreViewModel.backupToDrive(context, account)
+                    }
+                    
                     namePrefManager.setUserNameSet(true)
-                    navController.navigate("home") {
-                        popUpTo("onboarding") { inclusive = true }
+                    
+                    withContext(Dispatchers.Main) {
+                        if (restored) {
+                            // If restored, restart app to load DB
+                            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                            intent?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            context.startActivity(intent)
+                        } else {
+                            navController.navigate("home") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        }
                     }
                 }
             } catch (e: Exception) {
