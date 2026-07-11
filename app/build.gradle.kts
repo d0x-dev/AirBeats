@@ -53,7 +53,7 @@ android {
             )
         }
         debug {
-            // Removed applicationIdSuffix so the package name matches com.darkxvenom.airbeats in Google Cloud Console
+            applicationIdSuffix = ".debug"
         }
     }
 
