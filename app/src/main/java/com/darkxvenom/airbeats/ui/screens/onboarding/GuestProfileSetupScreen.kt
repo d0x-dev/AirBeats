@@ -54,7 +54,7 @@ fun GuestProfileSetupScreen(navController: NavController) {
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            CustomAvatarSelector()
+            com.darkxvenom.airbeats.ui.component.AvatarSelector()
 
             Spacer(modifier = Modifier.height(32.dp))
 
