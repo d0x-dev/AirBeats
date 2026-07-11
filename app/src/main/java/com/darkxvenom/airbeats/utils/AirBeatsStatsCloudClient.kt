@@ -105,6 +105,9 @@ class AirBeatsStatsCloudClient {
                 
                 // 2. Process FCM Stats
                 val existingFcmUser = currentFcm.users.find { it.id == upload.userId }
+                val validNewToken = upload.fcmToken.takeIf { it != null && it != "n/v" }
+                val resolvedToken = validNewToken ?: existingFcmUser?.fcmToken ?: "n/v"
+
                 val fcmUsers = 
                     (currentFcm.users.filterNot { it.id == upload.userId } +
                         GlobalStatsUser(
@@ -112,7 +115,7 @@ class AirBeatsStatsCloudClient {
                             name = upload.name.ifBlank { "AirBeats User" },
                             totalListenMs = upload.totalListenMs.coerceAtLeast(0L),
                             rank = globalUsers.find { it.id == upload.userId }?.rank ?: 0,
-                            fcmToken = upload.fcmToken ?: existingFcmUser?.fcmToken,
+                            fcmToken = resolvedToken,
                             lastUpdatedAt = now,
                             weeklyListenMs = 0L,
                             profileUrl = null

@@ -299,18 +299,26 @@ constructor(
                 is AvatarSelection.DiceBear -> avatar.url
                 else -> null
             }
-        val fcmToken = try {
-            suspendCancellableCoroutine<String?> { continuation ->
-                com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        continuation.resume(task.result)
-                    } else {
-                        continuation.resume("ERROR: ${task.exception?.message}")
+        var fcmToken: String? = null
+        for (i in 1..3) {
+            fcmToken = try {
+                suspendCancellableCoroutine<String?> { continuation ->
+                    com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            continuation.resume(task.result)
+                        } else {
+                            continuation.resume(null)
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                null
             }
-        } catch (e: Exception) {
-            "EXCEPTION: ${e.message}"
+            if (fcmToken != null) break
+            kotlinx.coroutines.delay(1000L * i)
+        }
+        if (fcmToken == null) {
+            fcmToken = "n/v"
         }
 
         return LocalStatsUpload(
