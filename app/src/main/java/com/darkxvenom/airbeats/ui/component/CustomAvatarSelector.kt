@@ -299,7 +299,7 @@ fun AvatarSelector(
                         try {
                             val client = okhttp3.OkHttpClient()
                             val binId = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
-                            val fileBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), savedFile)
+                            val fileBody = okhttp3.RequestBody.create(okhttp3.MediaType.Companion.parse("image/*"), savedFile)
                             val request = okhttp3.Request.Builder()
                                 .url("https://filebin.net/$binId/avatar.jpg")
                                 .put(fileBody)
