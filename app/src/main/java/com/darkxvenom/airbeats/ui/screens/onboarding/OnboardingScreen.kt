@@ -193,14 +193,35 @@ fun OnboardingScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Hero background image with subtle blur
+        // Unblurred Background Image
         Image(
             painter = painterResource(id = R.drawable.hero_bg),
             contentDescription = "Background",
             contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Blurred Background Image (Masked to show only at the bottom)
+        Image(
+            painter = painterResource(id = R.drawable.hero_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
-                .blur(radius = 8.dp)
+                .blur(radius = 24.dp)
+                .androidx.compose.ui.graphics.graphicsLayer { alpha = 0.99f }
+                .androidx.compose.ui.draw.drawWithContent {
+                    val colors = listOf(Color.Transparent, Color.Black, Color.Black)
+                    drawContent()
+                    drawRect(
+                        brush = Brush.verticalGradient(
+                            colors = colors,
+                            startY = size.height * 0.4f,
+                            endY = size.height * 0.8f
+                        ),
+                        blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    )
+                }
         )
 
         // Gradient overlay fading to dark purple/black at bottom
@@ -244,17 +265,24 @@ fun OnboardingScreen(
                 modifier = Modifier.padding(bottom = 48.dp)
             )
 
-            // Primary Purple Button (Continue as Guest / Setup)
+            // Primary Purple Button (Continue with Google)
             Button(
-                onClick = { navController.navigate("guest_profile_setup") },
+                onClick = onGoogleSignInClick,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA259FF)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.google),
+                    contentDescription = "Google",
+                    tint = Color.Unspecified, // Keep original colors
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Continue as Guest",
+                    text = "Continue With Google",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
@@ -263,24 +291,17 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Secondary Dark Button (Continue with Google)
+            // Secondary Dark Button (Continue as Guest)
             Button(
-                onClick = onGoogleSignInClick,
+                onClick = { navController.navigate("guest_profile_setup") },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF232336)),
                 shape = RoundedCornerShape(24.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
-                Icon(
-                    imageVector = androidx.compose.material.icons.Icons.Default.Person,
-                    contentDescription = "Google",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Continue With Google",
+                    text = "Continue as Guest",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
