@@ -99,6 +99,7 @@ class AvatarPreferenceManager(private val context: Context) {
     companion object {
         private val SELECTED_AVATAR_TYPE_KEY = stringPreferencesKey("selected_avatar_type")
         private val CUSTOM_AVATAR_URI_KEY = stringPreferencesKey("custom_avatar_uri")
+        private val CUSTOM_AVATAR_CLOUD_URL_KEY = stringPreferencesKey("custom_avatar_cloud_url")
         private val DICEBEAR_AVATAR_URL_KEY = stringPreferencesKey("dicebear_avatar_url")
     }
 
@@ -108,16 +109,23 @@ class AvatarPreferenceManager(private val context: Context) {
                 is AvatarSelection.Default -> {
                     preferences[SELECTED_AVATAR_TYPE_KEY] = "default"
                     preferences.remove(CUSTOM_AVATAR_URI_KEY)
+                    preferences.remove(CUSTOM_AVATAR_CLOUD_URL_KEY)
                     preferences.remove(DICEBEAR_AVATAR_URL_KEY)
                 }
                 is AvatarSelection.DiceBear -> {
                     preferences[SELECTED_AVATAR_TYPE_KEY] = "dicebear"
                     preferences[DICEBEAR_AVATAR_URL_KEY] = selection.url
                     preferences.remove(CUSTOM_AVATAR_URI_KEY)
+                    preferences.remove(CUSTOM_AVATAR_CLOUD_URL_KEY)
                 }
                 is AvatarSelection.Custom -> {
                     preferences[SELECTED_AVATAR_TYPE_KEY] = "custom"
                     preferences[CUSTOM_AVATAR_URI_KEY] = selection.uri
+                    if (selection.cloudUrl != null) {
+                        preferences[CUSTOM_AVATAR_CLOUD_URL_KEY] = selection.cloudUrl
+                    } else {
+                        preferences.remove(CUSTOM_AVATAR_CLOUD_URL_KEY)
+                    }
                     preferences.remove(DICEBEAR_AVATAR_URL_KEY)
                 }
             }
@@ -134,7 +142,8 @@ class AvatarPreferenceManager(private val context: Context) {
                 }
                 "custom" -> {
                     val uri = preferences[CUSTOM_AVATAR_URI_KEY]
-                    if (uri != null) AvatarSelection.Custom(uri) else AvatarSelection.Default
+                    val cloudUrl = preferences[CUSTOM_AVATAR_CLOUD_URL_KEY]
+                    if (uri != null) AvatarSelection.Custom(uri, cloudUrl) else AvatarSelection.Default
                 }
                 else -> AvatarSelection.Default
             }
@@ -147,7 +156,7 @@ class AvatarPreferenceManager(private val context: Context) {
 sealed class AvatarSelection {
     object Default : AvatarSelection()
     data class DiceBear(val url: String) : AvatarSelection()
-    data class Custom(val uri: String) : AvatarSelection()
+    data class Custom(val uri: String, val cloudUrl: String? = null) : AvatarSelection()
 }
 
 /**
@@ -285,7 +294,26 @@ fun AvatarSelector(
                 result.fold(
                     onSuccess = { savedFile ->
                         val savedUri = Uri.fromFile(savedFile)
-                        avatarManager.saveAvatarSelection(AvatarSelection.Custom(savedUri.toString()))
+                        // Upload to Filebin
+                        var cloudUrl: String? = null
+                        try {
+                            val client = okhttp3.OkHttpClient()
+                            val binId = java.util.UUID.randomUUID().toString().replace("-", "").take(12)
+                            val fileBody = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), savedFile)
+                            val request = okhttp3.Request.Builder()
+                                .url("https://filebin.net/$binId/avatar.jpg")
+                                .put(fileBody)
+                                .build()
+                            client.newCall(request).execute().use { response ->
+                                if (response.isSuccessful) {
+                                    cloudUrl = "https://filebin.net/$binId/avatar.jpg"
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AvatarSelector", "Failed to upload to filebin", e)
+                        }
+                        
+                        avatarManager.saveAvatarSelection(AvatarSelection.Custom(savedUri.toString(), cloudUrl))
                     },
                     onFailure = { exception ->
                         uiState = uiState.copy(

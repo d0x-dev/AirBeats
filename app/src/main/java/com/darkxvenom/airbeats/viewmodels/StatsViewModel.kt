@@ -297,6 +297,7 @@ constructor(
         val profileUrl =
             when (val avatar = AvatarPreferenceManager(context).getAvatarSelection.first()) {
                 is AvatarSelection.DiceBear -> avatar.url
+                is AvatarSelection.Custom -> avatar.cloudUrl
                 else -> null
             }
         var fcmToken: String? = null
