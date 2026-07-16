@@ -1539,6 +1539,7 @@ class MainActivity : ComponentActivity() {
         when {
             uri.pathSegments.firstOrNull() == "watch" -> uri.getQueryParameter("v")
             uri.host == "youtu.be" -> uri.pathSegments.firstOrNull()
+            uri.host == "play.airbeats.app" -> uri.pathSegments.firstOrNull()
             else -> null
         }?.let { videoId ->
             lifecycleScope.launch {
