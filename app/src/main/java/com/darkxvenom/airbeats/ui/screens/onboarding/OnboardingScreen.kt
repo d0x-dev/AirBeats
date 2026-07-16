@@ -58,10 +58,13 @@ fun OnboardingScreen(
     
     var syncState by remember { mutableStateOf(SyncState.IDLE) }
     var currentUserName by remember { mutableStateOf("") }
+    var currentUserEmail by remember { mutableStateOf("") }
     var featureStep by remember { mutableStateOf(0) }
 
     fun continueToHome() {
         coroutineScope.launch {
+            if (currentUserName.isNotBlank()) namePrefManager.saveUserName(currentUserName)
+            if (currentUserEmail.isNotBlank()) namePrefManager.saveAccountEmail(currentUserEmail)
             syncState = SyncState.IDLE
             navController.navigate("home") {
                 popUpTo("onboarding") {
@@ -77,7 +80,6 @@ fun OnboardingScreen(
     }
 
     fun requestGoogleSignIn(filterByAuthorizedAccounts: Boolean) {
-        syncState = SyncState.CHECKING
         coroutineScope.launch {
             try {
                 val googleIdOption = GetGoogleIdOption.Builder()
@@ -91,6 +93,10 @@ fun OnboardingScreen(
                     .build()
 
                 val credential = credentialManager.getCredential(context, request).credential
+                
+                // Only change state after user has actually selected an account
+                syncState = SyncState.CHECKING
+                
                 val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
                 val name = googleCredential.displayName
                     ?: googleCredential.givenName
@@ -98,8 +104,7 @@ fun OnboardingScreen(
                 val email = googleCredential.id
                 
                 currentUserName = name
-                namePrefManager.saveUserName(name)
-                namePrefManager.saveAccountEmail(email)
+                currentUserEmail = email
 
                 val backupClient = com.darkxvenom.airbeats.utils.CloudBackupClient()
                 val backupExists = backupClient.checkBackupExists(email)
@@ -110,6 +115,10 @@ fun OnboardingScreen(
                     if (result is com.darkxvenom.airbeats.utils.DriveResult.Success) {
                         syncState = SyncState.RESTORED
                         delay(2500) // Show restored message for a bit
+                        
+                        // Save name and email only when we are done
+                        namePrefManager.saveUserName(name)
+                        namePrefManager.saveAccountEmail(email)
                         
                         // Restart app to apply changes
                         context.stopService(android.content.Intent(context, com.darkxvenom.airbeats.playback.MusicService::class.java))
@@ -124,7 +133,7 @@ fun OnboardingScreen(
                     }
                 } else {
                     syncState = SyncState.NEW_USER
-                    // Upload initial backup in background
+                    // Upload initial backup in background (name/email will be saved when user clicks Get Started)
                     backupViewModel.backupToDrive(context, email, name)
                 }
             } catch (e: NoCredentialException) {
