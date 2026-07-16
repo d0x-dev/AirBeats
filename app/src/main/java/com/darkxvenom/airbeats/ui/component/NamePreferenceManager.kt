@@ -37,4 +37,10 @@ class NamePreferenceManager @Inject constructor(
             preferences[NAME_SET_KEY] = "true"
         }
     }
+
+    suspend fun saveAccountEmail(email: String) {
+        context.nameDataStore.edit { preferences ->
+            preferences[androidx.datastore.preferences.core.stringPreferencesKey("accountEmail")] = email
+        }
+    }
 }

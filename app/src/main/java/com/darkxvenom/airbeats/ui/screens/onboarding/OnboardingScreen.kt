@@ -48,6 +48,7 @@ fun OnboardingScreen(
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
     val namePrefManager = remember { NamePreferenceManager(context) }
+    val backupViewModel: com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel = androidx.hilt.navigation.compose.hiltViewModel()
     var isLoading by remember { mutableStateOf(false) }
 
     fun continueToHome(name: String) {
@@ -68,6 +69,7 @@ fun OnboardingScreen(
     }
 
     fun requestGoogleSignIn(filterByAuthorizedAccounts: Boolean) {
+        isLoading = true
         coroutineScope.launch {
             try {
                 val googleIdOption = GetGoogleIdOption.Builder()
@@ -85,6 +87,32 @@ fun OnboardingScreen(
                 val name = googleCredential.displayName
                     ?: googleCredential.givenName
                     ?: googleCredential.id.substringBefore("@")
+                val email = googleCredential.id
+
+                val backupClient = com.darkxvenom.airbeats.utils.CloudBackupClient()
+                val backupExists = backupClient.checkBackupExists(email)
+                
+                if (backupExists) {
+                    Toast.makeText(context, "Restoring cloud backup...", Toast.LENGTH_SHORT).show()
+                    val result = backupViewModel.restoreFromDrive(context, email)
+                    if (result is com.darkxvenom.airbeats.utils.DriveResult.Success) {
+                        namePrefManager.saveUserName(name)
+                        namePrefManager.saveAccountEmail(email)
+                        Toast.makeText(context, "Restore complete!", Toast.LENGTH_SHORT).show()
+                        // Restart app to apply changes
+                        context.stopService(android.content.Intent(context, com.darkxvenom.airbeats.playback.MusicService::class.java))
+                        context.startActivity(android.content.Intent(context, com.darkxvenom.airbeats.MainActivity::class.java).apply {
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        })
+                        Runtime.getRuntime().exit(0)
+                        return@launch
+                    }
+                } else {
+                    Toast.makeText(context, "Creating cloud folder...", Toast.LENGTH_SHORT).show()
+                    namePrefManager.saveUserName(name)
+                    namePrefManager.saveAccountEmail(email)
+                    backupViewModel.backupToDrive(context, email)
+                }
 
                 continueToHome(name)
             } catch (e: NoCredentialException) {
