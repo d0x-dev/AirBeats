@@ -1664,7 +1664,7 @@ private fun ShareLyricsDialog(
                                 action = Intent.ACTION_SEND
                                 type = "text/plain"
                                 val songLink =
-                                    "https://music.youtube.com/watch?v=${mediaMetadata?.id}"
+                                    "https://play.airbeats.app/${mediaMetadata?.id}"
                                 putExtra(
                                     Intent.EXTRA_TEXT,
                                     "\"$lyricsText\"\n\n$songTitle - $artists\n$songLink"

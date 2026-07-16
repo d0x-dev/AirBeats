@@ -39,7 +39,7 @@ class GoogleAuthManager(private val context: Context) {
 
     private fun getDriveService(email: String): Drive {
         val credential = GoogleAccountCredential.usingOAuth2(
-            context, listOf(DriveScopes.DRIVE_APPDATA, "https://www.googleapis.com/auth/youtube")
+            context, listOf(DriveScopes.DRIVE_APPDATA)
         )
         credential.selectedAccount = Account(email, "com.google")
         

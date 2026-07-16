@@ -2470,7 +2470,7 @@ fun BottomSheetPlayer(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "https://music.youtube.com/watch?v=${metadata.id}"
+                                "https://play.airbeats.app/${metadata.id}"
                             )
                         }
                         context.startActivity(Intent.createChooser(intent, null))
@@ -2524,7 +2524,7 @@ fun BottomSheetPlayer(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "https://music.youtube.com/watch?v=${metadata.id}"
+                                "https://play.airbeats.app/${metadata.id}"
                             )
                         }
                         context.startActivity(Intent.createChooser(intent, null))
@@ -2589,7 +2589,7 @@ fun BottomSheetPlayer(
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "https://music.youtube.com/watch?v=${metadata.id}"
+                                "https://play.airbeats.app/${metadata.id}"
                             )
                         }
                         context.startActivity(Intent.createChooser(intent, null))

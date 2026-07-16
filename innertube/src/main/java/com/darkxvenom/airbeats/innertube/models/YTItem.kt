@@ -33,7 +33,7 @@ data class SongItem(
     val endpoint: WatchEndpoint? = null,
 ) : YTItem() {
     override val shareLink: String
-        get() = "https://music.youtube.com/watch?v=$id"
+        get() = "https://play.airbeats.app/$id"
 }
 
 data class AlbumItem(

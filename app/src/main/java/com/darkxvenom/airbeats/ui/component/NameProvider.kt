@@ -3,6 +3,7 @@ package com.darkxvenom.airbeats.ui.component
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,7 +23,7 @@ fun NameProvider(
     namePreferenceManager: NamePreferenceManager,
     content: @Composable () -> Unit
 ) {
-    var userName by remember { mutableStateOf("") }
+    val userName by namePreferenceManager.userName.collectAsState(initial = "")
     var showNameDialog by remember { mutableStateOf(false) }
     var isInitialized by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -32,8 +33,6 @@ fun NameProvider(
         val isNameSet = namePreferenceManager.isNameSet.first()
         if (!isNameSet) {
             showNameDialog = true
-        } else {
-            userName = namePreferenceManager.userName.first()
         }
         isInitialized = true
     }
@@ -41,7 +40,6 @@ fun NameProvider(
     // Handle name confirmation
     val onNameConfirmed: (String) -> Unit = { name ->
         if (name.isNotBlank()) {
-            userName = name
             showNameDialog = false
             // Save to preferences and sync immediately
             scope.launch {

@@ -685,7 +685,7 @@ fun EnhancedRichPresence(
                         onClick = {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
-                                "https://music.youtube.com/watch?v=${song?.id}".toUri()
+                                "https://play.airbeats.app/${song?.id}".toUri()
                             )
                             context.startActivity(intent)
                         },
