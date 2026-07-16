@@ -57,7 +57,7 @@ class AirBeatsStatsCloudClient {
                         .build()
                 client.newCall(request).execute().use { response ->
                     if (response.code == 404) return@use GlobalStatsBoard()
-                    val text = response.body?.string().orEmpty()
+                    val text = response.body?.bytes()?.let { String(it, Charsets.UTF_8) }.orEmpty()
                     if (!response.isSuccessful) error(parseError(text, response.code))
                     val wrapper = try {
                         JSONObject(text)
@@ -83,7 +83,7 @@ class AirBeatsStatsCloudClient {
                 .post(json.toString().toRequestBody(JSON_MEDIA_TYPE))
                 .build()
         client.newCall(request).execute().use { response ->
-            val text = response.body?.string().orEmpty()
+            val text = response.body?.bytes()?.let { String(it, Charsets.UTF_8) }.orEmpty()
             if (!response.isSuccessful) error(parseError(text, response.code))
         }
     }
