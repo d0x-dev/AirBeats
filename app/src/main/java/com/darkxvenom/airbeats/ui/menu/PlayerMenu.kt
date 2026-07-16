@@ -137,9 +137,7 @@ fun PlayerMenu(
     val librarySong by database.song(mediaMetadata.id).collectAsState(initial = null)
     val coroutineScope = rememberCoroutineScope()
 
-    val bottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+
 
     val download by LocalDownloadUtil.current.getDownload(mediaMetadata.id)
         .collectAsState(initial = null)
@@ -270,30 +268,12 @@ fun PlayerMenu(
         )
     }
 
-    if (isQueueTrigger != true) {
-        var isMuted by remember { mutableStateOf(false) }
-        var previousVolume by remember { mutableFloatStateOf(playerVolume.value) }
-        var showEqualizerSheet by rememberSaveable { mutableStateOf(false) }
-        var showListenTogetherSheet by rememberSaveable { mutableStateOf(false) }
+    var isMuted by remember { mutableStateOf(false) }
+    var previousVolume by remember { mutableFloatStateOf(playerVolume.value) }
+    var showEqualizerSheet by rememberSaveable { mutableStateOf(false) }
+    var showListenTogetherSheet by rememberSaveable { mutableStateOf(false) }
 
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = bottomSheetState,
-            containerColor = MaterialTheme.colorScheme.surface,
-            dragHandle = {
-                Box(
-                    modifier = Modifier
-                        .padding(top = 10.dp, bottom = 6.dp)
-                        .width(34.dp)
-                        .height(4.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.36f),
-                            shape = RoundedCornerShape(50)
-                        )
-                )
-            }
-        ) {
-            Column(
+    Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 18.dp)
@@ -634,7 +614,6 @@ fun PlayerMenu(
                     }
                 }
             }
-        }
 
         if (showEqualizerSheet) {
             InAppEqualizerSheet(
@@ -651,7 +630,6 @@ fun PlayerMenu(
                 }
             )
         }
-    }
 }
 
 @Composable
