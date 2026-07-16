@@ -325,6 +325,7 @@ fun PlayerMenu(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(CircleShape)
+                                    .clickable {
                                         isMuted = !isMuted
                                         if (isMuted) {
                                             previousVolume = playerVolume.value
