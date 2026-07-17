@@ -53,6 +53,11 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.darkxvenom.airbeats.ui.component.SongDetailsDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -134,6 +139,16 @@ fun AlternateQueue(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val clipboardManager = LocalClipboard.current
+
+    var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showDetailsDialog) {
+        SongDetailsDialog(
+            mediaMetadata = mediaMetadata,
+            onDismiss = { showDetailsDialog = false }
+        )
+    }
+
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
 

@@ -42,6 +42,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.darkxvenom.airbeats.ui.component.SongDetailsDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,7 +81,6 @@ import com.darkxvenom.airbeats.db.entities.FormatEntity
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.PlayerConnection
 import com.darkxvenom.airbeats.ui.component.BottomSheetPage
-import com.darkxvenom.airbeats.ui.component.SongDetailsDialogState
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.component.MenuState
 import com.darkxvenom.airbeats.ui.menu.PlayerMenu
@@ -115,7 +119,7 @@ fun IosStyledPlayer(
     playerConnection: PlayerConnection,
     navController: NavController,
     menuState: MenuState,
-    bottomSheetPageState: BottomSheetPageState,
+    
     nextUpMetadata: MediaMetadata? = null,
     currentFormat: FormatEntity? = null,
     playerVolume: Float,
@@ -291,7 +295,7 @@ private fun V8PlayerControlsContent(
     navController: NavController,
     state: BottomSheetState,
     menuState: MenuState,
-    bottomSheetPageState: BottomSheetPageState,
+    
     onSliderValueChange: (Long) -> Unit,
     onSliderValueChangeFinished: () -> Unit,
     nextUpMetadata: MediaMetadata? = null,

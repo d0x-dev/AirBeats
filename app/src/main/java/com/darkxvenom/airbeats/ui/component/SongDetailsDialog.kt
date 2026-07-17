@@ -24,7 +24,6 @@ import androidx.compose.ui.window.DialogProperties
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.models.MediaMetadata
-import com.darkxvenom.airbeats.utils.useBlackBackground
 
 @Composable
 fun SongDetailsDialog(
@@ -38,7 +37,7 @@ fun SongDetailsDialog(
     AlertDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        containerColor = if (useBlackBackground) Color.Black else AlertDialogDefaults.containerColor,
+        containerColor = AlertDialogDefaults.containerColor,
         icon = {
             Icon(
                 painter = painterResource(R.drawable.info),
