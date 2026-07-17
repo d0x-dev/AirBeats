@@ -82,14 +82,19 @@ fun OnboardingScreen(
     fun requestGoogleSignIn(filterByAuthorizedAccounts: Boolean) {
         coroutineScope.launch {
             try {
-                val googleIdOption = GetGoogleIdOption.Builder()
-                    .setFilterByAuthorizedAccounts(filterByAuthorizedAccounts)
-                    .setServerClientId(GoogleAuthManager.WEB_CLIENT_ID)
-                    .setAutoSelectEnabled(false)
-                    .build()
+                val credentialOption: androidx.credentials.CredentialOption = if (filterByAuthorizedAccounts) {
+                    GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(true)
+                        .setServerClientId(GoogleAuthManager.WEB_CLIENT_ID)
+                        .setAutoSelectEnabled(false)
+                        .build()
+                } else {
+                    com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption.Builder(GoogleAuthManager.WEB_CLIENT_ID)
+                        .build()
+                }
 
                 val request = GetCredentialRequest.Builder()
-                    .addCredentialOption(googleIdOption)
+                    .addCredentialOption(credentialOption)
                     .build()
 
                 val credential = credentialManager.getCredential(context, request).credential
