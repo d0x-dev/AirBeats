@@ -211,16 +211,7 @@ private fun V8PlayerBackdrop(
             label = label,
         ) { artworkUrl ->
             if (artworkUrl != null) {
-                var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
-
-    if (showDetailsDialog) {
-        SongDetailsDialog(
-            mediaMetadata = mediaMetadata,
-            onDismiss = { showDetailsDialog = false }
-        )
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
                         model = artworkUrl.highRes(),
                         contentDescription = null,
