@@ -365,79 +365,77 @@ fun PlayerMenu(
                     }
                 }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(
-                        bottom = WindowInsets.navigationBars.asPaddingValues()
-                            .calculateBottomPadding() + 16.dp
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
                     ),
-                    modifier = Modifier.height(450.dp),
-                    userScrollEnabled = false
                 ) {
                     item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.radio,
-                            title = R.string.start_radio,
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            playerConnection.playQueue(
-                                YouTubeQueue(
-                                    WatchEndpoint(videoId = mediaMetadata.id),
-                                    mediaMetadata
+                            PlayerMenuActionTile(
+                                icon = R.drawable.radio,
+                                title = R.string.start_radio,
+                                modifier = Modifier.weight(1f).height(76.dp),
+                            ) {
+                                playerConnection.playQueue(
+                                    YouTubeQueue(
+                                        WatchEndpoint(videoId = mediaMetadata.id),
+                                        mediaMetadata
+                                    )
                                 )
-                            )
-                            onDismiss()
-                        }
-                    }
-                    item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.playlist_add,
-                            title = R.string.add_to_playlist,
-                        ) {
-                            showChoosePlaylistDialog = true
-                        }
-                    }
-                    item {
-                        PlayerMenuActionTile(
-                            icon = if (download?.state == Download.STATE_COMPLETED) {
-                                R.drawable.offline
-                            } else {
-                                R.drawable.download
-                            },
-                            title = if (download?.state == Download.STATE_COMPLETED) {
-                                R.string.remove_download
-                            } else {
-                                R.string.download
-                            },
-                        ) {
-                            if (download?.state == Download.STATE_COMPLETED) {
-                                DownloadService.sendRemoveDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    mediaMetadata.id,
-                                    false,
-                                )
-                            } else {
-                                database.transaction {
-                                    insert(mediaMetadata)
-                                }
-                                val downloadRequest =
-                                    DownloadRequest
-                                        .Builder(mediaMetadata.id, mediaMetadata.id.toUri())
-                                        .setCustomCacheKey(mediaMetadata.id)
-                                        .setData(mediaMetadata.title.toByteArray())
-                                        .build()
-                                DownloadService.sendAddDownload(
-                                    context,
-                                    ExoDownloadService::class.java,
-                                    downloadRequest,
-                                    false,
-                                )
+                                onDismiss()
                             }
-                            onDismiss()
+                            
+                            PlayerMenuActionTile(
+                                icon = R.drawable.playlist_add,
+                                title = R.string.add_to_playlist,
+                                modifier = Modifier.weight(1f).height(76.dp),
+                            ) {
+                                showChoosePlaylistDialog = true
+                            }
+                            
+                            PlayerMenuActionTile(
+                                icon = if (download?.state == Download.STATE_COMPLETED) R.drawable.offline else R.drawable.download,
+                                title = if (download?.state == Download.STATE_COMPLETED) R.string.remove_download else R.string.download,
+                                modifier = Modifier.weight(1f).height(76.dp),
+                            ) {
+                                if (download?.state == Download.STATE_COMPLETED) {
+                                    DownloadService.sendRemoveDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        mediaMetadata.id,
+                                        false,
+                                    )
+                                } else {
+                                    database.transaction {
+                                        insert(mediaMetadata)
+                                    }
+                                    val downloadRequest =
+                                        DownloadRequest
+                                            .Builder(mediaMetadata.id, mediaMetadata.id.toUri())
+                                            .setCustomCacheKey(mediaMetadata.id)
+                                            .setData(mediaMetadata.title.toByteArray())
+                                            .build()
+                                    DownloadService.sendAddDownload(
+                                        context,
+                                        ExoDownloadService::class.java,
+                                        downloadRequest,
+                                        false,
+                                    )
+                                }
+                                onDismiss()
+                            }
                         }
                     }
+
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
                     item {
                         val savingToastMsg = stringResource(R.string.saving_song)
                         val savedToastMsg = stringResource(R.string.song_saved_successfully)
@@ -469,156 +467,200 @@ fun PlayerMenu(
                             }
                         }
 
-                        PlayerMenuActionTile(
-                            icon = R.drawable.save_to_storage,
-                            title = R.string.save_to_local,
-                        ) {
-                            val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                // Android 10+ uses scoped storage, no permission needed
-                                true
-                            } else {
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                                ) == PackageManager.PERMISSION_GRANTED
-                            }
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.save_to_local)) },
+                            leadingContent = { Icon(painterResource(R.drawable.save_to_storage), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                    true
+                                } else {
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                }
 
-                            if (hasPermission) {
-                                Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
-                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO).launch {
-                                    com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                                        .saveToMusicFolder(context, mediaMetadata)
-                                        .onSuccess {
-                                            launch(Dispatchers.Main) {
-                                                Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
+                                if (hasPermission) {
+                                    Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
+                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO).launch {
+                                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
+                                            .saveToMusicFolder(context, mediaMetadata)
+                                            .onSuccess {
+                                                launch(Dispatchers.Main) {
+                                                    Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
+                                                }
                                             }
-                                        }
-                                        .onFailure { e ->
-                                            launch(Dispatchers.Main) {
-                                                Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
+                                            .onFailure { e ->
+                                                launch(Dispatchers.Main) {
+                                                    Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
+                                                }
                                             }
-                                        }
-                                }
-                                onDismiss()
-                            } else {
-                                permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                            }
-                        }
-                    }
-                    item {
-                        PlayerMenuActionTile(
-                            icon = if (librarySong?.song?.inLibrary != null) {
-                                R.drawable.library_add_check
-                            } else {
-                                R.drawable.library_add
-                            },
-                            title = if (librarySong?.song?.inLibrary != null) {
-                                R.string.remove_from_library
-                            } else {
-                                R.string.add_to_library
-                            },
-                        ) {
-                            if (librarySong?.song?.inLibrary != null) {
-                                database.query {
-                                    inLibrary(mediaMetadata.id, null)
-                                }
-                            } else {
-                                database.transaction {
-                                    insert(mediaMetadata)
-                                    inLibrary(mediaMetadata.id, LocalDateTime.now())
-                                }
-                            }
-                            onDismiss()
-                        }
-                    }
-                    if (artists.isNotEmpty()) {
-                        item {
-                            PlayerMenuActionTile(
-                                icon = R.drawable.artist,
-                                title = R.string.view_artist,
-                            ) {
-                                if (mediaMetadata.artists.size == 1) {
-                                    navController.navigate("artist/${mediaMetadata.artists[0].id}")
-                                    playerBottomSheetState.collapseSoft()
+                                    }
                                     onDismiss()
                                 } else {
-                                    showSelectArtistDialog = true
+                                    permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                 }
                             }
+                        )
+                    }
+
+                    item {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = {
+                                Text(
+                                    stringResource(
+                                        if (librarySong?.song?.inLibrary != null) R.string.remove_from_library else R.string.add_to_library
+                                    )
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    painterResource(
+                                        if (librarySong?.song?.inLibrary != null) R.drawable.library_add_check else R.drawable.library_add
+                                    ),
+                                    contentDescription = null
+                                )
+                            },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                if (librarySong?.song?.inLibrary != null) {
+                                    database.query {
+                                        inLibrary(mediaMetadata.id, null)
+                                    }
+                                } else {
+                                    database.transaction {
+                                        insert(mediaMetadata)
+                                        inLibrary(mediaMetadata.id, LocalDateTime.now())
+                                    }
+                                }
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    if (artists.isNotEmpty()) {
+                        item {
+                            androidx.compose.material3.ListItem(
+                                headlineContent = { Text(stringResource(R.string.view_artist)) },
+                                leadingContent = { Icon(painterResource(R.drawable.artist), contentDescription = null) },
+                                colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                                modifier = Modifier.clickable {
+                                    if (mediaMetadata.artists.size == 1) {
+                                        navController.navigate("artist/${mediaMetadata.artists[0].id}")
+                                        playerBottomSheetState.collapseSoft()
+                                        onDismiss()
+                                    } else {
+                                        showSelectArtistDialog = true
+                                    }
+                                }
+                            )
                         }
                     }
+
                     if (mediaMetadata.album != null) {
                         item {
-                            PlayerMenuActionTile(
-                                icon = R.drawable.album,
-                                title = R.string.view_album,
-                            ) {
-                                navController.navigate("album/${mediaMetadata.album.id}")
+                            androidx.compose.material3.ListItem(
+                                headlineContent = { Text(stringResource(R.string.view_album)) },
+                                leadingContent = { Icon(painterResource(R.drawable.album), contentDescription = null) },
+                                colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                                modifier = Modifier.clickable {
+                                    navController.navigate("album/${mediaMetadata.album.id}")
+                                    playerBottomSheetState.collapseSoft()
+                                    onDismiss()
+                                }
+                            )
+                        }
+                    }
+
+                    item {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.share)) },
+                            leadingContent = { Icon(painterResource(R.drawable.share), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                val intent =
+                                    Intent().apply {
+                                        action = Intent.ACTION_SEND
+                                        type = "text/plain"
+                                        putExtra(
+                                            Intent.EXTRA_TEXT,
+                                            "https://play.airbeats.app/${mediaMetadata.id}"
+                                        )
+                                    }
+                                context.startActivity(Intent.createChooser(intent, null))
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    item {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.details)) },
+                            leadingContent = { Icon(painterResource(R.drawable.info), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                onShowDetailsDialog()
+                                onDismiss()
+                            }
+                        )
+                    }
+
+                    item {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.always_on_display)) },
+                            leadingContent = { Icon(painterResource(R.drawable.dark_mode), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                navController.navigate("always_on_display")
                                 playerBottomSheetState.collapseSoft()
                                 onDismiss()
                             }
-                        }
+                        )
                     }
+
                     item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.share,
-                            title = R.string.share,
-                        ) {
-                            val intent =
-                                Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    type = "text/plain"
-                                    putExtra(
-                                        Intent.EXTRA_TEXT,
-                                        "https://play.airbeats.app/${mediaMetadata.id}"
-                                    )
-                                }
-                            context.startActivity(Intent.createChooser(intent, null))
-                            onDismiss()
-                        }
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.sleep_timer)) },
+                            leadingContent = { Icon(painterResource(R.drawable.sleep), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                showSleepTimerDialog = true
+                            }
+                        )
                     }
+
                     item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.info,
-                            title = R.string.details,
-                        ) {
-                            onShowDetailsDialog()
-                            onDismiss()
-                        }
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.equalizer)) },
+                            leadingContent = { Icon(painterResource(R.drawable.equalizer), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                showEqualizerSheet = true
+                            }
+                        )
                     }
+
                     item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.dark_mode,
-                            title = R.string.always_on_display,
-                        ) {
-                            navController.navigate("always_on_display")
-                            playerBottomSheetState.collapseSoft()
-                            onDismiss()
-                        }
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.listen_together)) },
+                            leadingContent = { Icon(painterResource(R.drawable.group), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                showListenTogetherSheet = true
+                            }
+                        )
                     }
+
                     item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.equalizer,
-                            title = R.string.equalizer,
-                        ) {
-                            showEqualizerSheet = true
-                        }
-                    }
-                    item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.group,
-                            title = R.string.listen_together,
-                        ) {
-                            showListenTogetherSheet = true
-                        }
-                    }
-                    item {
-                        PlayerMenuActionTile(
-                            icon = R.drawable.tune,
-                            title = R.string.advanced,
-                        ) {
-                            showPitchTempoDialog = true
-                        }
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.advanced)) },
+                            leadingContent = { Icon(painterResource(R.drawable.tune), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable {
+                                showPitchTempoDialog = true
+                            }
+                        )
                     }
                 }
             }
@@ -694,6 +736,7 @@ private fun PlayerMenuHeader(mediaMetadata: MediaMetadata) {
 private fun PlayerMenuActionTile(
     @DrawableRes icon: Int,
     @StringRes title: Int,
+    modifier: Modifier = Modifier.fillMaxWidth().height(76.dp),
     onClick: () -> Unit,
 ) {
     Surface(
@@ -702,9 +745,8 @@ private fun PlayerMenuActionTile(
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
         tonalElevation = 1.dp,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(76.dp)
+        modifier = modifier
+
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
