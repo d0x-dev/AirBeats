@@ -125,6 +125,15 @@ fun IosStyledPlayer(
     playerVolume: Float,
     onVolumeChange: (Float) -> Unit,
 ) {
+    var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showDetailsDialog) {
+        SongDetailsDialog(
+            mediaMetadata = mediaMetadata,
+            onDismiss = { showDetailsDialog = false }
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         V8PlayerBackdrop(
             thumbnailUrl = mediaMetadata?.thumbnailUrl,
@@ -166,7 +175,6 @@ fun IosStyledPlayer(
                     navController = navController,
                     state = state,
                     menuState = menuState,
-                    bottomSheetPageState = bottomSheetPageState,
                     onSliderValueChange = onSeek,
                     onSliderValueChangeFinished = onSeekFinished,
                     nextUpMetadata = nextUpMetadata,
@@ -203,7 +211,16 @@ private fun V8PlayerBackdrop(
             label = label,
         ) { artworkUrl ->
             if (artworkUrl != null) {
-                Box(modifier = Modifier.fillMaxSize()) {
+                var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showDetailsDialog) {
+        SongDetailsDialog(
+            mediaMetadata = mediaMetadata,
+            onDismiss = { showDetailsDialog = false }
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
                     AsyncImage(
                         model = artworkUrl.highRes(),
                         contentDescription = null,

@@ -139,16 +139,6 @@ fun AlternateQueue(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val clipboardManager = LocalClipboard.current
-
-    var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
-
-    if (showDetailsDialog) {
-        SongDetailsDialog(
-            mediaMetadata = mediaMetadata,
-            onDismiss = { showDetailsDialog = false }
-        )
-    }
-
     val menuState = LocalMenuState.current
     val bottomSheetPageState = LocalBottomSheetPageState.current
 
@@ -158,6 +148,15 @@ fun AlternateQueue(
 
     val currentWindowIndex by playerConnection.currentWindowIndex.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
+
+    var showDetailsDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showDetailsDialog) {
+        SongDetailsDialog(
+            mediaMetadata = mediaMetadata,
+            onDismiss = { showDetailsDialog = false }
+        )
+    }
 
     val currentFormat by playerConnection.currentFormat.collectAsState(initial = null)
 
