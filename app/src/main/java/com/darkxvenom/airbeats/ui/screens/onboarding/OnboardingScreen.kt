@@ -147,21 +147,24 @@ fun OnboardingScreen(
                         syncState = SyncState.NEW_USER
                     }
                 }
-            } catch (e: NoCredentialException) {
+            } catch (e: GetCredentialException) {
+                e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
-                    showSignInError("No Google account found on this device.")
+                    if (e is androidx.credentials.exceptions.GetCredentialCancellationException) {
+                        showSignInError("Google sign in was cancelled.")
+                    } else {
+                        showSignInError(e.message ?: "Google sign in failed.")
+                    }
                 }
-            } catch (e: GoogleIdTokenParsingException) {
-                e.printStackTrace()
-                showSignInError("Google sign in failed. Please try again.")
-            } catch (e: GetCredentialException) {
-                e.printStackTrace()
-                showSignInError(e.message ?: "Google sign in was cancelled.")
             } catch (e: Exception) {
                 e.printStackTrace()
-                showSignInError("Sign in failed: ${e.message}")
+                if (filterByAuthorizedAccounts) {
+                    requestGoogleSignIn(filterByAuthorizedAccounts = false)
+                } else {
+                    showSignInError("Sign in failed: ${e.message}")
+                }
             }
         }
     }

@@ -176,15 +176,22 @@ fun AccountSettings(
                         nameManager.saveAccountEmail(email)
                     }
                 }
-            } catch (e: NoCredentialException) {
+            } catch (e: GetCredentialException) {
+                e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
-                    Toast.makeText(context, "Sign in failed: No credentials available", Toast.LENGTH_SHORT).show()
+                    if (e !is androidx.credentials.exceptions.GetCredentialCancellationException) {
+                        Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                if (filterByAuthorizedAccounts) {
+                    requestGoogleSignIn(filterByAuthorizedAccounts = false)
+                } else {
+                    Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
