@@ -150,6 +150,11 @@ fun OnboardingScreen(
             } catch (e: GetCredentialException) {
                 e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
+                    try {
+                        credentialManager.clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
+                    } catch (clearE: Exception) {
+                        clearE.printStackTrace()
+                    }
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
                     if (e is androidx.credentials.exceptions.GetCredentialCancellationException) {
@@ -161,6 +166,11 @@ fun OnboardingScreen(
             } catch (e: Exception) {
                 e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
+                    try {
+                        credentialManager.clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
+                    } catch (clearE: Exception) {
+                        clearE.printStackTrace()
+                    }
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
                     showSignInError("Sign in failed: ${e.message}")

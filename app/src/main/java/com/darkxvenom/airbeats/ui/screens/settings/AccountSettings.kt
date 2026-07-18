@@ -179,6 +179,11 @@ fun AccountSettings(
             } catch (e: GetCredentialException) {
                 e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
+                    try {
+                        credentialManager.clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
+                    } catch (clearE: Exception) {
+                        clearE.printStackTrace()
+                    }
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
                     if (e !is androidx.credentials.exceptions.GetCredentialCancellationException) {
@@ -188,6 +193,11 @@ fun AccountSettings(
             } catch (e: Exception) {
                 e.printStackTrace()
                 if (filterByAuthorizedAccounts) {
+                    try {
+                        credentialManager.clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
+                    } catch (clearE: Exception) {
+                        clearE.printStackTrace()
+                    }
                     requestGoogleSignIn(filterByAuthorizedAccounts = false)
                 } else {
                     Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
