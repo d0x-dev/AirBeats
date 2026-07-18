@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -192,72 +193,15 @@ fun Queue(
     }
 
     if (showDetailsDialog) {
-        AlertDialog(
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+        androidx.compose.material3.ModalBottomSheet(
             onDismissRequest = { showDetailsDialog = false },
-            icon = {
-                Icon(
-                    painter = painterResource(R.drawable.info),
-                    contentDescription = null,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = { showDetailsDialog = false },
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            },
-            text = {
-                Column(
-                    modifier =
-                        Modifier
-                            .sizeIn(minWidth = 280.dp, maxWidth = 560.dp)
-                            .verticalScroll(rememberScrollState()),
-                ) {
-                    listOf(
-                        stringResource(R.string.song_title) to mediaMetadata?.title,
-                        stringResource(R.string.song_artists) to mediaMetadata?.artists?.joinToString { it.name },
-                        stringResource(R.string.media_id) to mediaMetadata?.id,
-                        "Itag" to currentFormat?.itag?.toString(),
-                        stringResource(R.string.mime_type) to currentFormat?.mimeType,
-                        stringResource(R.string.codecs) to currentFormat?.codecs,
-                        stringResource(R.string.bitrate) to currentFormat?.bitrate?.let { "${it / 1000} Kbps" },
-                        stringResource(R.string.sample_rate) to currentFormat?.sampleRate?.let { "$it Hz" },
-                        stringResource(R.string.loudness) to currentFormat?.loudnessDb?.let { "$it dB" },
-                        stringResource(R.string.volume) to "${(playerConnection.player.volume * 100).toInt()}%",
-                        stringResource(R.string.file_size) to
-                                currentFormat?.contentLength?.let {
-                                    Formatter.formatShortFileSize(
-                                        context,
-                                        it
-                                    )
-                                },
-                    ).forEach { (label, text) ->
-                        val displayText = text ?: stringResource(R.string.unknown)
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Text(
-                            text = displayText,
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier =
-                                Modifier.clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                    onClick = {
-                                        clipboardManager.setText(AnnotatedString(displayText))
-                                        Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT)
-                                            .show()
-                                    },
-                                ),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                    }
-                }
-            },
-        )
+            modifier = Modifier.fillMaxHeight(0.9f)
+        ) {
+            mediaMetadata?.id?.let {
+                com.darkxvenom.airbeats.ui.utils.ShowMediaInfo(videoId = it)
+            }
+        }
     }
 
     BottomSheet(

@@ -21,6 +21,18 @@ import com.darkxvenom.airbeats.constants.*
 import com.darkxvenom.airbeats.ui.component.*
 import com.darkxvenom.airbeats.utils.rememberPreference
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import android.widget.Toast
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.NoCredentialException
+import androidx.credentials.exceptions.GetCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.darkxvenom.airbeats.utils.GoogleAuthManager
+import com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -47,6 +59,10 @@ fun AccountSettings(
 
     val nameManager = remember { NamePreferenceManager(context) }
     val currentDisplayName by nameManager.userName.collectAsState(initial = "")
+    val currentGoogleEmail by nameManager.accountEmail.collectAsState(initial = "")
+    
+    val credentialManager = remember { CredentialManager.create(context) }
+    val backupViewModel: BackupRestoreViewModel = hiltViewModel()
 
     var showEditNameDialog by remember { mutableStateOf(false) }
 
@@ -98,6 +114,73 @@ fun AccountSettings(
     val playerConnection = LocalPlayerConnection.current
     val mediaMetadata by playerConnection?.mediaMetadata?.collectAsState()
         ?: remember { mutableStateOf(null) }
+
+    fun requestGoogleSignIn(filterByAuthorizedAccounts: Boolean) {
+        scope.launch {
+            try {
+                val credentialOption: androidx.credentials.CredentialOption = if (filterByAuthorizedAccounts) {
+                    GetGoogleIdOption.Builder()
+                        .setFilterByAuthorizedAccounts(true)
+                        .setServerClientId(GoogleAuthManager.WEB_CLIENT_ID)
+                        .setAutoSelectEnabled(false)
+                        .build()
+                } else {
+                    com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption.Builder(GoogleAuthManager.WEB_CLIENT_ID)
+                        .build()
+                }
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(credentialOption)
+                    .build()
+
+                val credential = credentialManager.getCredential(context, request).credential
+                
+                val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                val name = googleCredential.displayName
+                    ?: googleCredential.givenName
+                    ?: googleCredential.id.substringBefore("@")
+                val email = googleCredential.id
+                
+                val backupClient = com.darkxvenom.airbeats.utils.CloudBackupClient()
+                val backupExists = backupClient.checkBackupExists(email)
+                
+                if (backupExists) {
+                    Toast.makeText(context, "Restoring cloud backup...", Toast.LENGTH_SHORT).show()
+                    val result = backupViewModel.restoreFromDrive(context, email)
+                    if (result is com.darkxvenom.airbeats.utils.DriveResult.Success) {
+                        Toast.makeText(context, "Cloud backup restored!", Toast.LENGTH_SHORT).show()
+                        nameManager.saveUserName(name)
+                        nameManager.saveAccountEmail(email)
+                        
+                        delay(1500)
+                        context.stopService(android.content.Intent(context, com.darkxvenom.airbeats.playback.MusicService::class.java))
+                        context.startActivity(android.content.Intent(context, com.darkxvenom.airbeats.MainActivity::class.java).apply {
+                            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        })
+                        Runtime.getRuntime().exit(0)
+                        return@launch
+                    } else {
+                        Toast.makeText(context, "Failed to restore backup.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    // Upload initial backup
+                    backupViewModel.backupToDrive(context, email, name)
+                    nameManager.saveUserName(name)
+                    nameManager.saveAccountEmail(email)
+                    Toast.makeText(context, "Google Account Linked!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: NoCredentialException) {
+                if (filterByAuthorizedAccounts) {
+                    requestGoogleSignIn(filterByAuthorizedAccounts = false)
+                } else {
+                    Toast.makeText(context, "Sign in failed: No credentials available", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // 🎵 BLUR BACKGROUND
@@ -266,6 +349,37 @@ fun AccountSettings(
                                 onClick = {
                                     if (!isLoggedIn)
                                         navController.navigate("login")
+                                }
+                            )
+                        },
+
+                        // 🔹 GOOGLE CLOUD ACCOUNT
+                        {
+                            PreferenceEntry(
+                                title = {
+                                    Text(
+                                        if (currentGoogleEmail.isNotBlank()) currentGoogleEmail 
+                                        else "Login with Google"
+                                    )
+                                },
+                                description = if (currentGoogleEmail.isNotBlank()) "Cloud Backup & Stats Linked" else "Link account for cloud backups",
+                                icon = { Icon(painterResource(R.drawable.google), null, tint = Color.Unspecified) },
+                                trailingContent = {
+                                    if (currentGoogleEmail.isNotBlank()) {
+                                        OutlinedButton(onClick = {
+                                            scope.launch {
+                                                nameManager.saveAccountEmail("")
+                                                Toast.makeText(context, "Unlinked Google Account", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }) {
+                                            Text(stringResource(R.string.logout))
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    if (currentGoogleEmail.isBlank()) {
+                                        requestGoogleSignIn(false)
+                                    }
                                 }
                             )
                         },

@@ -26,6 +26,11 @@ class NamePreferenceManager @Inject constructor(
             preferences[USER_NAME_KEY] ?: ""
         }
 
+    val accountEmail: Flow<String> = context.nameDataStore.data
+        .map { preferences ->
+            preferences[androidx.datastore.preferences.core.stringPreferencesKey("accountEmail")] ?: ""
+        }
+
     val isNameSet: Flow<Boolean> = context.nameDataStore.data
         .map { preferences ->
             val isV58Set = preferences[NAME_SET_KEY]?.toBoolean() ?: false

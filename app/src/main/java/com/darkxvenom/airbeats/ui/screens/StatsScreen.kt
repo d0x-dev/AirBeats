@@ -615,8 +615,14 @@ fun StatsScreen(
     }
 
     if (showWeeklyGlobalStats) {
+        val weeklyUsers = remember(globalStats.board.users) {
+            globalStats.board.users
+                .filter { it.weeklyListenMs > 0 }
+                .sortedByDescending { it.weeklyListenMs }
+                .mapIndexed { index, user -> user.copy(rank = index + 1) }
+        }
         WeeklyGlobalStatsSheet(
-            users = globalStats.board.users,
+            users = weeklyUsers,
             currentUserId = globalStats.currentUserId,
             onDismiss = {
                 viewModel.markWeeklyPopupSeen()
@@ -868,7 +874,7 @@ private fun WeeklyGlobalStatsSheet(
                                 }
                             }
                             Text(
-                                text = formatListenHours(user.weeklyListenMs.takeIf { it > 0 } ?: user.totalListenMs),
+                                text = formatListenHours(user.weeklyListenMs),
                                 fontWeight = FontWeight.Black,
                             )
                         }

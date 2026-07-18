@@ -35,7 +35,7 @@ android {
         applicationId = "com.darkxvenom.airbeats"
         minSdk = 24
         targetSdk = 35
-        versionCode = 167
+        versionCode = 168
         versionName = "5.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GOOGLE_API_KEY", googleApiKey.asBuildConfigString())

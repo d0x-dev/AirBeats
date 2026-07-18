@@ -239,6 +239,12 @@
     <string name="seek_backward">5 seconds backward</string>
     <string name="seek_forward">5 seconds forward</string>
 
+    <string name="added_to_playlist">Added %1$s to %2$s</string>
+    <string name="you_might_like">You might like</string>
+    <string name="refresh_suggestions">Refresh suggestions</string>
+    <string name="playlist_not_found">Playlist not found</string>
+    <string name="playlist_not_found_desc">The requested playlist could not be found.</string>
+
     <!-- Player action -->
     <string name="action_like">Like</string>
     <string name="action_remove_like">Remove like</string>
