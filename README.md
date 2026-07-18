@@ -1,21 +1,24 @@
 <p align="center">
-<img width="1024" height="1024" alt="1000116784" src="https://github.com/user-attachments/assets/2bf845a0-a67a-4f6f-9874-9f26eb712f05" />
+  <img src="https://github.com/user-attachments/assets/2bf845a0-a67a-4f6f-9874-9f26eb712f05" width="250" alt="AirBeats Logo" />
 </p>
 
-<h1 align="center" style="font-size: 3.2rem;">AirBeats</h1>
+<h1 align="center">AirBeats</h1>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/drkvenom786/Airbeats/refs/heads/main/sc.png" alt="AirBeats Preview" width="100%"/>
-  
-  ### 🚀 Advanced YouTube Music Client with Material Design 3
-  **Experience Music Like Never Before on Android**
-  
-  [![Latest Release](https://img.shields.io/github/v/release/d0x-dev/airbeats?style=for-the-badge&logo=github&color=0D1117&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/releases)
-  [![License](https://img.shields.io/github/license/d0x-dev/airbeats?style=for-the-badge&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/blob/main/LICENSE)
-  [![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
-  [![GitHub Stars](https://img.shields.io/github/stars/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/stargazers)
-  [![GitHub Forks](https://img.shields.io/github/forks/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/network)
-  [![Crowdin](https://img.shields.io/badge/𝐓𝐑𝐀𝐍𝐒𝐋𝐀𝐓𝐄-2E3340?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/airbeats)
+
+<img src="https://raw.githubusercontent.com/drkvenom786/Airbeats/refs/heads/main/sc.png" alt="AirBeats Preview" width="100%"/>
+
+### 🚀 Advanced YouTube Music Client with Material Design 3
+
+**Experience Music Like Never Before on Android**
+
+[![Latest Release](https://img.shields.io/github/v/release/d0x-dev/airbeats?style=for-the-badge&logo=github&color=0D1117&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/releases)
+[![License](https://img.shields.io/github/license/d0x-dev/airbeats?style=for-the-badge&logo=gnu&color=2B3137&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/blob/main/LICENSE)
+[![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
+[![GitHub Stars](https://img.shields.io/github/stars/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/network)
+[![Crowdin](https://img.shields.io/badge/𝐓𝐑𝐀𝐍𝐒𝐋𝐀𝐓𝐄-2E3340?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/airbeats)
+
 </div>
 
 ---
