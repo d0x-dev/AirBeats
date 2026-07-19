@@ -627,7 +627,7 @@
 
 
     <string name="cloud_upload_title">Automatic cloud upload</string>
-    <string name="cloud_upload_enabled_description">Backups will be uploaded to filebin.net</string>
+    <string name="cloud_upload_enabled_description">Backups will be uploaded to database.airbeats.app</string>
     <string name="cloud_upload_disabled_description">Backups will only be saved locally</string>
     <string name="backup_with_cloud">Create local backup and upload to cloud</string>
     <string name="uploading_backup">Uploading backup…</string>

@@ -575,7 +575,7 @@ Aplikacja zrestartuje się automatycznie."</string>
     <string name="playing_from">"Odtwarzane z"</string>
     <string name="SmallButtonsShape">"Kształt małych przycisków"</string>
     <string name="cloud_upload_title">"Automatyczne przesyłanie do chmury"</string>
-    <string name="cloud_upload_enabled_description">"Kopie zapasowe będą zapisywane na filebin.net"</string>
+    <string name="cloud_upload_enabled_description">"Kopie zapasowe będą zapisywane na database.airbeats.app"</string>
     <string name="cloud_upload_disabled_description">"Kopie zapasowe będą zapisywane lokalnie"</string>
     <string name="backup_with_cloud">"Stwórz kopię zapasową i prześlij ją do chmury"</string>
     <string name="uploading_backup">"Przesyłanie kopii zapasowej..."</string>

@@ -15,6 +15,15 @@ class DailyBackupWorker(
 
     override suspend fun doWork(): Result {
         try {
+            val automaticCloudBackupEnabled = context
+                .getSharedPreferences("backup_settings", Context.MODE_PRIVATE)
+                .getBoolean("enable_cloud_upload", true)
+
+            if (!automaticCloudBackupEnabled) {
+                Log.i("DailyBackupWorker", "Automatic cloud backup disabled. Skipping backup.")
+                return Result.success()
+            }
+
             val nameManager = NamePreferenceManager(context)
             val email = nameManager.accountEmail.first()
             val name = nameManager.userName.first().takeIf { it.isNotBlank() } ?: "AirBeats User"

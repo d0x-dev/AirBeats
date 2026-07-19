@@ -436,7 +436,11 @@ class MainActivity : ComponentActivity() {
             val userName by namePreferenceManager.userName.collectAsState(initial = "AirBeats User")
             
             LaunchedEffect(accountEmail, userName) {
-                if (accountEmail.isNotBlank()) {
+                val automaticCloudBackupEnabled = context
+                    .getSharedPreferences("backup_settings", android.content.Context.MODE_PRIVATE)
+                    .getBoolean("enable_cloud_upload", true)
+
+                if (automaticCloudBackupEnabled && accountEmail.isNotBlank()) {
                     val now = System.currentTimeMillis()
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         val result = backupViewModel.backupToDrive(context, accountEmail, userName)

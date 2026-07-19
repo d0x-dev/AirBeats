@@ -542,7 +542,7 @@
     <string name="playing_from">"Reproduciendo desde: "</string>
     <string name="SmallButtonsShape">Forma de Botones pequeños</string>
     <string name="cloud_upload_title">Carga automática en la nube</string>
-    <string name="cloud_upload_enabled_description">Las copias de seguridad se cargarán en filebin.net</string>
+    <string name="cloud_upload_enabled_description">Las copias de seguridad se cargarán en database.airbeats.app</string>
     <string name="cloud_upload_disabled_description">Las copias de seguridad solo se guardarán localmente</string>
     <string name="backup_with_cloud">Crear copia de seguridad local y cargarla en la nube</string>
     <string name="uploading_backup">Cargando copia de seguridad...</string>
