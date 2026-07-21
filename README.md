@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/2bf845a0-a67a-4f6f-9874-9f26eb712f05" width="250" alt="AirBeats Logo" />
+  <img src="https://raw.githubusercontent.com/drkvenom786/Airbeats/refs/heads/main/icon2.png" width="250" alt="AirBeats Logo" />
 </p>
 
 <h1 align="center">AirBeats</h1>
