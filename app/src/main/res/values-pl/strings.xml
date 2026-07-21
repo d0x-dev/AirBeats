@@ -446,7 +446,7 @@
     <string name="collapse">"Zminimalizuj"</string>
     <string name="expand">"Rozwiń"</string>
     <string name="reset_to_default">"Resetuj do ustawień domyślnych"</string>
-    <string name="Presets">"Presety"</string>
+    <string name="theme_presets">"Presety"</string>
     <string name="custom">"Własny"</string>
     <string name="close">"Zamknij"</string>
     <string name="custom_value">"Własna wartość"</string>

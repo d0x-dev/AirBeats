@@ -426,7 +426,7 @@
     <string name="collapse">Згорнути</string>
     <string name="expand">Розгорнути</string>
     <string name="reset_to_default">Відновити типові</string>
-    <string name="Presets">Шаблони</string>
+    <string name="theme_presets">Шаблони</string>
     <string name="custom">Користувацька</string>
     <string name="close">Закрити</string>
     <string name="custom_value">Довільне значення</string>

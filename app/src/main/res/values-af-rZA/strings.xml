@@ -441,7 +441,7 @@
     <string name="collapse">Ineenstort</string>
     <string name="expand">Uitbrei</string>
     <string name="reset_to_default">Herstel na standaard</string>
-    <string name="Presets">Voorafsette</string>
+    <string name="theme_presets">Voorafsette</string>
     <string name="custom">Gebruik</string>
     <string name="close">Dig</string>
     <string name="custom_value">Aangepaste waarde</string>

@@ -410,7 +410,7 @@
     <string name="collapse">"sụp đổ"</string>
     <string name="expand">"mở rộng"</string>
     <string name="reset_to_default">"reset_to_default"</string>
-    <string name="Presets">"Presets"</string>
+    <string name="theme_presets">"Presets"</string>
     <string name="custom">"phong tục"</string>
     <string name="close">"đóng"</string>
     <string name="custom_value">"custom_value"</string>

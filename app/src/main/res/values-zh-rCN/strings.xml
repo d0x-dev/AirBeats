@@ -410,7 +410,7 @@
     <string name="collapse">"收起"</string>
     <string name="expand">"展开"</string>
     <string name="reset_to_default">"重置为默认值"</string>
-    <string name="Presets">"预设"</string>
+    <string name="theme_presets">"预设"</string>
     <string name="custom">"自定义"</string>
     <string name="close">"关闭"</string>
     <string name="custom_value">"自定义值"</string>

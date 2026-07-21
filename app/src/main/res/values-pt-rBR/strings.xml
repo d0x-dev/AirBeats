@@ -441,7 +441,7 @@
     <string name="collapse">Recolher</string>
     <string name="expand">Expandir</string>
     <string name="reset_to_default">Redefinir para padrão</string>
-    <string name="Presets">Predefinidos</string>
+    <string name="theme_presets">Predefinidos</string>
     <string name="custom">Personalizado</string>
     <string name="close">Fechar</string>
     <string name="custom_value">Valor personalizado</string>

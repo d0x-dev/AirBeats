@@ -423,7 +423,7 @@ Treu el m'agrada a tot"</string>
     <string name="collapse">"Col·lapse"</string>
     <string name="expand">"Expandeix"</string>
     <string name="reset_to_default">"Reinicia a valors predeterminats"</string>
-    <string name="Presets">"Predefinits"</string>
+    <string name="theme_presets">"Predefinits"</string>
     <string name="custom">"Personalitzat"</string>
     <string name="close">"Tanca"</string>
     <string name="custom_value">"Valor personalitzat"</string>

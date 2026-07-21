@@ -402,7 +402,7 @@
     <string name="collapse">Összecsuk</string>
     <string name="expand">Kinyit</string>
     <string name="reset_to_default">Visszaállítás alaphelyzetbe</string>
-    <string name="Presets">Sémák</string>
+    <string name="theme_presets">Sémák</string>
     <string name="custom">Egyedi</string>
     <string name="close">Bezár</string>
     <string name="custom_value">Egyedi érték</string>

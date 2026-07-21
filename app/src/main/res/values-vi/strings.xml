@@ -410,7 +410,7 @@
     <string name="collapse">"Gấp gọn"</string>
     <string name="expand">"Mở rộng"</string>
     <string name="reset_to_default">"Đặt lại về mặc định"</string>
-    <string name="Presets">"Cài trước"</string>
+    <string name="theme_presets">"Cài trước"</string>
     <string name="custom">"Tùy chỉnh"</string>
     <string name="close">"Đóng"</string>
     <string name="custom_value">"Tùy chỉnh giá trị"</string>

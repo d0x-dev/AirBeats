@@ -410,7 +410,7 @@
     <string name="collapse">"崩壊"</string>
     <string name="expand">"拡大"</string>
     <string name="reset_to_default">"デフォルトに戻す"</string>
-    <string name="Presets">"プリセット"</string>
+    <string name="theme_presets">"プリセット"</string>
     <string name="custom">"カスタム"</string>
     <string name="close">"閉める"</string>
     <string name="custom_value">"カスタムの値"</string>

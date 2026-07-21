@@ -848,7 +848,14 @@ class MainActivity : ComponentActivity() {
                                     }
 
                                 addOnNewIntentListener(listener)
-                                intent?.let { listener.accept(it) }
+                                intent?.let { initialIntent ->
+                                    coroutineScope.launch {
+                                        while (navController.currentDestination == null) {
+                                            delay(50)
+                                        }
+                                        listener.accept(initialIntent)
+                                    }
+                                }
                                 onDispose { removeOnNewIntentListener(listener) }
                             }
 

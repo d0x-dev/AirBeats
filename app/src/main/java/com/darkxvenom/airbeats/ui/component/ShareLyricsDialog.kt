@@ -372,7 +372,7 @@ fun ShareLyricsImageCustomizationSheet(
                 }
 
                 Text(
-                    text = stringResource(R.string.presets),
+                    text = stringResource(R.string.theme_presets),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 8.dp)

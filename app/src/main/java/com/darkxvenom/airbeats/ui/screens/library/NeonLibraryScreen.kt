@@ -105,7 +105,7 @@ fun NeonLibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Library",
+                    text = stringResource(R.string.library),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     color = textColor

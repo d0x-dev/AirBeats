@@ -402,7 +402,7 @@
     <string name="collapse">Comprimi</string>
     <string name="expand">Espandi</string>
     <string name="reset_to_default">Ripristina impostazioni predefinite</string>
-    <string name="Presets">Predefiniti</string>
+    <string name="theme_presets">Predefiniti</string>
     <string name="custom">Personalizzato</string>
     <string name="close">Chiudi</string>
     <string name="custom_value">Valore personalizzato</string>

@@ -422,7 +422,7 @@
     <string name="collapse">"संक्षिप्त गर्नुहोस्"</string>
     <string name="expand">"विस्तार गर्नुहोस्"</string>
     <string name="reset_to_default">"पूर्वनिर्धारितमा रिसेट गर्नुहोस्"</string>
-    <string name="Presets">"प्रिसेटहरू"</string>
+    <string name="theme_presets">"प्रिसेटहरू"</string>
     <string name="custom">"अनुकूलन"</string>
     <string name="close">"बन्द गर्नुहोस्"</string>
     <string name="custom_value">"आफू अनुकूल मान"</string>

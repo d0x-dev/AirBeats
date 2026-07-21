@@ -422,7 +422,7 @@
     <string name="collapse">"Fäll ihop"</string>
     <string name="expand">"Expandera"</string>
     <string name="reset_to_default">"Återställ till standard"</string>
-    <string name="Presets">"Förval"</string>
+    <string name="theme_presets">"Förval"</string>
     <string name="custom">"Anpassa"</string>
     <string name="close">"Stäng"</string>
     <string name="custom_value">"Anpassat värde"</string>

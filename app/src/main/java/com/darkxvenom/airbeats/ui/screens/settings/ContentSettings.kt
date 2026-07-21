@@ -6,9 +6,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
@@ -35,7 +32,6 @@ import com.darkxvenom.airbeats.constants.SYSTEM_DEFAULT
 import com.darkxvenom.airbeats.constants.TopSize
 import com.darkxvenom.airbeats.ui.component.EditTextPreference
 import com.darkxvenom.airbeats.ui.component.ListPreference
-import com.darkxvenom.airbeats.ui.component.LocaleManager
 import com.darkxvenom.airbeats.ui.component.SettingsGeneralCategory
 import com.darkxvenom.airbeats.ui.component.SettingsPage
 import com.darkxvenom.airbeats.ui.component.SliderPreference
@@ -44,7 +40,6 @@ import com.darkxvenom.airbeats.utils.rememberEnumPreference
 import com.darkxvenom.airbeats.utils.rememberPreference
 import java.net.Proxy
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,9 +48,6 @@ fun ContentSettings(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    val localeManager = remember { LocaleManager.getInstance(context) }
     val (contentLanguage, onContentLanguageChange) = rememberPreference(
         key = ContentLanguageKey,
         defaultValue = SYSTEM_DEFAULT
@@ -148,15 +140,6 @@ fun ContentSettings(
                             ?: "en"
                         YouTube.locale = YouTube.locale.copy(hl = effectiveLanguage)
 
-                        // In AirBeats this is the language control users reach from
-                        // Settings > Content. Apply it to the UI as well so every
-                        // resource-backed screen changes together with the content.
-                        coroutineScope.launch {
-                            localeManager.updateLanguage(
-                                if (selectedLanguage == SYSTEM_DEFAULT) "system_default" else selectedLanguage
-                            )
-                            localeManager.restartApp(context)
-                        }
                     },
                 )},
                 {ListPreference(

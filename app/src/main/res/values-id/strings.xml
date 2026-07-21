@@ -441,7 +441,7 @@
     <string name="collapse">Runtuh</string>
     <string name="expand">Memperluas</string>
     <string name="reset_to_default">Reset ke default</string>
-    <string name="Presets">Preset</string>
+    <string name="theme_presets">Preset</string>
     <string name="custom">Kebiasaan</string>
     <string name="close">Menutup</string>
     <string name="custom_value">Nilai khusus</string>

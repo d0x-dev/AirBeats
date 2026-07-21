@@ -446,7 +446,7 @@
     <string name="collapse">"Свернуть"</string>
     <string name="expand">"Развернуть"</string>
     <string name="reset_to_default">"Сброс к умолчанию"</string>
-    <string name="Presets">"Пресеты"</string>
+    <string name="theme_presets">"Пресеты"</string>
     <string name="custom">"Пользовательский"</string>
     <string name="close">"Закрыть"</string>
     <string name="custom_value">"Значение"</string>

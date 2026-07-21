@@ -177,20 +177,27 @@ fun AccountSettings(
                         Runtime.getRuntime().exit(0)
                         return@launch
                     } else {
-                        Toast.makeText(context, "Failed to restore backup.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.restore_failed), Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Toast.makeText(context, "Creating initial cloud backup...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.creating_initial_cloud_backup), Toast.LENGTH_SHORT).show()
                     val result = backupViewModel.backupToDrive(context, email, name)
                     if (result is com.darkxvenom.airbeats.utils.DriveResult.Success) {
-                        Toast.makeText(context, "Google Account Linked and Backup Created!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.google_account_linked_backup_created), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(context, "Failed to create initial backup. Account still linked.", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.backup_create_failed_account_linked), Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "Google account linked, but cloud sync failed: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context.getString(
+                        R.string.google_account_linked_cloud_sync_failed,
+                        e.message.orEmpty()
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
@@ -207,7 +214,7 @@ fun AccountSettings(
                 .getResult(ApiException::class.java)
             val email = account.email.orEmpty()
             if (email.isBlank()) {
-                Toast.makeText(context, "Google did not return an email for this account.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.google_email_missing), Toast.LENGTH_SHORT).show()
                 return@rememberLauncherForActivityResult
             }
             val name = account.displayName
@@ -220,17 +227,28 @@ fun AccountSettings(
         } catch (e: ApiException) {
             e.printStackTrace()
             val message = when (e.statusCode) {
-                GoogleSignInStatusCodes.SIGN_IN_CANCELLED -> "Google sign in was cancelled."
-                GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS -> "Google sign in is already open."
-                GoogleSignInStatusCodes.SIGN_IN_FAILED -> "Google sign in failed. Check the Android OAuth client package and SHA-1."
-                else -> "Google sign in failed (${e.statusCode}): ${e.message.orEmpty()}"
+                GoogleSignInStatusCodes.SIGN_IN_CANCELLED ->
+                    context.getString(R.string.google_sign_in_cancelled)
+                GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS ->
+                    context.getString(R.string.google_sign_in_in_progress)
+                GoogleSignInStatusCodes.SIGN_IN_FAILED ->
+                    context.getString(R.string.google_sign_in_failed_oauth)
+                else -> context.getString(
+                    R.string.google_sign_in_failed_with_status,
+                    e.statusCode,
+                    e.message.orEmpty()
+                )
             }
             isGoogleSignInOpen = false
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             e.printStackTrace()
             isGoogleSignInOpen = false
-            Toast.makeText(context, "Google sign in failed: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                context.getString(R.string.google_sign_in_failed_message, e.message.orEmpty()),
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -368,9 +386,9 @@ fun AccountSettings(
                             PreferenceEntry(
                                 title = { Text(stringResource(R.string.edit_display_name)) },
                                 description = if (currentDisplayName.isNotBlank())
-                                    "Current: $currentDisplayName"
+                                    stringResource(R.string.current_value, currentDisplayName)
                                 else
-                                    "Not set",
+                                    stringResource(R.string.not_set),
                                 icon = { Icon(painterResource(R.drawable.person), null) },
                                 onClick = { showEditNameDialog = true }
                             )
@@ -419,17 +437,21 @@ fun AccountSettings(
                                 title = {
                                     Text(
                                         if (currentGoogleEmail.isNotBlank()) currentGoogleEmail 
-                                        else "Login with Google"
+                                        else stringResource(R.string.login_with_google)
                                     )
                                 },
-                                description = if (currentGoogleEmail.isNotBlank()) "Cloud Backup & Stats Linked" else "Link account for cloud backups",
+                                description = if (currentGoogleEmail.isNotBlank()) {
+                                    stringResource(R.string.cloud_backup_stats_linked)
+                                } else {
+                                    stringResource(R.string.link_account_for_cloud_backups)
+                                },
                                 icon = { Icon(painterResource(R.drawable.google), null, tint = Color.Unspecified) },
                                 trailingContent = {
                                     if (currentGoogleEmail.isNotBlank()) {
                                         OutlinedButton(onClick = {
                                             scope.launch {
                                                 nameManager.saveAccountEmail("")
-                                                Toast.makeText(context, "Unlinked Google Account", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.google_account_unlinked), Toast.LENGTH_SHORT).show()
                                             }
                                         }) {
                                             Text(stringResource(R.string.logout))

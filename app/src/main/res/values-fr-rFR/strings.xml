@@ -434,7 +434,7 @@
     <string name="collapse">"Réduire"</string>
     <string name="expand">"Développer"</string>
     <string name="reset_to_default">"Réinitialiser aux paramètres par défaut"</string>
-    <string name="Presets">"Préréglages"</string>
+    <string name="theme_presets">"Préréglages"</string>
     <string name="custom">"Personnalisé"</string>
     <string name="close">"Fermer"</string>
     <string name="custom_value">"Valeur personnalisée"</string>

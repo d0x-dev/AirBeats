@@ -4,6 +4,7 @@ package com.darkxvenom.airbeats.ui.component
 
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -456,15 +457,16 @@ class LocaleManager private constructor(private val context: Context) {
                 if (useSystemLocale) {
                     localeManager?.applicationLocales = LocaleList.getEmptyLocaleList()
                 } else {
-                    localeManager?.applicationLocales = LocaleList(locale)
+                    localeManager?.applicationLocales =
+                        LocaleList.forLanguageTags(locale.toLanguageTag())
                 }
 
-                val localeList = LocaleList(locale)
+                val localeList = LocaleList.forLanguageTags(locale.toLanguageTag())
                 LocaleList.setDefault(localeList)
                 config.setLocales(localeList)
                 config.setLocale(locale)
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                val localeList = LocaleList(locale)
+                val localeList = LocaleList.forLanguageTags(locale.toLanguageTag())
                 LocaleList.setDefault(localeList)
                 config.setLocales(localeList)
                 config.setLocale(locale)
@@ -489,7 +491,7 @@ class LocaleManager private constructor(private val context: Context) {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 config.setLocale(locale)
-                val localeList = LocaleList(locale)
+                val localeList = LocaleList.forLanguageTags(locale.toLanguageTag())
                 LocaleList.setDefault(localeList)
                 config.setLocales(localeList)
                 baseContext.createConfigurationContext(config)
@@ -510,23 +512,37 @@ class LocaleManager private constructor(private val context: Context) {
 
     fun restartApp(context: Context) {
         try {
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            intent?.let {
-                it.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    context.startActivity(it)
-                    if (context is Activity) {
-                        context.finish()
-                        context.overridePendingTransition(
-                            android.R.anim.fade_in,
-                            android.R.anim.fade_out
-                        )
-                    }
-                }, RESTART_DELAY)
-            }
+            val activity = findActivity(context)
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (activity != null && !activity.isFinishing) {
+                    activity.recreate()
+                    activity.overridePendingTransition(
+                        android.R.anim.fade_in,
+                        android.R.anim.fade_out
+                    )
+                    return@postDelayed
+                }
+
+                val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (intent != null) {
+                    context.startActivity(intent)
+                }
+            }, RESTART_DELAY)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error reiniciando aplicación")
         }
+    }
+
+    private fun findActivity(context: Context): Activity? {
+        var currentContext = context
+        while (currentContext is ContextWrapper) {
+            if (currentContext is Activity) {
+                return currentContext
+            }
+            currentContext = currentContext.baseContext
+        }
+        return null
     }
 
     fun resetChangeState() {

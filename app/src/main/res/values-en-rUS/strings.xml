@@ -404,7 +404,7 @@
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
     <string name="reset_to_default">Reset to default</string>
-    <string name="Presets">Presets</string>
+    <string name="theme_presets">Presets</string>
     <string name="custom">Custom</string>
     <string name="close">Close</string>
     <string name="custom_value">Custom value</string>

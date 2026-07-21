@@ -422,7 +422,7 @@
     <string name="collapse">"ചുരുക്കുക"</string>
     <string name="expand">"വികസിപ്പിക്കുക"</string>
     <string name="reset_to_default">"സ്ഥിരസ്ഥിതിയിലേക്ക് പുനഃസജ്ജമാക്കുക"</string>
-    <string name="Presets">"പ്രീസെറ്റുകൾ"</string>
+    <string name="theme_presets">"പ്രീസെറ്റുകൾ"</string>
     <string name="custom">"കസ്റ്റം"</string>
     <string name="close">"അടയ്ക്കുക"</string>
     <string name="custom_value">"ഇഷ്ടാനുസൃത മൂല്യം"</string>

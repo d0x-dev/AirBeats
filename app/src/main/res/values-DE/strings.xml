@@ -422,7 +422,7 @@
     <string name="collapse">"Einklappen"</string>
     <string name="expand">"Ausklappen"</string>
     <string name="reset_to_default">"Auf Standard zurücksetzen"</string>
-    <string name="Presets">"Voreinstellungen"</string>
+    <string name="theme_presets">"Voreinstellungen"</string>
     <string name="custom">"Benutzerdefiniert"</string>
     <string name="close">"Schließen"</string>
     <string name="custom_value">"Benutzerdefinierter Wert"</string>
