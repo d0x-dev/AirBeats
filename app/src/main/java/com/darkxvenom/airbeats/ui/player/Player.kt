@@ -440,7 +440,10 @@ fun BottomSheetPlayer(
                         ).drawable as? BitmapDrawable
                 }.getOrNull()
 
-                result?.bitmap?.let { bitmap ->
+                result?.bitmap?.let { rawBitmap ->
+                    val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && rawBitmap.config == android.graphics.Bitmap.Config.HARDWARE) {
+                        rawBitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) ?: rawBitmap
+                    } else rawBitmap
                     val palette = Palette.from(bitmap)
                         .maximumColorCount(8)
                         .resizeBitmapArea(100 * 100)
@@ -479,7 +482,10 @@ fun BottomSheetPlayer(
                     ).drawable as? BitmapDrawable
             }.getOrNull()
 
-            result?.bitmap?.let { bitmap ->
+            result?.bitmap?.let { rawBitmap ->
+                val bitmap = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && rawBitmap.config == android.graphics.Bitmap.Config.HARDWARE) {
+                    rawBitmap.copy(android.graphics.Bitmap.Config.ARGB_8888, false) ?: rawBitmap
+                } else rawBitmap
                 val palette = Palette.from(bitmap)
                     .maximumColorCount(8)
                     .resizeBitmapArea(100 * 100)

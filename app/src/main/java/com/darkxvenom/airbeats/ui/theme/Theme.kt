@@ -8,13 +8,10 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
@@ -25,8 +22,14 @@ import com.google.material.color.dynamiccolor.DynamicScheme
 import com.google.material.color.hct.Hct
 import com.google.material.color.scheme.SchemeTonalSpot
 import com.google.material.color.score.Score
+import androidx.compose.runtime.saveable.Saver
 
 val DefaultThemeColor = Color(0xFF4285F4)
+
+val ColorSaver = Saver<Color, Int>(
+    save = { it.toArgb() },
+    restore = { Color(it) }
+)
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -68,8 +71,17 @@ fun AirBeatsTheme(
     )
 }
 
+fun Bitmap.toSoftwareBitmap(): Bitmap {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && config == Bitmap.Config.HARDWARE) {
+        copy(Bitmap.Config.ARGB_8888, false) ?: this
+    } else {
+        this
+    }
+}
+
 fun Bitmap.extractThemeColor(): Color {
-    val colorsToPopulation = Palette.from(this)
+    val softwareBitmap = toSoftwareBitmap()
+    val colorsToPopulation = Palette.from(softwareBitmap)
         .maximumColorCount(8)
         .generate()
         .swatches
@@ -79,7 +91,8 @@ fun Bitmap.extractThemeColor(): Color {
 }
 
 fun Bitmap.extractGradientColors(): List<Color> {
-    val extractedColors = Palette.from(this)
+    val softwareBitmap = toSoftwareBitmap()
+    val extractedColors = Palette.from(softwareBitmap)
         .maximumColorCount(64)
         .generate()
         .swatches
@@ -117,6 +130,19 @@ object PlayerColorExtractor {
             listOf(Color(0xFF595959), Color(0xFF0D0D0D))
         }
     }
+}
+
+object PlayerSliderColors {
+    @Composable
+    fun getSliderColors(
+        textButtonColor: Color,
+        playerBackground: PlayerBackgroundStyle,
+        useDarkTheme: Boolean,
+    ) = androidx.compose.material3.SliderDefaults.colors(
+        thumbColor = if (playerBackground != PlayerBackgroundStyle.DEFAULT || useDarkTheme) textButtonColor else MaterialTheme.colorScheme.primary,
+        activeTrackColor = if (playerBackground != PlayerBackgroundStyle.DEFAULT || useDarkTheme) textButtonColor else MaterialTheme.colorScheme.primary,
+        inactiveTrackColor = if (playerBackground != PlayerBackgroundStyle.DEFAULT || useDarkTheme) textButtonColor.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+    )
 }
 
 fun DynamicScheme.toColorScheme() =
@@ -159,53 +185,21 @@ fun DynamicScheme.toColorScheme() =
         surfaceContainerLowest = Color(surfaceContainerLowest),
     )
 
-fun ColorScheme.pureBlack(apply: Boolean, isDarkTheme: Boolean) =
-    if (apply && isDarkTheme) {
-        copy(
-            surface = Color.Black,
+fun ColorScheme.pureBlack(
+    pureBlack: Boolean,
+    darkTheme: Boolean
+): ColorScheme {
+    if (pureBlack && darkTheme) {
+        return copy(
             background = Color.Black,
-            surfaceContainer = Color.Black,
-            surfaceContainerLow = Color.Black,
+            surface = Color.Black,
+            surfaceVariant = Color(0xFF161616),
             surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color(0xFF0A0A0A),
+            surfaceContainer = Color(0xFF121212),
+            surfaceContainerHigh = Color(0xFF1E1E1E),
+            surfaceContainerHighest = Color(0xFF262626),
         )
-    } else {
-        this
     }
-
-val ColorSaver = object : Saver<Color, Int> {
-    override fun restore(value: Int): Color = Color(value)
-    override fun SaverScope.save(value: Color): Int = value.toArgb()
-}
-
-object PlayerSliderColors {
-    @Composable
-    fun getSliderColors(
-        textButtonColor: Color,
-        playerBackground: PlayerBackgroundStyle,
-        useDarkTheme: Boolean
-    ) = SliderDefaults.colors(
-        activeTrackColor = when (playerBackground) {
-            PlayerBackgroundStyle.DEFAULT -> textButtonColor
-            PlayerBackgroundStyle.BLUR -> Color.White
-            PlayerBackgroundStyle.GRADIENT -> Color.White
-            PlayerBackgroundStyle.FLUID -> Color.White
-        },
-        inactiveTrackColor = when {
-            useDarkTheme -> Color.Gray.copy(alpha = 0.5f)
-            else -> Color.Gray.copy(alpha = 0.3f)
-        },
-        activeTickColor = when (playerBackground) {
-            PlayerBackgroundStyle.DEFAULT -> textButtonColor
-            PlayerBackgroundStyle.BLUR -> Color.White
-            PlayerBackgroundStyle.GRADIENT -> Color.White
-            PlayerBackgroundStyle.FLUID -> Color.White
-        },
-        inactiveTickColor = Color.Gray,
-        thumbColor = when (playerBackground) {
-            PlayerBackgroundStyle.DEFAULT -> textButtonColor
-            PlayerBackgroundStyle.BLUR -> Color.White
-            PlayerBackgroundStyle.GRADIENT -> Color.White
-            PlayerBackgroundStyle.FLUID -> Color.White
-        }
-    )
+    return this
 }
