@@ -78,10 +78,19 @@ class HomeViewModel @Inject constructor(
             similarRecommendations.value = emptyList()
         }
 
-        quickPicks.value = database.quickPicks()
+        val rawQuickPicks = database.quickPicks()
             .first()
             .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
-            .shuffled().take(20)
+
+        val finalQuickPicks = if (rawQuickPicks.isEmpty()) {
+            database.mostPlayedSongs(0L, limit = 20, offset = 0)
+                .first()
+                .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
+        } else {
+            rawQuickPicks
+        }
+
+        quickPicks.value = finalQuickPicks.shuffled().take(20)
 
         forgottenFavorites.value = database.forgottenFavorites()
             .first()
