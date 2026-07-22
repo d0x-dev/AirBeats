@@ -970,6 +970,7 @@ fun BottomSheetPlayer(
                     position = position,
                     duration = duration,
                     state = state,
+                    navController = navController,
                 )
             } else if (navBarStyle == com.darkxvenom.airbeats.constants.NavBarStyle.NEON) {
                 NeonMiniPlayer(state = state)
