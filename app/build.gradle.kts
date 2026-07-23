@@ -126,6 +126,7 @@ ksp {
 }
 
 dependencies {
+    implementation("dev.chrisbanes.haze:haze:0.7.3")
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
     implementation(libs.concurrent.futures)
@@ -158,6 +159,7 @@ dependencies {
     implementation(libs.media3)
     implementation(libs.media3.session)
     implementation(libs.media3.okhttp)
+    implementation("androidx.media3:media3-ui:1.8.0")
     implementation(libs.squigglyslider)
 
     implementation(libs.room.runtime)

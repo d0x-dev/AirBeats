@@ -5,40 +5,56 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import com.darkxvenom.airbeats.R
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
+import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.ui.component.AvatarPreferenceManager
 import com.darkxvenom.airbeats.ui.component.AvatarSelection
 import com.darkxvenom.airbeats.ui.component.NamePreferenceManager
+import com.darkxvenom.airbeats.utils.AuthApiClient
+import com.darkxvenom.airbeats.utils.AuthResult
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import com.google.android.gms.common.api.ApiException
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -51,6 +67,11 @@ enum class SyncState {
     NEW_USER
 }
 
+enum class AuthMode {
+    LOGIN, SIGNUP
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
     navController: NavController
@@ -60,12 +81,21 @@ fun OnboardingScreen(
     val namePrefManager = remember { NamePreferenceManager(context) }
     val avatarPrefManager = remember { AvatarPreferenceManager(context) }
     val backupViewModel: com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+    val authClient = remember { AuthApiClient() }
     
     var syncState by remember { mutableStateOf(SyncState.IDLE) }
+    var authMode by remember { mutableStateOf(AuthMode.LOGIN) }
     var currentUserName by remember { mutableStateOf("") }
     var currentUserEmail by remember { mutableStateOf("") }
     var featureStep by remember { mutableStateOf(0) }
     var isGoogleSignInOpen by remember { mutableStateOf(false) }
+
+    // Input States
+    var emailInput by remember { mutableStateOf("") }
+    var passwordInput by remember { mutableStateOf("") }
+    var nameInput by remember { mutableStateOf("") }
+    var isEmailProcessing by remember { mutableStateOf(false) }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     fun generatedAvatarUrl(name: String, email: String): String {
         val seed = name.takeIf { it.isNotBlank() } ?: email
@@ -89,12 +119,13 @@ fun OnboardingScreen(
             .ifBlank { "Friend" }
     }
 
-    fun saveGoogleProfile(name: String, email: String, photoUrl: String?) {
+    fun saveProfileAndSync(name: String, email: String, photoUrl: String? = null) {
         coroutineScope.launch {
             if (!namePrefManager.canUseGoogleEmail(email)) {
                 val lockedEmail = namePrefManager.previousGoogleEmail.first().ifBlank { "your previous email" }
                 isGoogleSignInOpen = false
                 syncState = SyncState.IDLE
+                isEmailProcessing = false
                 Toast.makeText(context, namePrefManager.lockedEmailMessage(lockedEmail), Toast.LENGTH_LONG).show()
                 return@launch
             }
@@ -140,6 +171,31 @@ fun OnboardingScreen(
                 syncState = SyncState.CREATING_BACKUP
                 backupViewModel.backupToDrive(context, email, name)
                 syncState = SyncState.NEW_USER
+            }
+        }
+    }
+
+    fun handleEmailAuth() {
+        if (emailInput.isBlank() || passwordInput.isBlank() || (authMode == AuthMode.SIGNUP && nameInput.isBlank())) {
+            Toast.makeText(context, "Please fill in all required fields", Toast.LENGTH_SHORT).show()
+            return
+        }
+        isEmailProcessing = true
+        coroutineScope.launch {
+            val result = if (authMode == AuthMode.SIGNUP) {
+                authClient.signup(nameInput, emailInput, passwordInput)
+            } else {
+                authClient.login(emailInput, passwordInput)
+            }
+            when (result) {
+                is AuthResult.Success -> {
+                    val displayName = result.user.name.ifBlank { displayNameFromEmail(result.user.email) }
+                    saveProfileAndSync(displayName, result.user.email)
+                }
+                is AuthResult.Error -> {
+                    Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                    isEmailProcessing = false
+                }
             }
         }
     }
@@ -191,7 +247,7 @@ fun OnboardingScreen(
                 ?: displayNameFromEmail(email)
 
             isGoogleSignInOpen = false
-            saveGoogleProfile(name, email, account.photoUrl?.toString())
+            saveProfileAndSync(name, email, account.photoUrl?.toString())
         } catch (e: ApiException) {
             e.printStackTrace()
             showSignInError(googleSignInErrorMessage(e))
@@ -210,100 +266,219 @@ fun OnboardingScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Background Image
-        Image(
-            painter = painterResource(id = R.drawable.hero_bg),
-            contentDescription = "Background",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+    // Video Background ExoPlayer Setup
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            val mediaItem = MediaItem.fromUri("android.resource://${context.packageName}/${R.raw.login_bg_video}")
+            setMediaItem(mediaItem)
+            repeatMode = Player.REPEAT_MODE_ALL
+            volume = 0f
+            prepare()
+            playWhenReady = true
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { exoPlayer.release() }
+    }
 
-        // Blurred Background Masked
-        Image(
-            painter = painterResource(id = R.drawable.hero_bg),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
+    val hazeState = remember { HazeState() }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Video Background
+        AndroidView(
             modifier = Modifier
                 .fillMaxSize()
-                .blur(radius = 24.dp)
-                .drawWithContent {
-                    val colors = listOf(Color.Transparent, Color.Black, Color.Black)
-                    drawContent()
-                    drawRect(
-                        brush = Brush.verticalGradient(
-                            colors = colors,
-                            startY = this.size.height * 0.4f,
-                            endY = this.size.height * 0.8f
-                        ),
-                        blendMode = BlendMode.DstIn
-                    )
+                .haze(hazeState),
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 }
+            }
         )
 
-        // Gradient overlay
+        // Glassmorphism Card at the bottom
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color(0x800D0D1A), Color(0xFF0D0D1A), Color(0xFF0D0D1A)),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(0.72f)
+                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                .hazeChild(
+                    state = hazeState,
+                    style = HazeStyle(
+                        tint = HazeTint(Color.Black.copy(alpha = 0.35f)),
+                        blurRadius = 30.dp
                     )
                 )
-        )
-
-        // Main Content Area
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
+                .background(
+                    Color.Black.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+                )
         ) {
             Crossfade(targetState = syncState, label = "OnboardingState") { state ->
                 Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 28.dp, vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    verticalArrangement = Arrangement.Center
                 ) {
                     when (state) {
                         SyncState.IDLE -> {
                             Text(
-                                text = "Let get started",
-                                color = Color.White,
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = if (authMode == AuthMode.SIGNUP) "Get Started Free" else "Welcome Back",
+                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Sign up or log in to see what's happening\nnear you",
-                                color = Color.LightGray,
-                                fontSize = 14.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(bottom = 48.dp)
+                                text = if (authMode == AuthMode.SIGNUP) "Free Forever. No Credit Card Needed" else "Welcome back we missed you",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            val textFieldColors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.White.copy(alpha = 0.5f),
+                                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.1f),
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                cursorColor = Color.White
+                            )
+
+                            if (authMode == AuthMode.SIGNUP) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                                    Text("Your name", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                                    OutlinedTextField(
+                                        value = nameInput,
+                                        onValueChange = { nameInput = it },
+                                        placeholder = { Text("@yourname", color = Color.White.copy(alpha = 0.5f)) },
+                                        leadingIcon = { Icon(painterResource(R.drawable.person), contentDescription = null, tint = Color.White.copy(alpha = 0.5f)) },
+                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = textFieldColors
+                                    )
+                                }
+                            }
+
+                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                                Text(if (authMode == AuthMode.SIGNUP) "Email address" else "Username / Email", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                                OutlinedTextField(
+                                    value = emailInput,
+                                    onValueChange = { emailInput = it },
+                                    placeholder = { Text("yourname@gmail.com", color = Color.White.copy(alpha = 0.5f)) },
+                                    leadingIcon = { Icon(painterResource(if (authMode == AuthMode.SIGNUP) R.drawable.email else R.drawable.person), contentDescription = null, tint = Color.White.copy(alpha = 0.5f)) },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = textFieldColors
+                                )
+                            }
+
+                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                                Text("Password", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                                OutlinedTextField(
+                                    value = passwordInput,
+                                    onValueChange = { passwordInput = it },
+                                    placeholder = { Text("••••••••", color = Color.White.copy(alpha = 0.5f)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.lock), contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp)) },
+                                    trailingIcon = {
+                                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                            Icon(painterResource(if (passwordVisible) R.drawable.visibility else R.drawable.visibility_off), contentDescription = null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                        }
+                                    },
+                                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = textFieldColors
+                                )
+                            }
+
+                            Text(
+                                text = "Forgot Password?",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.End).padding(bottom = 16.dp).clickable { }
+                            )
+
+                            // Gradient Action Button
+                            val gradientBrush = Brush.horizontalGradient(
+                                colors = listOf(Color(0xFFC084FC), Color(0xFFF472B6), Color(0xFFFB923C))
                             )
                             Button(
-                                onClick = onGoogleSignInClick,
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA259FF)),
-                                shape = RoundedCornerShape(24.dp),
-                                modifier = Modifier.fillMaxWidth().height(56.dp)
+                                onClick = { handleEmailAuth() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .background(brush = gradientBrush, shape = RoundedCornerShape(24.dp)),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                                contentPadding = PaddingValues(),
+                                enabled = !isEmailProcessing
                             ) {
-                                Icon(painter = painterResource(id = R.drawable.google), contentDescription = "Google", tint = Color.Unspecified, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(stringResource(R.string.continue_with_google), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                if (isEmailProcessing) {
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                                } else {
+                                    Text(if (authMode == AuthMode.SIGNUP) "Sign up" else "Login", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
                             }
+
                             Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { navController.navigate("guest_profile_setup") },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF232336)),
-                                shape = RoundedCornerShape(24.dp),
-                                modifier = Modifier.fillMaxWidth().height(56.dp)
-                            ) {
-                                Text(stringResource(R.string.continue_as_guest), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+
+                            // Or continue with divider
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.2f))
+                                Text(
+                                    text = if (authMode == AuthMode.SIGNUP) " Or sign up with " else " Or continue with ",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                )
+                                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.2f))
                             }
-                            Spacer(modifier = Modifier.height(48.dp))
-                            Text(stringResource(R.string.onboarding_terms), color = Color.Gray, fontSize = 12.sp, textAlign = TextAlign.Center)
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // Social Icons & Google Sign-In Row
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                val socialModifier = Modifier
+                                    .size(44.dp)
+                                    .background(Color.White.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp))
+                                    .padding(10.dp)
+                                
+                                Box(modifier = socialModifier.clickable { onGoogleSignInClick() }, contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(R.drawable.google), contentDescription = "Google", tint = Color.Unspecified)
+                                }
+                                Box(modifier = socialModifier.clickable { }, contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(R.drawable.facebook), contentDescription = "Facebook", tint = Color(0xFF1877F2))
+                                }
+                                Box(modifier = socialModifier.clickable { }, contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(R.drawable.github), contentDescription = "Github", tint = Color.White)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(onClick = { navController.navigate("guest_profile_setup") }) {
+                                    Text("Continue as Guest", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                                }
+                                TextButton(onClick = { authMode = if (authMode == AuthMode.LOGIN) AuthMode.SIGNUP else AuthMode.LOGIN }) {
+                                    Text(if (authMode == AuthMode.LOGIN) "Sign up" else "Login", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                }
+                            }
                         }
 
                         SyncState.CHECKING -> {
@@ -315,7 +490,7 @@ fun OnboardingScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
-                            Text(stringResource(R.string.please_wait), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp, bottom = 120.dp))
+                            Text(stringResource(R.string.please_wait), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         SyncState.RESTORING -> {
@@ -327,7 +502,7 @@ fun OnboardingScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
-                            Text(stringResource(R.string.please_wait), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp, bottom = 120.dp))
+                            Text(stringResource(R.string.please_wait), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         SyncState.RESTORED -> {
@@ -343,8 +518,7 @@ fun OnboardingScreen(
                                 text = "Welcome again back to Airbeats",
                                 color = Color.LightGray,
                                 fontSize = 16.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(bottom = 120.dp)
+                                textAlign = TextAlign.Center
                             )
                         }
 
@@ -357,7 +531,7 @@ fun OnboardingScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
                             )
-                            Text(stringResource(R.string.uploading_first_backup), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp, bottom = 120.dp))
+                            Text(stringResource(R.string.uploading_first_backup), color = Color.LightGray, fontSize = 14.sp, modifier = Modifier.padding(top = 8.dp))
                         }
 
                         SyncState.NEW_USER -> {
@@ -377,7 +551,7 @@ fun OnboardingScreen(
                                 color = Color.LightGray,
                                 fontSize = 16.sp,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(bottom = 48.dp)
+                                modifier = Modifier.padding(bottom = 32.dp)
                             )
                             Button(
                                 onClick = {
@@ -385,11 +559,10 @@ fun OnboardingScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA259FF)),
                                 shape = RoundedCornerShape(24.dp),
-                                modifier = Modifier.fillMaxWidth().height(56.dp)
+                                modifier = Modifier.fillMaxWidth().height(52.dp)
                             ) {
                                 Text(if (featureStep == featureTitles.size) "Get Started" else "Next", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                             }
-                            Spacer(modifier = Modifier.height(48.dp))
                         }
                     }
                 }

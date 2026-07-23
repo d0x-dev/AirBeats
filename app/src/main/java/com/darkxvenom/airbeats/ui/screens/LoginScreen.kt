@@ -12,6 +12,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -264,84 +273,211 @@ fun LoginScreen(navController: NavController) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(stringResource(R.string.login)) },
-            navigationIcon = {
-                IconButton(onClick = navController::navigateUp, onLongClick = navController::backToMain) {
-                    Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
+    val exoPlayer = remember {
+        androidx.media3.exoplayer.ExoPlayer.Builder(context).build().apply {
+            val mediaItem = androidx.media3.common.MediaItem.fromUri("android.resource://${context.packageName}/${R.raw.login_bg_video}")
+            setMediaItem(mediaItem)
+            repeatMode = androidx.media3.common.Player.REPEAT_MODE_ALL
+            volume = 0f
+            prepare()
+            playWhenReady = true
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose { exoPlayer.release() }
+    }
+    val hazeState = remember { dev.chrisbanes.haze.HazeState() }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Video Background
+        AndroidView(
+            modifier = Modifier
+                .fillMaxSize()
+                .haze(hazeState),
+            factory = { ctx ->
+                androidx.media3.ui.PlayerView(ctx).apply {
+                    player = exoPlayer
+                    useController = false
+                    resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                 }
             }
         )
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+
+        // Back Button
+        IconButton(
+            onClick = navController::navigateUp,
+            modifier = Modifier.statusBarsPadding().padding(16.dp).align(Alignment.TopStart)
         ) {
-            Text(
-                text = if (uiState == LoginUiState.EMAIL_SIGNUP) "Create Account" else "Welcome Back",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
+            Icon(painterResource(R.drawable.arrow_back), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White)
+        }
 
-            if (uiState == LoginUiState.EMAIL_SIGNUP) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    singleLine = true
+        // Glassmorphism Card
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .fillMaxHeight(0.7f)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
+                .hazeChild(
+                    state = hazeState,
+                    style = dev.chrisbanes.haze.HazeStyle(
+                        tint = dev.chrisbanes.haze.HazeTint(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f)),
+                        blurRadius = 30.dp
+                    )
                 )
-            }
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
-                singleLine = true
-            )
-
-            Button(
-                onClick = { processEmailAuth(uiState == LoginUiState.EMAIL_SIGNUP) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = !isProcessing
+                .background(
+                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f), 
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(if (uiState == LoginUiState.EMAIL_SIGNUP) "Sign Up" else "Login")
-            }
+                Text(
+                    text = if (uiState == LoginUiState.EMAIL_SIGNUP) "Get Started Free" else "Welcome Back",
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                    color = androidx.compose.ui.graphics.Color.White
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = if (uiState == LoginUiState.EMAIL_SIGNUP) "Free Forever. No Credit Card Needed" else "Welcome back we missed you",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                // Input Fields
+                val textFieldColors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                    unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
+                    focusedContainerColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
+                    unfocusedContainerColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
+                    focusedTextColor = androidx.compose.ui.graphics.Color.White,
+                    unfocusedTextColor = androidx.compose.ui.graphics.Color.White,
+                    cursorColor = androidx.compose.ui.graphics.Color.White
+                )
 
-            TextButton(onClick = {
-                uiState = if (uiState == LoginUiState.EMAIL_LOGIN) LoginUiState.EMAIL_SIGNUP else LoginUiState.EMAIL_LOGIN
-            }) {
-                Text(if (uiState == LoginUiState.EMAIL_LOGIN) "Don't have an account? Sign up" else "Already have an account? Login")
-            }
+                if (uiState == LoginUiState.EMAIL_SIGNUP) {
+                    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                        Text("Your name", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = { Text("@yourname", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f)) },
+                            leadingIcon = { Icon(painterResource(R.drawable.person), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f)) },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            singleLine = true,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                            colors = textFieldColors
+                        )
+                    }
+                }
 
-            Divider(modifier = Modifier.padding(vertical = 24.dp))
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                    Text(if (uiState == LoginUiState.EMAIL_SIGNUP) "Email address" else "Username / Email", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        placeholder = { Text("yourname@gmail.com", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(painterResource(if (uiState == LoginUiState.EMAIL_SIGNUP) R.drawable.email else R.drawable.person), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        singleLine = true,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = textFieldColors
+                    )
+                }
 
-            OutlinedButton(
-                onClick = { uiState = LoginUiState.GOOGLE_WEBVIEW },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-            ) {
-                Text("Login with Google")
-            }
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                    Text("Password", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                    var passwordVisible by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        placeholder = { Text("••••••••", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f)) },
+                        leadingIcon = { Icon(painterResource(R.drawable.lock), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp)) },
+                        trailingIcon = { 
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(painterResource(if (passwordVisible) R.drawable.visibility else R.drawable.visibility_off), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        singleLine = true,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                        colors = textFieldColors
+                    )
+                }
 
-            TextButton(onClick = { navController.backToMain() }) {
-                Text("Continue as Guest")
+                Text(
+                    text = "Forgot Password?",
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    modifier = Modifier.align(Alignment.End).padding(bottom = 24.dp).clickable { }
+                )
+
+                // Gradient Button
+                val gradientBrush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    colors = listOf(androidx.compose.ui.graphics.Color(0xFFC084FC), androidx.compose.ui.graphics.Color(0xFFF472B6), androidx.compose.ui.graphics.Color(0xFFFB923C))
+                )
+                Button(
+                    onClick = { processEmailAuth(uiState == LoginUiState.EMAIL_SIGNUP) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .background(brush = gradientBrush, shape = androidx.compose.foundation.shape.RoundedCornerShape(25.dp)),
+                    colors = ButtonDefaults.buttonColors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
+                    contentPadding = PaddingValues(),
+                    enabled = !isProcessing
+                ) {
+                    Text(if (uiState == LoginUiState.EMAIL_SIGNUP) "Sign up" else "Login", color = androidx.compose.ui.graphics.Color.White, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Or continue with
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Divider(modifier = Modifier.weight(1f), color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f))
+                    Text(
+                        text = if (uiState == LoginUiState.EMAIL_SIGNUP) " Or sign up with " else " Or continue with ",
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                    Divider(modifier = Modifier.weight(1f), color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f))
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Social Icons Row
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    val socialModifier = Modifier
+                        .size(48.dp)
+                        .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                    
+                    Box(modifier = socialModifier.clickable { uiState = LoginUiState.GOOGLE_WEBVIEW }, contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.google), contentDescription = "Google", tint = androidx.compose.ui.graphics.Color.Unspecified)
+                    }
+                    Box(modifier = socialModifier.clickable { }, contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.facebook), contentDescription = "Facebook", tint = androidx.compose.ui.graphics.Color(0xFF1877F2))
+                    }
+                    Box(modifier = socialModifier.clickable { }, contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.github), contentDescription = "Github", tint = androidx.compose.ui.graphics.Color.White)
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(onClick = { navController.backToMain() }) {
+                    Text("Continue as Guest", color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f))
+                }
+                TextButton(onClick = { uiState = if (uiState == LoginUiState.EMAIL_LOGIN) LoginUiState.EMAIL_SIGNUP else LoginUiState.EMAIL_LOGIN }) {
+                    Text(if (uiState == LoginUiState.EMAIL_LOGIN) "Create an account" else "Already have an account? Login", color = androidx.compose.ui.graphics.Color.White)
+                }
             }
         }
     }
