@@ -1,5 +1,5 @@
 /*
- * OpenTune Insight — Year in Music, redesigned (2026)
+ * Airbeats Insight — Year in Music, redesigned (2026)
  * Arturo254 (github.com/Arturo254)
  * Licensed Under GPL-3.0 | see git history for contributors
  */
@@ -353,7 +353,7 @@ fun YearInMusicScreen(
                     // Brand label — centered
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text       = "OpenTune",
+                            text       = "Airbeats",
                             style      = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color      = SnowDim,
@@ -1433,7 +1433,7 @@ private fun SummaryPage(
 
             // Header
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // OpenTune branding row
+                // Airbeats branding row
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -1453,7 +1453,7 @@ private fun SummaryPage(
                     }
                     Column {
                         Text(
-                            "OpenTune Insight",
+                            "Airbeats Insight",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = Snow,
@@ -1560,12 +1560,12 @@ private fun SummaryPage(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    joinByBullet("OpenTune", year.toString()),
+                    joinByBullet("Airbeats", year.toString()),
                     style = MaterialTheme.typography.labelSmall,
                     color = SnowDim,
                 )
                 Text(
-                    "OpenTune Insight",
+                    "Airbeats Insight",
                     style = MaterialTheme.typography.labelSmall,
                     color = SnowDim,
                 )

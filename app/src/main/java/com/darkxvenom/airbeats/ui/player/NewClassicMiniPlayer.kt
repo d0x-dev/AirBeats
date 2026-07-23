@@ -292,7 +292,7 @@ fun NewClassicMiniPlayer(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // 5. OpenTune Play/Pause Button (Cookie9Sided shape)
+                // 5. Airbeats Play/Pause Button (Cookie9Sided shape)
                 FilledIconButton(
                     onClick = { playerConnection.player.togglePlayPause() },
                     modifier = Modifier.size(44.dp),
