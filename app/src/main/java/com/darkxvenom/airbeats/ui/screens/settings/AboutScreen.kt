@@ -579,7 +579,7 @@ fun AboutScreen(
                     }
 
                     Text(
-                        text = "Dev By DarkXVenom 亗",
+                        text = "Dev By DxV STUDIO 亗",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontFamily = FontFamily.Monospace
                         ),

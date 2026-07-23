@@ -1525,7 +1525,7 @@ fun ProfileSection(
                     )
 
                     Text(
-                        text = "Dev By DarkXVenom 亗",
+                        text = "Dev By DxV STUDIO 亗",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                     )

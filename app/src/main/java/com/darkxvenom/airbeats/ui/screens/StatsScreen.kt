@@ -62,6 +62,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.shape.GenericShape
+import kotlin.math.cos
+import kotlin.math.sin
+import com.darkxvenom.airbeats.db.entities.Artist
+import com.darkxvenom.airbeats.db.entities.Song
+import com.darkxvenom.airbeats.db.entities.SongWithStats
 import coil.compose.AsyncImage
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
@@ -348,30 +356,25 @@ fun StatsScreen(
             }
 
             item {
-                if (mostPlayedSongsStats.isNotEmpty()) {
-                    val maxPlayCount = mostPlayedSongsStats.maxOf { it.songCountListened }
-                    val top5 = mostPlayedSongsStats.take(5)
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.top_5_songs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            top5.forEachIndexed { index, song ->
-                                val fraction = if (maxPlayCount > 0) song.songCountListened.toFloat() / maxPlayCount else 0f
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                    Text("${index + 1}. ${song.title}", modifier = Modifier.weight(0.4f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
-                                    Box(modifier = Modifier.weight(0.6f).height(12.dp).background(Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(6.dp))) {
-                                        Box(modifier = Modifier.fillMaxWidth(fraction).height(12.dp).background(Color(0xFF1DB954), RoundedCornerShape(6.dp)))
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${song.songCountListened}", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                        }
-                    }
+                StatsHighlightsSection(
+                    topArtist = mostPlayedArtists.firstOrNull(),
+                    topSong = mostPlayedSongsStats.firstOrNull(),
+                    topSongEntity = mostPlayedSongs.firstOrNull(),
+                    navController = navController,
+                )
+            }
+
+            item(key = "artistPieChart") {
+                if (mostPlayedArtists.isNotEmpty()) {
+                    Spacer(modifier = Modifier.size(16.dp))
+                    ArtistPieChart(
+                        artists = mostPlayedArtists.take(5),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .animateItem()
+                    )
+                    Spacer(modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -574,15 +577,15 @@ fun StatsScreen(
             ),
             actions = {
                 IconButton(
-                    onClick = { showInsightBottomSheet = true },
+                    onClick = { navController.navigate("year_in_music") },
                     modifier = Modifier.size(48.dp),
                     enabled = true,
                     onLongClick = {}
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.auto_awesome),
-                        contentDescription = "AirBeats Insight",
-                        tint = Color(0xFF1DB954)
+                        painter = painterResource(R.drawable.stats),
+                        contentDescription = "AirBeats Insights",
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -1101,3 +1104,178 @@ fun InsightFeatureItem(
 }
 
 enum class OptionStats { WEEKS, MONTHS, YEARS, CONTINUOUS }
+
+@Composable
+fun ArtistPieChart(
+    artists: List<Artist>,
+    modifier: Modifier = Modifier
+) {
+    val totalTime = artists.sumOf { it.timeListened?.toLong() ?: 0L }
+    if (totalTime == 0L) return
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Box(
+            modifier = Modifier.size(160.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            var startAngle = -90f
+
+            artists.forEach { artist ->
+                val time = artist.timeListened?.toLong() ?: 0L
+                val sweepAngle = (time.toFloat() / totalTime) * 360f
+                
+                if (sweepAngle > 1f) {
+                    AsyncImage(
+                        model = artist.artist.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(PieSliceShape(startAngle, sweepAngle))
+                    )
+                    startAngle += sweepAngle
+                }
+            }
+        }
+
+        Column {
+            Text(
+                text = "Total Time Listened",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Text(
+                text = makeTimeString(totalTime),
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+fun PieSliceShape(startAngle: Float, sweepAngle: Float): GenericShape {
+    return GenericShape { size, _ ->
+        val center = Offset(size.width / 2, size.height / 2)
+        val radius = size.width / 2
+        
+        moveTo(center.x, center.y)
+        
+        val startRad = Math.toRadians(startAngle.toDouble())
+        
+        lineTo(
+            (center.x + radius * cos(startRad)).toFloat(),
+            (center.y + radius * sin(startRad)).toFloat()
+        )
+        
+        arcTo(
+            rect = androidx.compose.ui.geometry.Rect(
+                center = center,
+                radius = radius
+            ),
+            startAngleDegrees = startAngle,
+            sweepAngleDegrees = sweepAngle,
+            forceMoveTo = false
+        )
+        
+        lineTo(center.x, center.y)
+        close()
+    }
+}
+
+@Composable
+fun StatsHighlightsSection(
+    topArtist: Artist?,
+    topSong: SongWithStats?,
+    topSongEntity: com.darkxvenom.airbeats.db.entities.Song?,
+    navController: NavController
+) {
+    if (topArtist == null && topSong == null) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (topArtist != null) {
+            StatsHighlightCard(
+                title = "Your Favourite Artist",
+                mainText = topArtist.artist.name,
+                subText = "${topArtist.songCount} songs played • ${makeTimeString(topArtist.timeListened?.toLong())}",
+                imageUrl = topArtist.artist.thumbnailUrl,
+                onClick = { navController.navigate("artist/${topArtist.id}") }
+            )
+        }
+
+        if (topSong != null && topSongEntity != null) {
+            StatsHighlightCard(
+                title = "Your Favourite Song",
+                mainText = topSong.title,
+                subText = "${topSong.songCountListened} plays • ${makeTimeString(topSong.timeListened)}",
+                imageUrl = topSong.thumbnailUrl,
+                onClick = { }
+            )
+        }
+    }
+}
+
+@Composable
+fun StatsHighlightCard(
+    title: String,
+    mainText: String,
+    subText: String,
+    imageUrl: String?,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+            )
+
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = mainText,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = subText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}

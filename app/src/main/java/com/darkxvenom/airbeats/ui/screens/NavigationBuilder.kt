@@ -173,6 +173,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("insight") {
         InsightScreen(navController)
     }
+    composable("year_in_music") {
+        YearInMusicScreen(navController)
+    }
     composable("listen_together") {
         ListenTogetherScreen(navController, scrollBehavior)
     }
