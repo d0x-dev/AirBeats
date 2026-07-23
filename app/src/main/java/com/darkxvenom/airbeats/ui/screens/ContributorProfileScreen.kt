@@ -34,6 +34,16 @@ import com.darkxvenom.airbeats.utils.*
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.launch
 
+private fun cleanMarkdownReadme(raw: String): String {
+    var cleaned = raw.replace("\uFFFC", "")
+    val imgRegex = Regex("""<img\s+[^>]*src=["']([^"']+)["'][^>]*>""", RegexOption.IGNORE_CASE)
+    cleaned = imgRegex.replace(cleaned) { matchResult ->
+        val url = matchResult.groupValues[1]
+        "![badge]($url)"
+    }
+    return cleaned
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ContributorProfileScreen(
@@ -241,9 +251,17 @@ fun ContributorProfileScreen(
                         ) {
                             Box(modifier = Modifier.padding(16.dp)) {
                                 MarkdownText(
-                                    markdown = readme!!,
+                                    markdown = cleanMarkdownReadme(readme!!),
                                     color = MaterialTheme.colorScheme.onSurface,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    imageLoader = svgImageLoader,
+                                    onLinkClicked = { url ->
+                                        try {
+                                            uriHandler.openUri(url)
+                                        } catch (e: Exception) {
+                                            // Handle invalid url gracefully
+                                        }
+                                    }
                                 )
                             }
                         }
