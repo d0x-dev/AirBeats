@@ -366,9 +366,11 @@ fun StatsScreen(
 
             item(key = "artistPieChart") {
                 if (mostPlayedArtists.isNotEmpty()) {
+                    val overallTotalTime = mostPlayedSongsStats.sumOf { it.timeListened?.toLong() ?: 0L }
                     Spacer(modifier = Modifier.size(16.dp))
                     ArtistPieChart(
                         artists = mostPlayedArtists.take(5),
+                        totalTime = overallTotalTime,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
@@ -1108,10 +1110,11 @@ enum class OptionStats { WEEKS, MONTHS, YEARS, CONTINUOUS }
 @Composable
 fun ArtistPieChart(
     artists: List<Artist>,
+    totalTime: Long = artists.sumOf { it.timeListened?.toLong() ?: 0L },
     modifier: Modifier = Modifier
 ) {
-    val totalTime = artists.sumOf { it.timeListened?.toLong() ?: 0L }
-    if (totalTime == 0L) return
+    val effectiveTotalTime = if (totalTime > 0L) totalTime else artists.sumOf { it.timeListened?.toLong() ?: 0L }
+    if (effectiveTotalTime == 0L) return
 
     Row(
         modifier = modifier,
@@ -1126,7 +1129,7 @@ fun ArtistPieChart(
 
             artists.forEach { artist ->
                 val time = artist.timeListened?.toLong() ?: 0L
-                val sweepAngle = (time.toFloat() / totalTime) * 360f
+                val sweepAngle = (time.toFloat() / effectiveTotalTime) * 360f
                 
                 if (sweepAngle > 1f) {
                     AsyncImage(
@@ -1149,7 +1152,7 @@ fun ArtistPieChart(
                 color = MaterialTheme.colorScheme.secondary
             )
             Text(
-                text = makeTimeString(totalTime),
+                text = makeTimeString(effectiveTotalTime),
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
