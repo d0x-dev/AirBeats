@@ -58,6 +58,8 @@ import timber.log.Timber
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -82,7 +84,7 @@ enum class AuthMode {
     LOGIN, SIGNUP
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
 @Composable
 fun OnboardingScreen(
     navController: NavController
@@ -398,7 +400,7 @@ fun OnboardingScreen(
             )
         }
 
-        // Liquid Glassmorphism Frosted Card
+        // Liquid Glassmorphism Frosted Card — Apple Liquid Glass Style
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -407,27 +409,18 @@ fun OnboardingScreen(
                 .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
                 .hazeEffect(
                     state = hazeState,
-                    style = HazeStyle(
-                        tint = HazeTint(Color.White.copy(alpha = 0.08f)),
-                        blurRadius = 32.dp
-                    )
+                    style = HazeMaterials.ultraThin()
                 )
                 .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            Color.White.copy(alpha = 0.18f),
-                            Color.White.copy(alpha = 0.06f),
-                            Color.Black.copy(alpha = 0.35f)
-                        )
-                    ),
+                    Color.Black.copy(alpha = 0.25f),
                     shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
                 )
                 .border(
-                    width = 1.2.dp,
+                    width = 1.dp,
                     brush = Brush.verticalGradient(
                         listOf(
-                            Color.White.copy(alpha = 0.45f),
-                            Color.White.copy(alpha = 0.10f)
+                            Color.White.copy(alpha = 0.35f),
+                            Color.White.copy(alpha = 0.08f)
                         )
                     ),
                     shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
