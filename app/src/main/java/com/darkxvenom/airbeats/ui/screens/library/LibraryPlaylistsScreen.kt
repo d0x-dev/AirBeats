@@ -174,13 +174,24 @@ fun LibraryPlaylistsScreen(
         Playlist(
             playlist = PlaylistEntity(
                 id = UUID.randomUUID().toString(),
-                name = "Import Playlist"
+                name = "Import Spotify"
+            ),
+            songCount = 0,
+            thumbnails = emptyList(),
+        )
+
+    val importYouTubePlaylist =
+        Playlist(
+            playlist = PlaylistEntity(
+                id = UUID.randomUUID().toString(),
+                name = "Import YouTube"
             ),
             songCount = 0,
             thumbnails = emptyList(),
         )
 
     var showSpotifyImportDialog by remember { mutableStateOf(false) }
+    var showYouTubeImportDialog by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val lazyGridState = rememberLazyGridState()
@@ -231,6 +242,7 @@ fun LibraryPlaylistsScreen(
         Triple(topPlaylist.playlist.name, R.drawable.trending_up, "top_playlist/$topSize"),
         Triple(localPlaylist.playlist.name, R.drawable.folder, "local"),
         Triple(importPlaylist.playlist.name, R.drawable.spotify, "import"),
+        Triple(importYouTubePlaylist.playlist.name, R.drawable.youtube, "import_yt"),
     )
     val summary = pluralStringResource(R.plurals.n_playlist, playlists.size, playlists.size)
     val pullRefreshState = rememberPullToRefreshState()
@@ -292,6 +304,7 @@ fun LibraryPlaylistsScreen(
                         when (route) {
                             "local" -> onLocalClick()
                             "import" -> showSpotifyImportDialog = true
+                            "import_yt" -> showYouTubeImportDialog = true
                             else -> navController.navigate(route)
                         }
                     },
@@ -342,6 +355,9 @@ fun LibraryPlaylistsScreen(
     }
     if (showSpotifyImportDialog) {
         SpotifyImportDialog(onDismiss = { showSpotifyImportDialog = false })
+    }
+    if (showYouTubeImportDialog) {
+        YouTubeImportDialog(onDismiss = { showYouTubeImportDialog = false })
     }
 }
 
