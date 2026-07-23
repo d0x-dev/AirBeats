@@ -300,7 +300,7 @@ fun OnboardingScreen(
             val videoUri = if (cachedVideoFile.exists() && cachedVideoFile.length() > 0) {
                 Uri.fromFile(cachedVideoFile)
             } else {
-                Uri.parse("android.resource://${context.packageName}/${R.raw.login_bg_video}")
+                Uri.parse(PRIMARY_VIDEO_URL)
             }
             setMediaItem(MediaItem.fromUri(videoUri))
             repeatMode = Player.REPEAT_MODE_ALL
@@ -443,7 +443,7 @@ fun OnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (authMode == AuthMode.SIGNUP) "Free Forever. No Credit Card Needed" else "Welcome back we missed you",
+                            text = if (authMode == AuthMode.SIGNUP) "Free Forever. No Ads, No Subscription" else "Welcome back we missed you",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.White.copy(alpha = 0.7f),
                                 textAlign = TextAlign.Center

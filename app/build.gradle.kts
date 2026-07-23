@@ -45,7 +45,7 @@ android {
         buildConfigField("String", "AUTH_API_BASE_URL", authBaseUrl.asBuildConfigString())
         
         // Strip out language resources from libraries that the app doesn't support
-        resConfigs("en", "af", "ar", "be", "bn", "ca", "cs", "da", "de", "el", "es", "fa", "fr", "hi", "hu", "id", "it", "iw", "ja", "ko", "ml", "ne", "nl", "no", "or", "pa", "pl", "pt", "ro", "ru", "sr", "sv", "tr", "uk", "vi", "zh")
+        resConfigs("en")
     }
 
     buildTypes {
