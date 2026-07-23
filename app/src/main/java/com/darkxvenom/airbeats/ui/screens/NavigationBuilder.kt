@@ -13,9 +13,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
-import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -49,7 +47,6 @@ import com.darkxvenom.airbeats.ui.screens.settings.PlayerSettings
 import com.darkxvenom.airbeats.ui.screens.settings.PrivacySettings
 import com.darkxvenom.airbeats.ui.screens.settings.SettingsScreen
 import com.darkxvenom.airbeats.ui.screens.settings.StorageSettings
-import com.darkxvenom.airbeats.ui.screens.AlwaysOnDisplayScreen
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @SuppressLint("UnrememberedMutableState")

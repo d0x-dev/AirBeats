@@ -35,12 +35,12 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 import kotlinx.coroutines.launch
 
 private fun cleanMarkdownReadme(raw: String): String {
-    var cleaned = raw
-    cleaned = cleaned.replace(Regex("""<img\s+[^>]*>""", RegexOption.IGNORE_CASE), "")
-    cleaned = cleaned.replace(Regex("""!\[[^\]]*\]\([^)]+\)"""), "")
-    cleaned = cleaned.replace(Regex("""</?(picture|source)[^>]*>""", RegexOption.IGNORE_CASE), "")
-    cleaned = cleaned.replace("\uFFFC", "")
-    cleaned = cleaned.replace(Regex("""<a\s+[^>]*>\s*</a>""", RegexOption.IGNORE_CASE), "")
+    var cleaned = raw.replace("\uFFFC", "")
+    val imgRegex = Regex("""<img\s+[^>]*src=["']([^"']+)["'][^>]*>""", RegexOption.IGNORE_CASE)
+    cleaned = imgRegex.replace(cleaned) { matchResult ->
+        val url = matchResult.groupValues[1]
+        "![badge]($url)"
+    }
     return cleaned
 }
 
@@ -142,7 +142,30 @@ fun ContributorProfileScreen(
                     }
                 }
 
-
+                // CONTRIBUTION GRAPH
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("Contributions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data("https://ghchart.rshah.org/1DB954/$username")
+                                        .crossfade(true)
+                                        .build(),
+                                    imageLoader = svgImageLoader,
+                                    contentDescription = "Contribution Graph",
+                                    modifier = Modifier.height(100.dp)
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // AIRBEATS COMMITS
                 if (commits.isNotEmpty()) {

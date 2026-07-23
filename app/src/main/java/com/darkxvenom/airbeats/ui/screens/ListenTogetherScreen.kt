@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,17 +51,13 @@ import androidx.navigation.NavController
 import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
-import com.darkxvenom.airbeats.innertube.models.WatchEndpoint
-import com.darkxvenom.airbeats.playback.queues.YouTubeQueue
 import com.darkxvenom.airbeats.utils.ListenTogetherClient
 import com.darkxvenom.airbeats.utils.ListenTogetherPlaybackState
 import com.darkxvenom.airbeats.utils.ListenTogetherSession
 import com.darkxvenom.airbeats.utils.ListenTogetherStore
 import com.darkxvenom.airbeats.utils.ListenTogetherSync
 import com.darkxvenom.airbeats.utils.joinByBullet
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
