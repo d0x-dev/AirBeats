@@ -16,10 +16,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.ui.unit.sp
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -293,19 +295,30 @@ fun LoginScreen(navController: NavController) {
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState),
+                .hazeSource(hazeState),
             factory = { ctx ->
                 androidx.media3.ui.PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false
                     resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
             }
         )
 
         // Back Button
         IconButton(
-            onClick = navController::navigateUp,
+            onClick = {
+                if (uiState == LoginUiState.EMAIL_SIGNUP) {
+                    uiState = LoginUiState.EMAIL_LOGIN
+                } else {
+                    navController.navigateUp()
+                }
+            },
             modifier = Modifier.statusBarsPadding().padding(16.dp).align(Alignment.TopStart)
         ) {
             Icon(painterResource(R.drawable.arrow_back), contentDescription = null, tint = androidx.compose.ui.graphics.Color.White)
@@ -316,25 +329,28 @@ fun LoginScreen(navController: NavController) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f)
-                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                .hazeChild(
+                .fillMaxHeight(0.82f)
+                .clip(androidx.compose.foundation.shape.RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
+                .hazeEffect(
                     state = hazeState,
-                    style = dev.chrisbanes.haze.HazeStyle(
-                        tint = dev.chrisbanes.haze.HazeTint(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f)),
+                    style = HazeStyle(
+                        tint = HazeTint(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.45f)),
                         blurRadius = 30.dp
                     )
                 )
                 .background(
-                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f), 
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+                    androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f), 
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
                 )
         ) {
+            val scrollState = rememberScrollState()
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = if (uiState == LoginUiState.EMAIL_SIGNUP) "Get Started Free" else "Welcome Back",

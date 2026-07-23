@@ -2,16 +2,17 @@ package com.darkxvenom.airbeats.ui.screens.onboarding
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,8 +49,8 @@ import com.google.android.gms.common.api.ApiException
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -96,6 +97,10 @@ fun OnboardingScreen(
     var nameInput by remember { mutableStateOf("") }
     var isEmailProcessing by remember { mutableStateOf(false) }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = authMode == AuthMode.SIGNUP) {
+        authMode = AuthMode.LOGIN
+    }
 
     fun generatedAvatarUrl(name: String, email: String): String {
         val seed = name.takeIf { it.isNotBlank() } ?: email
@@ -284,44 +289,68 @@ fun OnboardingScreen(
     val hazeState = remember { HazeState() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Video Background
+        // True Fullscreen Video Background
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
-                .haze(hazeState),
+                .hazeSource(hazeState),
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    layoutParams = android.view.ViewGroup.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
                 }
             }
         )
 
-        // Glassmorphism Card at the bottom
+        // Top Back Button when in Signup mode
+        if (authMode == AuthMode.SIGNUP) {
+            IconButton(
+                onClick = { authMode = AuthMode.LOGIN },
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(16.dp)
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.arrow_back),
+                    contentDescription = "Back to Login",
+                    tint = Color.White
+                )
+            }
+        }
+
+        // Liquid Glassmorphism Card
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.72f)
-                .clip(RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp))
-                .hazeChild(
+                .fillMaxHeight(0.82f)
+                .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
+                .hazeEffect(
                     state = hazeState,
                     style = HazeStyle(
-                        tint = HazeTint(Color.Black.copy(alpha = 0.35f)),
+                        tint = HazeTint(Color.Black.copy(alpha = 0.45f)),
                         blurRadius = 30.dp
                     )
                 )
                 .background(
-                    Color.Black.copy(alpha = 0.45f),
-                    shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp)
+                    Color.Black.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
                 )
         ) {
+            val scrollState = rememberScrollState()
             Crossfade(targetState = syncState, label = "OnboardingState") { state ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 28.dp, vertical = 24.dp),
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 24.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -339,20 +368,20 @@ fun OnboardingScreen(
                                 color = Color.White.copy(alpha = 0.7f),
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             val textFieldColors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = Color.White.copy(alpha = 0.5f),
                                 unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                                focusedContainerColor = Color.White.copy(alpha = 0.1f),
-                                unfocusedContainerColor = Color.White.copy(alpha = 0.1f),
+                                focusedContainerColor = Color.White.copy(alpha = 0.12f),
+                                unfocusedContainerColor = Color.White.copy(alpha = 0.08f),
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White,
                                 cursorColor = Color.White
                             )
 
                             if (authMode == AuthMode.SIGNUP) {
-                                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
                                     Text("Your name", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                                     OutlinedTextField(
                                         value = nameInput,
@@ -367,7 +396,7 @@ fun OnboardingScreen(
                                 }
                             }
 
-                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
                                 Text(if (authMode == AuthMode.SIGNUP) "Email address" else "Username / Email", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                                 OutlinedTextField(
                                     value = emailInput,
@@ -382,7 +411,7 @@ fun OnboardingScreen(
                                 )
                             }
 
-                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                                 Text("Password", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
                                 OutlinedTextField(
                                     value = passwordInput,
@@ -403,12 +432,16 @@ fun OnboardingScreen(
                                 )
                             }
 
-                            Text(
-                                text = "Forgot Password?",
-                                color = Color.White.copy(alpha = 0.7f),
-                                fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.End).padding(bottom = 16.dp).clickable { }
-                            )
+                            if (authMode == AuthMode.LOGIN) {
+                                Text(
+                                    text = "Forgot Password?",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.align(Alignment.End).padding(bottom = 14.dp).clickable { }
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.height(14.dp))
+                            }
 
                             // Gradient Action Button
                             val gradientBrush = Brush.horizontalGradient(
@@ -427,11 +460,11 @@ fun OnboardingScreen(
                                 if (isEmailProcessing) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                                 } else {
-                                    Text(if (authMode == AuthMode.SIGNUP) "Sign up" else "Login", color = Color.White, fontWeight = FontWeight.Bold)
+                                    Text(if (authMode == AuthMode.SIGNUP) "Sign up" else "Login", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             // Or continue with divider
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -445,7 +478,7 @@ fun OnboardingScreen(
                                 HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.2f))
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             // Social Icons & Google Sign-In Row
                             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -465,7 +498,7 @@ fun OnboardingScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -476,7 +509,12 @@ fun OnboardingScreen(
                                     Text("Continue as Guest", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
                                 }
                                 TextButton(onClick = { authMode = if (authMode == AuthMode.LOGIN) AuthMode.SIGNUP else AuthMode.LOGIN }) {
-                                    Text(if (authMode == AuthMode.LOGIN) "Sign up" else "Login", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(
+                                        text = if (authMode == AuthMode.LOGIN) "Sign up" else "Login",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
                                 }
                             }
                         }
@@ -506,7 +544,7 @@ fun OnboardingScreen(
                         }
 
                         SyncState.RESTORED -> {
-                            Icon(imageVector = Icons.Filled.CheckCircle, contentDescription = "Success", tint = Color(0xFFA259FF), modifier = Modifier.size(64.dp).padding(bottom = 16.dp))
+                            Icon(painter = painterResource(R.drawable.check_circle), contentDescription = "Success", tint = Color(0xFFA259FF), modifier = Modifier.size(64.dp).padding(bottom = 16.dp))
                             Text(
                                 text = "Hi $currentUserName,",
                                 color = Color.White,
