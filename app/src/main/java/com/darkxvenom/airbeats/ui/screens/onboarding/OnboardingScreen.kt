@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -48,16 +49,25 @@ import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes
 import com.google.android.gms.common.api.ApiException
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import android.net.Uri
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import timber.log.Timber
+
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.hazeEffect
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+
+private const val PRIMARY_VIDEO_URL = "https://database.airbeats.net/login_bg_video.mp4"
+private const val FALLBACK_VIDEO_URL = "https://raw.githubusercontent.com/d0x-dev/AirBeats/main/assets/login_bg_video.mp4"
 
 enum class SyncState {
     IDLE,
@@ -279,17 +289,66 @@ fun OnboardingScreen(
         }
     }
 
-    // Video Background ExoPlayer Setup
+    // Video Background Setup — Cached or Remote Stream
+    val cachedVideoFile = remember { File(context.cacheDir, "login_bg_video.mp4") }
+
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri("android.resource://${context.packageName}/${R.raw.login_bg_video}")
-            setMediaItem(mediaItem)
+            val videoUri = if (cachedVideoFile.exists() && cachedVideoFile.length() > 0) {
+                Uri.fromFile(cachedVideoFile)
+            } else {
+                Uri.parse("android.resource://${context.packageName}/${R.raw.login_bg_video}")
+            }
+            setMediaItem(MediaItem.fromUri(videoUri))
             repeatMode = Player.REPEAT_MODE_ALL
             volume = 0f
             prepare()
             playWhenReady = true
         }
     }
+
+    LaunchedEffect(Unit) {
+        if (!cachedVideoFile.exists() || cachedVideoFile.length() == 0L) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val url = java.net.URL(PRIMARY_VIDEO_URL)
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.connectTimeout = 8000
+                    connection.readTimeout = 15000
+                    if (connection.responseCode == 200) {
+                        connection.inputStream.use { input ->
+                            cachedVideoFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        withContext(Dispatchers.Main) {
+                            exoPlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(cachedVideoFile)))
+                            exoPlayer.prepare()
+                        }
+                    } else {
+                        val fallbackUrl = java.net.URL(FALLBACK_VIDEO_URL)
+                        val fallbackConn = fallbackUrl.openConnection() as java.net.HttpURLConnection
+                        fallbackConn.connectTimeout = 8000
+                        fallbackConn.readTimeout = 15000
+                        if (fallbackConn.responseCode == 200) {
+                            fallbackConn.inputStream.use { input ->
+                                cachedVideoFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            withContext(Dispatchers.Main) {
+                                exoPlayer.setMediaItem(MediaItem.fromUri(Uri.fromFile(cachedVideoFile)))
+                                exoPlayer.prepare()
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Error caching background video")
+                }
+            }
+        }
+    }
+
     DisposableEffect(Unit) {
         onDispose { exoPlayer.release() }
     }
@@ -339,22 +398,38 @@ fun OnboardingScreen(
             )
         }
 
-        // Liquid Glassmorphism Card
+        // Liquid Glassmorphism Frosted Card
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.82f)
+                .fillMaxHeight(0.78f)
                 .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
                 .hazeEffect(
                     state = hazeState,
                     style = HazeStyle(
-                        tint = HazeTint(Color.Black.copy(alpha = 0.45f)),
-                        blurRadius = 30.dp
+                        tint = HazeTint(Color.White.copy(alpha = 0.08f)),
+                        blurRadius = 32.dp
                     )
                 )
                 .background(
-                    Color.Black.copy(alpha = 0.5f),
+                    Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.06f),
+                            Color.Black.copy(alpha = 0.35f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
+                )
+                .border(
+                    width = 1.2.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.45f),
+                            Color.White.copy(alpha = 0.10f)
+                        )
+                    ),
                     shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
                 )
         ) {
