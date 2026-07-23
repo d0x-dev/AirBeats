@@ -398,12 +398,12 @@ fun OnboardingScreen(
             )
         }
 
-        // Liquid Glassmorphism Frosted Card — Exact Apple Nav Bar Blur
+        // Liquid Glassmorphism Frosted Card — Lowered for top character spacing
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.78f)
+                .fillMaxHeight(if (authMode == AuthMode.SIGNUP) 0.74f else 0.67f)
                 .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
                 .hazeChild(
                     state = hazeState,
@@ -578,10 +578,10 @@ fun OnboardingScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                             
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
