@@ -168,10 +168,12 @@ fun AppearanceSettings(
         DynamicIslandKey,
         defaultValue = false
     )
-    val (useSystemFont, onUseSystemFontChange) = rememberPreference(
-        UseSystemFontKey,
-        defaultValue = false
+    val (appFontKey, onAppFontKeyChange) = rememberPreference(
+        AppFontKey,
+        defaultValue = AppFont.LINOTTE.key
     )
+    val selectedFont = remember(appFontKey) { AppFont.fromKey(appFontKey) }
+    var showFontDialog by remember { mutableStateOf(false) }
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val useDarkTheme =
@@ -727,17 +729,73 @@ fun AppearanceSettings(
                                 isEnabled = useDarkTheme && !enableLiquidGlass
                             )
                         }},
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.use_system_font)) },
-                            description = stringResource(R.string.use_system_font_desc),
+                        { PreferenceEntry(
+                            title = { Text("Fonts") },
+                            description = selectedFont.title,
                             icon = { Icon(painterResource(R.drawable.tune), null) },
-                            checked = useSystemFont,
-                            onCheckedChange = onUseSystemFontChange
-                        )}
+                            onClick = { showFontDialog = true }
+                        ) }
                     )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (showFontDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showFontDialog = false },
+                        title = { Text("Fonts", fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                AppFont.entries.forEach { font ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                onAppFontKeyChange(font.key)
+                                                showFontDialog = false
+                                            }
+                                            .padding(horizontal = 8.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = (font == selectedFont),
+                                            onClick = {
+                                                onAppFontKeyChange(font.key)
+                                                showFontDialog = false
+                                            }
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(
+                                                text = font.title,
+                                                fontFamily = font.getFontFamily(),
+                                                fontWeight = FontWeight.Medium,
+                                                fontSize = 15.sp
+                                            )
+                                            Text(
+                                                text = "The quick brown fox jumps over the lazy dog",
+                                                fontFamily = font.getFontFamily(),
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showFontDialog = false }) {
+                                Text("Close")
+                            }
+                        }
+                    )
+                }
 
                 // Language preferences
                 SettingsGeneralCategory(

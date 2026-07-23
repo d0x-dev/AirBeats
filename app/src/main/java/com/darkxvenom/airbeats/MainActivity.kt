@@ -200,6 +200,8 @@ import com.darkxvenom.airbeats.ui.component.IconButton
 import com.darkxvenom.airbeats.ui.component.CurvedBottomNavigationBar
 import com.darkxvenom.airbeats.constants.LiquidGlassKey
 import com.darkxvenom.airbeats.constants.UseSystemFontKey
+import com.darkxvenom.airbeats.constants.AppFont
+import com.darkxvenom.airbeats.constants.AppFontKey
 import com.darkxvenom.airbeats.ui.component.CurvedBottomNavigationItem
 import com.darkxvenom.airbeats.ui.component.LocalMenuState
 import com.darkxvenom.airbeats.ui.component.rememberBackdrop
@@ -465,7 +467,8 @@ class MainActivity : ComponentActivity() {
             val enableLiquidGlass by rememberPreference(LiquidGlassKey, defaultValue = false)
 
             val pureBlack by rememberPreference(PureBlackKey, defaultValue = false)
-            val useSystemFont by rememberPreference(UseSystemFontKey, defaultValue = false)
+            val appFontKey by rememberPreference(AppFontKey, defaultValue = AppFont.LINOTTE.key)
+            val appFont = remember(appFontKey) { AppFont.fromKey(appFontKey) }
             val isPlayful = homeScreenStyle == HomeScreenStyle.PLAYFUL
             val isSystemInDarkTheme = isSystemInDarkTheme()
             val useDarkTheme =
@@ -515,7 +518,7 @@ class MainActivity : ComponentActivity() {
             AirBeatsTheme(
                 darkTheme = useDarkTheme,
                 pureBlack = pureBlack && !enableLiquidGlass && !isPlayful,
-                useSystemFont = useSystemFont,
+                appFont = appFont,
                 themeColor = themeColor,
             ) {
                 val rankPrefMgr = remember { RankPreferenceManager(this@MainActivity) }

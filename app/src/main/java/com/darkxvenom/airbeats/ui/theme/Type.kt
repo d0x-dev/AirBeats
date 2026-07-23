@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.constants.AppFont
 
 private fun buildTypography(fontFamily: FontFamily) =
     Typography(
@@ -120,3 +121,7 @@ private fun buildTypography(fontFamily: FontFamily) =
 private val AppFontFamily = FontFamily(Font(R.font.linotte))
 val AppTypography = buildTypography(AppFontFamily)
 val SystemTypography = buildTypography(FontFamily.Default)
+
+fun buildAppTypography(appFont: AppFont): Typography {
+    return buildTypography(appFont.getFontFamily())
+}

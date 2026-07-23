@@ -23,6 +23,7 @@ import com.google.material.color.hct.Hct
 import com.google.material.color.scheme.SchemeTonalSpot
 import com.google.material.color.score.Score
 import androidx.compose.runtime.saveable.Saver
+import com.darkxvenom.airbeats.constants.AppFont
 
 val DefaultThemeColor = Color(0xFF4285F4)
 
@@ -37,14 +38,14 @@ fun AirBeatsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     pureBlack: Boolean = false,
     expressive: Boolean = true,
-    useSystemFont: Boolean = false,
+    appFont: AppFont = AppFont.LINOTTE,
     themeColor: Color = DefaultThemeColor,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
 
-    val typography = remember(useSystemFont) {
-        if (useSystemFont) SystemTypography else AppTypography
+    val typography = remember(appFont) {
+        buildAppTypography(appFont)
     }
 
     val colorScheme = remember(darkTheme, pureBlack, themeColor) {

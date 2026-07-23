@@ -149,6 +149,7 @@ val LyricsLineSpacingKey = floatPreferencesKey("lyricsLineSpacingKey")
 val LyricsRomanizeJapaneseKey = booleanPreferencesKey("lyricsRomanizeJapaneseKey")
 val LyricsRomanizeKoreanKey = booleanPreferencesKey("lyricsRomanizeKoreanKey")
 val UseSystemFontKey = booleanPreferencesKey("useSystemFont")
+val AppFontKey = stringPreferencesKey("appFont")
 
 val DiscordUseDetailsKey = booleanPreferencesKey("discordUseDetails")
 
