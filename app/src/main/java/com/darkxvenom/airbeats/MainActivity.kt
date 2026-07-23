@@ -457,10 +457,10 @@ class MainActivity : ComponentActivity() {
 
             var showFullscreenLyrics by remember { mutableStateOf(false) }
 
-            val playerScreenStyle by rememberEnumPreference(PlayerScreenStyleKey, defaultValue = PlayerScreenStyle.CLASSIC)
+            val playerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(PlayerScreenStyleKey, defaultValue = PlayerScreenStyle.IOS_STYLED)
             val homeScreenStyle by rememberEnumPreference(HomeScreenStyleKey, defaultValue = HomeScreenStyle.CLASSIC)
-            val navBarStyle by rememberEnumPreference(NavBarStyleKey, defaultValue = NavBarStyle.CLASSIC)
-            val enableNewLyricsScreen by rememberPreference(com.darkxvenom.airbeats.constants.EnableNewLyricsScreenKey, defaultValue = false)
+            val navBarStyle by rememberEnumPreference(NavBarStyleKey, defaultValue = NavBarStyle.APPLE)
+            val enableNewLyricsScreen by rememberPreference(com.darkxvenom.airbeats.constants.EnableNewLyricsScreenKey, defaultValue = true)
 
             val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
             val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)

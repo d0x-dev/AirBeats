@@ -88,9 +88,9 @@ fun AppearanceSettings(
             defaultValue = PlayerBackgroundStyle.DEFAULT,
         )
     val (playerScreenStyle, onPlayerScreenStyleChange) =
-        rememberEnumPreference(
+        rememberEnumPreference<PlayerScreenStyle>(
             PlayerScreenStyleKey,
-            defaultValue = PlayerScreenStyle.CLASSIC,
+            defaultValue = PlayerScreenStyle.IOS_STYLED,
         )
     val (homeScreenStyle, onHomeScreenStyleChange) =
         rememberEnumPreference(
@@ -100,7 +100,7 @@ fun AppearanceSettings(
     val (navBarStyle, onNavBarStyleChange) =
         rememberEnumPreference(
             NavBarStyleKey,
-            defaultValue = NavBarStyle.CLASSIC,
+            defaultValue = NavBarStyle.APPLE,
         )
     val isPlayful = homeScreenStyle == HomeScreenStyle.PLAYFUL
 
@@ -118,8 +118,8 @@ fun AppearanceSettings(
         defaultValue = LyricsPosition.CENTER
     )
     val (lyricsClick, onLyricsClickChange) = rememberPreference(LyricsClickKey, defaultValue = true)
-    val (enableNewLyricsScreen, onEnableNewLyricsScreenChange) = rememberPreference(EnableNewLyricsScreenKey, defaultValue = false)
-    val (enableNewQueueScreen, onEnableNewQueueScreenChange) = rememberPreference(EnableNewQueueScreenKey, defaultValue = false)
+    val (enableNewLyricsScreen, onEnableNewLyricsScreenChange) = rememberPreference(EnableNewLyricsScreenKey, defaultValue = true)
+    val (enableNewQueueScreen, onEnableNewQueueScreenChange) = rememberPreference(EnableNewQueueScreenKey, defaultValue = true)
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
         defaultValue = SliderStyle.SQUIGGLY

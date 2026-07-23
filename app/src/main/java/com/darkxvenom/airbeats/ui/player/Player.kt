@@ -246,9 +246,9 @@ fun BottomSheetPlayer(
         PlayerTextAlignment.CENTER
     )
 
-    val playerScreenStyle by rememberEnumPreference(
+    val playerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(
         PlayerScreenStyleKey,
-        PlayerScreenStyle.CLASSIC
+        PlayerScreenStyle.IOS_STYLED
     )
 
     val playerBackground by rememberEnumPreference(
@@ -259,7 +259,7 @@ fun BottomSheetPlayer(
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
     val pureBlack by rememberPreference(PureBlackKey, defaultValue = false)
-    val enableNewQueueScreen by rememberPreference(EnableNewQueueScreenKey, defaultValue = false)
+    val enableNewQueueScreen by rememberPreference(EnableNewQueueScreenKey, defaultValue = true)
     val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
     }
