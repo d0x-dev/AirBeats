@@ -388,7 +388,7 @@ fun YearInMusicScreen(
                                 isShareCaptureMode = true
                                 awaitNextPreDraw(view)
                                 awaitNextPreDraw(view)
-                                val bitmap = view.drawToBitmap()
+                                val bitmap = com.darkxvenom.airbeats.utils.AirBeatsComposeToImage.captureViewBitmap(view)
                                 val file = java.io.File(context.cacheDir, "AirBeats_Insight_${selectedYear}.png")
                                 val stream = java.io.FileOutputStream(file)
                                 try {

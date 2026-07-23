@@ -88,16 +88,23 @@ object AirBeatsComposeToImage {
         targetHeight: Int? = null,
         backgroundColor: Int? = null,
     ): Bitmap {
-        val fallbackBitmap = runCatching { view.drawToBitmap() }.getOrElse {
-            val w = view.width.coerceAtLeast(1)
-            val h = view.height.coerceAtLeast(1)
-            Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { bmp ->
-                backgroundColor?.let { Canvas(bmp).drawColor(it) }
+        val original = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            pixelCopyViewBitmap(view) ?: runCatching { view.drawToBitmap() }.getOrElse {
+                val w = view.width.coerceAtLeast(1)
+                val h = view.height.coerceAtLeast(1)
+                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { bmp ->
+                    backgroundColor?.let { Canvas(bmp).drawColor(it) }
+                }
+            }
+        } else {
+            runCatching { view.drawToBitmap() }.getOrElse {
+                val w = view.width.coerceAtLeast(1)
+                val h = view.height.coerceAtLeast(1)
+                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { bmp ->
+                    backgroundColor?.let { Canvas(bmp).drawColor(it) }
+                }
             }
         }
-        val original = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            pixelCopyViewBitmap(view) ?: fallbackBitmap
-        } else fallbackBitmap
 
         val needsScale = (targetWidth  != null && targetWidth  > 0 && targetWidth  != original.width) ||
                 (targetHeight != null && targetHeight > 0 && targetHeight != original.height)
