@@ -55,7 +55,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
-import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.HazeMaterials
@@ -358,21 +359,18 @@ fun OnboardingScreen(
     val hazeState = remember { HazeState() }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // True Fullscreen Video Background
+        // True Fullscreen Video Background using TextureView for Haze capture
         AndroidView(
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(hazeState),
+                .haze(hazeState),
             factory = { ctx ->
-                PlayerView(ctx).apply {
-                    player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                android.view.TextureView(ctx).apply {
                     layoutParams = android.view.ViewGroup.LayoutParams(
                         android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                         android.view.ViewGroup.LayoutParams.MATCH_PARENT
                     )
-                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    exoPlayer.setVideoTextureView(this)
                 }
             }
         )
@@ -400,19 +398,19 @@ fun OnboardingScreen(
             )
         }
 
-        // Liquid Glassmorphism Frosted Card — Apple Liquid Glass Style
+        // Liquid Glassmorphism Frosted Card — Exact Apple Nav Bar Blur
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .fillMaxHeight(0.78f)
                 .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
-                .hazeEffect(
+                .hazeChild(
                     state = hazeState,
                     style = HazeMaterials.ultraThin()
                 )
                 .background(
-                    Color.Black.copy(alpha = 0.25f),
+                    Color.Black.copy(alpha = 0.2f),
                     shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp)
                 )
                 .border(
