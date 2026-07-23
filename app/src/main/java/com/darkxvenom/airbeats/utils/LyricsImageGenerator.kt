@@ -75,7 +75,7 @@ object ComposeToImage {
 
         return FileProvider.getUriForFile(
             context,
-            "${context.packageName}.FileProvider",
+            "${context.packageName}.provider",
             imageFile
         )
     }

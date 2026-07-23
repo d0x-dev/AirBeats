@@ -396,7 +396,7 @@ fun YearInMusicScreen(
                                 } finally {
                                     stream.close()
                                 }
-                                val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", file)
+                                val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
                                 context.startActivity(
                                     Intent.createChooser(
                                         Intent(Intent.ACTION_SEND).apply {

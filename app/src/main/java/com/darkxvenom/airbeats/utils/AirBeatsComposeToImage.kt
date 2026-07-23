@@ -1074,7 +1074,7 @@ object AirBeatsComposeToImage {
             val cachePath = File(context.cacheDir, "images").also { it.mkdirs() }
             val imageFile = File(cachePath, "$fileName.png")
             FileOutputStream(imageFile).use { safeBitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            FileProvider.getUriForFile(context, "${context.packageName}.FileProvider", imageFile)
+            FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
         }
     }
 }
