@@ -3,8 +3,8 @@ package com.darkxvenom.airbeats.utils
 import android.content.Context
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.db.entities.Song
-import com.my.kizzy.rpc.KizzyRPC
-import com.my.kizzy.rpc.RpcImage
+import com.darkxvenom.airbeats.kizzy.rpc.KizzyRPC
+import com.darkxvenom.airbeats.kizzy.rpc.RpcImage
 
 class DiscordRPC(
     val context: Context,

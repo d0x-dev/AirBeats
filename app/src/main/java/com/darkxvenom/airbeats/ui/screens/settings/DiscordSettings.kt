@@ -97,7 +97,7 @@ import com.darkxvenom.airbeats.ui.utils.backToMain
 import com.darkxvenom.airbeats.utils.makeTimeString
 import com.darkxvenom.airbeats.utils.rememberEnumPreference
 import com.darkxvenom.airbeats.utils.rememberPreference
-import com.my.kizzy.rpc.KizzyRPC
+import com.darkxvenom.airbeats.kizzy.rpc.KizzyRPC
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
