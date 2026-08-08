@@ -39,7 +39,7 @@
 
 | Link | Purpose |
 |------|---------|
-| 🌍 [Official Website](http://dxv.ispro.in) | Learn more about AirBeats |
+| 🌍 [Official Website](http://darkxvenom.com) | Learn more about AirBeats |
 | 📥 [Download APK](http://airbeats.stormx.pw) | Get the latest version |
 | 🏪 [Official Store](http://store.stormx.pw) | Alternative download source |
 
