@@ -161,6 +161,84 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
+            <!-- External Audio Player - Audio Mime Types (content & file) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/itunes" />
+                <data android:mimeType="application/opus" />
+                <data android:mimeType="application/x-flac" />
+                <data android:mimeType="application/flac" />
+                <data android:mimeType="application/x-matroska" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- External Audio Player - Audio Streams (http & https) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/opus" />
+                <data android:mimeType="application/x-flac" />
+                <data android:mimeType="application/flac" />
+            </intent-filter>
+
+            <!-- External Audio Player - File Extensions (for generic/wildcard mime types from file managers) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.mp3" />
+                <data android:pathPattern=".*\\.m4a" />
+                <data android:pathPattern=".*\\.wav" />
+                <data android:pathPattern=".*\\.flac" />
+                <data android:pathPattern=".*\\.aac" />
+                <data android:pathPattern=".*\\.opus" />
+                <data android:pathPattern=".*\\.ogg" />
+                <data android:pathPattern=".*\\.oga" />
+                <data android:pathPattern=".*\\.webm" />
+                <data android:pathPattern=".*\\.MP3" />
+                <data android:pathPattern=".*\\.M4A" />
+                <data android:pathPattern=".*\\.WAV" />
+                <data android:pathPattern=".*\\.FLAC" />
+                <data android:pathPattern=".*\\.AAC" />
+                <data android:pathPattern=".*\\.OPUS" />
+                <data android:pathPattern=".*\\.OGG" />
+            </intent-filter>
+
+            <!-- External Audio Player - Share Audio File -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/x-ogg" />
+                <data android:mimeType="application/opus" />
+                <data android:mimeType="application/x-flac" />
+                <data android:mimeType="application/flac" />
+            </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />

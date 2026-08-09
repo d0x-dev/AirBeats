@@ -149,6 +149,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.util.Consumer
+import com.darkxvenom.airbeats.utils.ExternalPlayerUtil
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -793,6 +794,24 @@ class MainActivity : ComponentActivity() {
                             DisposableEffect(Unit) {
                                 val listener =
                                     Consumer<Intent> { intent ->
+                                        if (ExternalPlayerUtil.isAudioIntent(intent, this@MainActivity)) {
+                                            val audioUri = ExternalPlayerUtil.getAudioUri(intent)
+                                            if (audioUri != null) {
+                                                coroutineScope.launch {
+                                                    while (playerConnection == null) {
+                                                        delay(50)
+                                                    }
+                                                    playerConnection?.let { pc ->
+                                                        ExternalPlayerUtil.playExternalAudio(pc, this@MainActivity, audioUri)
+                                                        if (playerBottomSheetState.isDismissed) {
+                                                            playerBottomSheetState.collapseSoft()
+                                                        }
+                                                    }
+                                                }
+                                                return@Consumer
+                                            }
+                                        }
+
                                         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)
                                             ?.toUri() ?: return@Consumer
                                         when (val path = uri.pathSegments.firstOrNull()) {
