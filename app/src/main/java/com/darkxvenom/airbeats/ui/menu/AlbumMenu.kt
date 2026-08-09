@@ -64,6 +64,7 @@ import com.darkxvenom.airbeats.constants.ListThumbnailSize
 import com.darkxvenom.airbeats.db.entities.Album
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.extensions.toMediaItem
+import com.darkxvenom.airbeats.models.toMediaMetadata
 import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.ui.component.AlbumListItem
 import com.darkxvenom.airbeats.ui.component.DownloadGridMenu
@@ -325,6 +326,50 @@ fun AlbumMenu(
                 }
             },
         )
+        if (songs.isNotEmpty()) {
+            GridMenuItem(
+                icon = R.drawable.save_to_storage,
+                title = R.string.save_playlist_to_storage,
+            ) {
+                val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    true
+                } else {
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                }
+
+                if (hasPermission) {
+                    val albumTitle = album.album.title
+                    val savingToastMsg = context.getString(R.string.saving_playlist_to_storage, albumTitle)
+                    android.widget.Toast.makeText(context, savingToastMsg, android.widget.Toast.LENGTH_SHORT).show()
+                    scope.launch(Dispatchers.IO) {
+                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
+                            .savePlaylistToMusicFolder(context, albumTitle, songs.map { it.toMediaMetadata() })
+                            .onSuccess { count ->
+                                launch(Dispatchers.Main) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Saved $count songs to Music/AirBeats/$albumTitle",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                            .onFailure { e ->
+                                launch(Dispatchers.Main) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Save failed: ${e.message}",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                    }
+                    onDismiss()
+                }
+            }
+        }
         GridMenuItem(
             icon = R.drawable.artist,
             title = R.string.view_artist,
