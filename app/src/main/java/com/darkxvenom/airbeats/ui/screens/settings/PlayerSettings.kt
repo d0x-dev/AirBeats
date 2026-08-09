@@ -18,6 +18,7 @@ import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.constants.AudioQualityKey
 import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
+import com.darkxvenom.airbeats.constants.PermanentShuffleKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
@@ -45,6 +46,10 @@ fun PlayerSettings(
     val (persistentQueue, onPersistentQueueChange) = rememberPreference(
         PersistentQueueKey,
         defaultValue = true
+    )
+    val (permanentShuffle, onPermanentShuffleChange) = rememberPreference(
+        PermanentShuffleKey,
+        defaultValue = false
     )
     val (skipSilence, onSkipSilenceChange) = rememberPreference(
         SkipSilenceKey,
@@ -91,6 +96,14 @@ fun PlayerSettings(
                             AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
                         }
                     }
+                )},
+
+                {SwitchPreference(
+                    title = { Text(stringResource(R.string.permanent_shuffle)) },
+                    description = stringResource(R.string.permanent_shuffle_desc),
+                    icon = { Icon(painterResource(R.drawable.shuffle), null) },
+                    checked = permanentShuffle,
+                    onCheckedChange = onPermanentShuffleChange
                 )},
 
                 {SwitchPreference(

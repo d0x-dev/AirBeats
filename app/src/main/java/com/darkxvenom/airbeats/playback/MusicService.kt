@@ -82,6 +82,7 @@ import com.darkxvenom.airbeats.constants.MediaSessionConstants.CommandToggleLike
 import com.darkxvenom.airbeats.constants.MediaSessionConstants.CommandToggleRepeatMode
 import com.darkxvenom.airbeats.constants.MediaSessionConstants.CommandToggleShuffle
 import com.darkxvenom.airbeats.constants.PauseListenHistoryKey
+import com.darkxvenom.airbeats.constants.PermanentShuffleKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.PlayerVolumeKey
 import com.darkxvenom.airbeats.constants.RepeatModeKey
@@ -766,7 +767,8 @@ class MusicService :
         if (!scope.isActive) scope = CoroutineScope(Dispatchers.Main) + Job()
         currentQueue = queue
         queueTitle = null
-        player.shuffleModeEnabled = false
+        val isPermanentShuffle = dataStore.get(PermanentShuffleKey, false)
+        player.shuffleModeEnabled = isPermanentShuffle
         if (queue.preloadItem != null) {
             player.setMediaItem(queue.preloadItem!!.toMediaItem())
             player.prepare()
@@ -807,6 +809,17 @@ class MusicService :
                 )
                 player.prepare()
                 player.playWhenReady = playWhenReady
+            }
+            if (isPermanentShuffle && player.mediaItemCount > 1) {
+                val shuffledIndices = IntArray(player.mediaItemCount) { it }
+                shuffledIndices.shuffle()
+                val currentIdx = player.currentMediaItemIndex
+                val currentPosInShuffled = shuffledIndices.indexOf(currentIdx)
+                if (currentPosInShuffled != -1) {
+                    shuffledIndices[currentPosInShuffled] = shuffledIndices[0]
+                    shuffledIndices[0] = currentIdx
+                }
+                player.setShuffleOrder(DefaultShuffleOrder(shuffledIndices, System.currentTimeMillis()))
             }
         }
     }
