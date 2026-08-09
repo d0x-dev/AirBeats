@@ -42,6 +42,7 @@ import com.darkxvenom.airbeats.db.entities.Playlist
 import com.darkxvenom.airbeats.db.entities.PlaylistSong
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.extensions.toMediaItem
+import com.darkxvenom.airbeats.models.toMediaMetadata
 import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import com.darkxvenom.airbeats.playback.queues.YouTubeQueue
@@ -387,6 +388,51 @@ fun PlaylistMenu(
                     showRemoveDownloadDialog = true
                 },
             )
+        }
+
+        if (songs.isNotEmpty()) {
+            GridMenuItem(
+                icon = R.drawable.save_to_storage,
+                title = R.string.save_playlist_to_storage,
+            ) {
+                val hasPermission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    true
+                } else {
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        context,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                }
+
+                if (hasPermission) {
+                    val savingToastMsg = context.getString(R.string.saving_playlist_to_storage, playlist.playlist.name)
+                    val playlistName = playlist.playlist.name
+                    android.widget.Toast.makeText(context, savingToastMsg, android.widget.Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
+                            .savePlaylistToMusicFolder(context, playlistName, songs.map { it.toMediaMetadata() })
+                            .onSuccess { count ->
+                                launch(kotlinx.coroutines.Dispatchers.Main) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Saved $count songs to Music/AirBeats/$playlistName",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                            .onFailure { e ->
+                                launch(kotlinx.coroutines.Dispatchers.Main) {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        "Save failed: ${e.message}",
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                    }
+                    onDismiss()
+                }
+            }
         }
 
         if (autoPlaylist != true) {

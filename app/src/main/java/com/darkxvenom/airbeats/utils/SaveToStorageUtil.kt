@@ -27,6 +27,29 @@ object SaveToStorageUtil {
         .proxy(YouTube.proxy)
         .build()
 
+    suspend fun savePlaylistToMusicFolder(
+        context: Context,
+        playlistName: String,
+        mediaList: List<MediaMetadata>,
+    ): Result<Int> = withContext(Dispatchers.IO) {
+        runCatching {
+            val subFolder = playlistName.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().take(50)
+            val relativeSubPath = if (subFolder.isNotEmpty()) "AirBeats/$subFolder" else "AirBeats"
+            var savedCount = 0
+
+            mediaList.forEach { mediaMetadata ->
+                try {
+                    saveToFolder(context, mediaMetadata, relativeSubPath).onSuccess {
+                        savedCount++
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Error saving song ${mediaMetadata.title} in playlist")
+                }
+            }
+            savedCount
+        }
+    }
+
     /**
      * Downloads the audio stream for the given media and saves it to the
      * device's Music folder. Uses MediaStore on Android 10+ and direct file
@@ -35,9 +58,15 @@ object SaveToStorageUtil {
     suspend fun saveToMusicFolder(
         context: Context,
         mediaMetadata: MediaMetadata,
+    ): Result<String> = saveToFolder(context, mediaMetadata, "AirBeats")
+
+    suspend fun saveToFolder(
+        context: Context,
+        mediaMetadata: MediaMetadata,
+        relativeFolder: String,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            Timber.tag(TAG).d("Starting save for: ${mediaMetadata.title}")
+            Timber.tag(TAG).d("Starting save for: ${mediaMetadata.title} into $relativeFolder")
 
             // 1. Resolve stream URL and format using robust playerResponseForPlayback with fallbacks
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -92,7 +121,7 @@ object SaveToStorageUtil {
                     val contentValues = ContentValues().apply {
                         put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
                         put(MediaStore.Audio.Media.MIME_TYPE, mimeType)
-                        put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/AirBeats")
+                        put(MediaStore.Audio.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MUSIC}/$relativeFolder")
                         put(MediaStore.Audio.Media.TITLE, mediaMetadata.title)
                         put(MediaStore.Audio.Media.ARTIST, artistName)
                         mediaMetadata.album?.title?.let {
@@ -120,7 +149,7 @@ object SaveToStorageUtil {
                     // Android 9 and below - direct file write
                     val musicDir = File(
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-                        "AirBeats"
+                        relativeFolder
                     )
                     if (!musicDir.exists()) musicDir.mkdirs()
 
