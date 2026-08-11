@@ -1449,7 +1449,7 @@ class MusicService :
                     dataSpec.position,
                     if (dataSpec.length >= 0) dataSpec.length else 1
                 ) ||
-                playerCache.isCached(mediaId, dataSpec.position, CHUNK_LENGTH)
+                playerCache.isCached(mediaId, dataSpec.position, dataSpec.length)
             ) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
                 return@Factory dataSpec
@@ -1530,23 +1530,21 @@ class MusicService :
                             id = mediaId,
                             itag = format.itag,
                             mimeType = format.mimeType.split(";")[0],
-                            codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
+                            codecs = format.mimeType.split("codecs=").getOrNull(1)?.removeSurrounding("\"").orEmpty(),
                             bitrate = format.bitrate,
                             sampleRate = format.audioSampleRate,
-                            contentLength = format.contentLength!!,
+                            contentLength = format.contentLength ?: 0L,
                             loudnessDb = playbackData.audioConfig?.loudnessDb,
                             playbackUrl = playbackData.streamUrl
                         )
                     )
                 }
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId, playbackData) }
-
                 val streamUrl = playbackData.streamUrl
 
                 songUrlCache[mediaId] =
                     streamUrl to System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L)
                 return@Factory dataSpec.withUri(streamUrl.toUri())
-                    .subrange(dataSpec.uriPositionOffset, CHUNK_LENGTH)
             } catch (e: Exception) {
                 Timber.tag(ytLogTag).e(e, "YouTube playback error, trying JossRed as fallback")
 
