@@ -136,6 +136,32 @@ fun NavGraphBuilder.navigationBuilder(
             SpotifySearchScreen(navController = navController)
         }
     }
+    composable("search") {
+        val (homeScreenStyle, _) = rememberEnumPreference(
+            HomeScreenStyleKey,
+            defaultValue = HomeScreenStyle.CLASSIC
+        )
+        if (homeScreenStyle == HomeScreenStyle.NEON) {
+            com.darkxvenom.airbeats.ui.screens.search.NeonSearchScreen(navController = navController)
+        } else if (homeScreenStyle == HomeScreenStyle.APPLE) {
+            com.darkxvenom.airbeats.ui.screens.apple.AppleSearchScreen(navController = navController)
+        } else {
+            SpotifySearchScreen(navController = navController)
+        }
+    }
+    composable("search/") {
+        val (homeScreenStyle, _) = rememberEnumPreference(
+            HomeScreenStyleKey,
+            defaultValue = HomeScreenStyle.CLASSIC
+        )
+        if (homeScreenStyle == HomeScreenStyle.NEON) {
+            com.darkxvenom.airbeats.ui.screens.search.NeonSearchScreen(navController = navController)
+        } else if (homeScreenStyle == HomeScreenStyle.APPLE) {
+            com.darkxvenom.airbeats.ui.screens.apple.AppleSearchScreen(navController = navController)
+        } else {
+            SpotifySearchScreen(navController = navController)
+        }
+    }
     composable("history") {
         HistoryScreen(navController)
     }

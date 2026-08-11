@@ -256,7 +256,6 @@ object YTPlayerUtils {
             val request = okhttp3.Request.Builder()
                 .url(url)
                 .header("Range", "bytes=0-1024")
-                .header("User-Agent", YouTubeClient.USER_AGENT_WEB)
                 .get()
                 .build()
             val response = httpClient.newCall(request).execute()
