@@ -254,9 +254,8 @@ object YTPlayerUtils {
         Timber.tag(logTag).d("Validating stream URL status")
         try {
             val request = okhttp3.Request.Builder()
+                .head()
                 .url(url)
-                .header("Range", "bytes=0-1024")
-                .get()
                 .build()
             val response = httpClient.newCall(request).execute()
             response.use {
