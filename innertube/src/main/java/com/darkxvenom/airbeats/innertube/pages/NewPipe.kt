@@ -87,25 +87,17 @@ object NewPipeUtils {
                 val url = params["url"]?.let { URLBuilder(it) }
                     ?: throw ParsingException("Could not parse cipher url")
                 url.parameters[signatureParam] =
-                    try {
-                        YoutubeJavaScriptPlayerManager.deobfuscateSignature(
-                            videoId,
-                            obfuscatedSignature
-                        )
-                    } catch (e: Exception) {
+                    YoutubeJavaScriptPlayerManager.deobfuscateSignature(
+                        videoId,
                         obfuscatedSignature
-                    }
+                    )
                 url.toString()
             } ?: throw ParsingException("Could not find format url")
 
-            try {
-                YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(
-                    videoId,
-                    url
-                )
-            } catch (e: Exception) {
+            return@runCatching YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(
+                videoId,
                 url
-            }
+            )
         }
 
 }

@@ -1530,10 +1530,10 @@ class MusicService :
                             id = mediaId,
                             itag = format.itag,
                             mimeType = format.mimeType.split(";")[0],
-                            codecs = format.mimeType.split("codecs=").getOrNull(1)?.removeSurrounding("\"").orEmpty(),
+                            codecs = format.mimeType.split("codecs=")[1].removeSurrounding("\""),
                             bitrate = format.bitrate,
                             sampleRate = format.audioSampleRate,
-                            contentLength = format.contentLength ?: 0L,
+                            contentLength = format.contentLength!!,
                             loudnessDb = playbackData.audioConfig?.loudnessDb,
                             playbackUrl = playbackData.streamUrl
                         )
@@ -1546,6 +1546,7 @@ class MusicService :
                 songUrlCache[mediaId] =
                     streamUrl to System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L)
                 return@Factory dataSpec.withUri(streamUrl.toUri())
+                    .subrange(dataSpec.uriPositionOffset, CHUNK_LENGTH)
             } catch (e: Exception) {
                 Timber.tag(ytLogTag).e(e, "YouTube playback error, trying JossRed as fallback")
 

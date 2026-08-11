@@ -1128,7 +1128,7 @@ fun ModernHomeTopBarInline(
 
                 CircleIconButton(
                     icon = R.drawable.search,
-                    onClick = { navController.navigate("search") }
+                    onClick = { navController.navigate("search/") }
                 )
 
                 CircleIconButton(
