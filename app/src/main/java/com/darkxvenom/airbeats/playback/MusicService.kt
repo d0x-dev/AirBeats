@@ -194,6 +194,38 @@ class MusicService :
     private var hasAudioFocus = false
 
     private var scope = CoroutineScope(Dispatchers.Main) + Job()
+
+    private val mediaOkHttpClient: okhttp3.OkHttpClient by lazy {
+        okhttp3.OkHttpClient
+            .Builder()
+            .proxy(YouTube.proxy)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .addInterceptor { chain ->
+                val request = chain.request()
+                val host = request.url.host
+                val isYouTubeMediaHost =
+                    host.endsWith("googlevideo.com") ||
+                        host.endsWith("googleusercontent.com") ||
+                        host.endsWith("youtube.com") ||
+                        host.endsWith("youtube-nocookie.com") ||
+                        host.endsWith("ytimg.com")
+
+                if (!isYouTubeMediaHost) return@addInterceptor chain.proceed(request)
+
+                val clientParam = request.url.queryParameter("c")?.trim().orEmpty()
+
+                val userAgent = com.darkxvenom.airbeats.utils.StreamClientUtils.resolveUserAgent(clientParam)
+                val originReferer = com.darkxvenom.airbeats.utils.StreamClientUtils.resolveOriginReferer(clientParam)
+
+                val builder = request.newBuilder().header("User-Agent", userAgent)
+                originReferer.origin?.let { builder.header("Origin", it) }
+                originReferer.referer?.let { builder.header("Referer", it) }
+
+                chain.proceed(builder.build())
+            }.build()
+    }
+
     private val binder = MusicBinder()
 
     private lateinit var connectivityManager: ConnectivityManager
@@ -1425,10 +1457,7 @@ class MusicService :
                         DefaultDataSource.Factory(
                             this,
                             OkHttpDataSource.Factory(
-                                OkHttpClient
-                                    .Builder()
-                                    .proxy(YouTube.proxy)
-                                    .build(),
+                                mediaOkHttpClient,
                             ),
                         ),
                     ),
@@ -1458,6 +1487,7 @@ class MusicService :
             songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
                 return@Factory dataSpec.withUri(it.first.toUri())
+                    .subrange(0, CHUNK_LENGTH)
             }
 
             if (mediaId.startsWith("JS:")) {
@@ -1545,7 +1575,7 @@ class MusicService :
                 songUrlCache[mediaId] =
                     streamUrl to System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L)
                 return@Factory dataSpec.withUri(streamUrl.toUri())
-                    .subrange(dataSpec.uriPositionOffset, CHUNK_LENGTH)
+                    .subrange(0, CHUNK_LENGTH)
             } catch (e: Exception) {
                 Timber.tag(ytLogTag).e(e, "YouTube playback error, trying JossRed as fallback")
 

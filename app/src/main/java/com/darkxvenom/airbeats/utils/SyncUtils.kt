@@ -5,8 +5,8 @@ import com.darkxvenom.airbeats.innertube.models.AlbumItem
 import com.darkxvenom.airbeats.innertube.models.ArtistItem
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
 import com.darkxvenom.airbeats.innertube.models.SongItem
-import com.darkxvenom.airbeats.innertube.utils.completed
 import com.darkxvenom.airbeats.innertube.utils.completedLibraryPage
+import com.darkxvenom.airbeats.innertube.utils.completedPlaylistPage
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.ArtistEntity
 import com.darkxvenom.airbeats.db.entities.PlaylistEntity
@@ -25,7 +25,7 @@ class SyncUtils @Inject constructor(
     val database: MusicDatabase,
 ) {
     suspend fun syncLikedSongs() {
-        YouTube.playlist("LM").completed().onSuccess { page ->
+        YouTube.playlist("LM").completedPlaylistPage().onSuccess { page ->
             val songs = page.songs.reversed()
 
             database.likedSongsByNameAsc().first()
@@ -158,7 +158,7 @@ class SyncUtils @Inject constructor(
     }
 
     suspend fun syncPlaylist(browseId: String, playlistId: String) {
-        val playlistPage = YouTube.playlist(browseId).completed().getOrNull() ?: return
+        val playlistPage = YouTube.playlist(browseId).completedPlaylistPage().getOrNull() ?: return
         database.transaction {
             clearPlaylist(playlistId)
             playlistPage.songs

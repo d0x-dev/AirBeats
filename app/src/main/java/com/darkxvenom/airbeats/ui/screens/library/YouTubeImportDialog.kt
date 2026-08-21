@@ -17,7 +17,7 @@ import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.db.entities.PlaylistEntity
 import com.darkxvenom.airbeats.db.entities.PlaylistSongMap
 import com.darkxvenom.airbeats.innertube.YouTube
-import com.darkxvenom.airbeats.innertube.utils.completed
+import com.darkxvenom.airbeats.innertube.utils.completedPlaylistPage
 import com.darkxvenom.airbeats.models.toMediaMetadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -123,8 +123,8 @@ fun YouTubeImportDialog(
                                 val cleanBrowseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
                                 val rawId = if (playlistId.startsWith("VL")) playlistId.removePrefix("VL") else playlistId
 
-                                val playlistPage = YouTube.playlist(rawId).completed().getOrNull()
-                                    ?: YouTube.playlist(cleanBrowseId).completed().getOrNull()
+                                val playlistPage = YouTube.playlist(rawId).completedPlaylistPage().getOrNull()
+                                    ?: YouTube.playlist(cleanBrowseId).completedPlaylistPage().getOrNull()
 
                                 if (playlistPage == null) {
                                     withContext(Dispatchers.Main) {

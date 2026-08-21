@@ -1,3 +1,9 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.pages
 
 import com.darkxvenom.airbeats.innertube.models.Album
@@ -15,7 +21,7 @@ object SearchSuggestionPage {
         return when {
             renderer.isSong -> {
                 SongItem(
-                    id = renderer.playlistItemData?.videoId ?: renderer.navigationEndpoint?.watchEndpoint?.videoId ?: return null,
+                    id = renderer.playlistItemData?.videoId ?: return null,
                     title =
                         renderer.flexColumns
                             .firstOrNull()
@@ -38,7 +44,7 @@ object SearchSuggestionPage {
                                     name = it.text,
                                     id = it.navigationEndpoint?.browseEndpoint?.browseId,
                                 )
-                            } ?: listOf(Artist(name = "Unknown Artist", id = null)),
+                            } ?: return null,
                     album =
                         renderer.flexColumns
                             .getOrNull(
@@ -111,9 +117,7 @@ object SearchSuggestionPage {
                             }?.menuNavigationItemRenderer
                             ?.navigationEndpoint
                             ?.watchPlaylistEndpoint
-                            ?.playlistId
-                            ?: renderer.navigationEndpoint?.browseEndpoint?.browseId?.let { "OLAK5uy_$it" }
-                            ?: return null,
+                            ?.playlistId ?: return null,
                     title =
                         renderer.flexColumns
                             .firstOrNull()

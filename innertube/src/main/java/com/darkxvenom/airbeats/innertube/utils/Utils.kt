@@ -1,46 +1,97 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
+
+
+
+
 package com.darkxvenom.airbeats.innertube.utils
 
 import com.darkxvenom.airbeats.innertube.YouTube
-import com.darkxvenom.airbeats.innertube.models.AlbumItem
-import com.darkxvenom.airbeats.innertube.models.ArtistItem
-import com.darkxvenom.airbeats.innertube.models.PlaylistItem
-import com.darkxvenom.airbeats.innertube.pages.LibraryContinuationPage
 import com.darkxvenom.airbeats.innertube.pages.LibraryPage
+import com.darkxvenom.airbeats.innertube.pages.PlaylistContinuationPage
 import com.darkxvenom.airbeats.innertube.pages.PlaylistPage
-import io.ktor.http.URLBuilder
-import io.ktor.http.parseQueryString
 import java.security.MessageDigest
 
-suspend fun Result<PlaylistPage>.completed() =
-    runCatching {
-        val page = getOrThrow()
-        val songs = page.songs.toMutableList()
-        var continuation = page.songsContinuation
-        while (continuation != null) {
-            val continuationPage = YouTube.playlistContinuation(continuation).getOrNull() ?: break
-            songs += continuationPage.songs
-            continuation = continuationPage.continuation
-        }
-        PlaylistPage(
-            playlist = page.playlist,
-            songs = songs,
-            songsContinuation = null,
-            continuation = page.continuation,
-        )
+suspend fun Result<PlaylistPage>.completedPlaylistPage(): Result<PlaylistPage> = runCatching {
+    completePlaylistPage(getOrThrow()) { continuation ->
+        YouTube.playlistContinuation(continuation).getOrNull()
     }
+}
+
+internal suspend fun completePlaylistPage(
+    page: PlaylistPage,
+    fetchContinuationPage: suspend (String) -> PlaylistContinuationPage?,
+): PlaylistPage {
+    val songs = page.songs.toMutableList()
+    var continuation = page.songsContinuation.normalizedContinuation()
+        ?: page.continuation.normalizedContinuation()
+    val seenContinuations = mutableSetOf<String>()
+    var requestCount = 0
+    val maxRequests = 50
+    var consecutiveEmptyResponses = 0
+
+    while (continuation != null && requestCount < maxRequests) {
+        if (continuation in seenContinuations) {
+            break
+        }
+        seenContinuations.add(continuation)
+        requestCount++
+
+        val continuationPage = fetchContinuationPage(continuation) ?: break
+
+        if (continuationPage.songs.isEmpty()) {
+            consecutiveEmptyResponses++
+            if (consecutiveEmptyResponses >= 2) break
+        } else {
+            consecutiveEmptyResponses = 0
+            songs += continuationPage.songs
+        }
+
+        continuation = continuationPage.continuation.normalizedContinuation()
+    }
+
+    return page.copy(
+        songs = songs,
+        songsContinuation = null,
+        continuation = null
+    )
+}
 
 suspend fun Result<LibraryPage>.completedLibraryPage(): Result<LibraryPage> = runCatching {
     val page = getOrThrow()
     val items = page.items.toMutableList()
     var continuation = page.continuation
-    while (continuation != null) {
+    val seenContinuations = mutableSetOf<String>()
+    var requestCount = 0
+    val maxRequests = 50
+    var consecutiveEmptyResponses = 0
+    
+    while (continuation != null && requestCount < maxRequests) {
+        if (continuation in seenContinuations) {
+            break
+        }
+        seenContinuations.add(continuation)
+        requestCount++
+        
         val continuationPage = YouTube.libraryContinuation(continuation).getOrNull() ?: break
-        items += continuationPage.items
+        
+        if (continuationPage.items.isEmpty()) {
+            consecutiveEmptyResponses++
+            if (consecutiveEmptyResponses >= 2) break
+        } else {
+            consecutiveEmptyResponses = 0
+            items += continuationPage.items
+        }
+        
         continuation = continuationPage.continuation
     }
     LibraryPage(
         items = items,
-        continuation = page.continuation
+        continuation = null
     )
 }
 
@@ -49,126 +100,66 @@ fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x
 fun sha1(str: String): String = MessageDigest.getInstance("SHA-1").digest(str.toByteArray()).toHex()
 
 fun parseCookieString(cookie: String): Map<String, String> =
-    cookie
-        .split("; ")
-        .filter { it.isNotEmpty() }
-        .associate {
-            val (key, value) = it.split("=")
-            key to value
+    cookie.split(";")
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .mapNotNull { part ->
+            val splitIndex = part.indexOf('=')
+            if (splitIndex == -1) {
+                null
+            } else {
+                val key = part.substring(0, splitIndex).trim()
+                if (key.isEmpty()) null else key to part.substring(splitIndex + 1).trim()
+            }
         }
+        .toMap()
 
 fun String.parseTime(): Int? {
-    try {
-        val parts = split(":").map { it.toInt() }
-        if (parts.size == 2) {
-            return parts[0] * 60 + parts[1]
+    val normalized =
+        buildString(length) {
+            for (char in this@parseTime) {
+                val digit = Character.digit(char, 10)
+                when {
+                    digit >= 0 -> append(digit)
+                    char.isDurationSeparator() -> append(':')
+                    char.isIgnorableDurationChar() -> Unit
+                    else -> return null
+                }
+            }
         }
-        if (parts.size == 3) {
-            return parts[0] * 3600 + parts[1] * 60 + parts[2]
-        }
-    } catch (e: Exception) {
-        return null
-    }
-    return null
-}
 
-fun String.swap(index1: Int, index2: Int): String {
-    val chars = toCharArray()
-    val temp = chars[index1]
-    chars[index1] = chars[index2]
-    chars[index2] = temp
-    return String(chars)
-}
+    val parts = normalized.split(':')
+    if (parts.any { it.isBlank() || it.length > 3 }) return null
+    if (parts.size !in 2..3) return null
+    if (parts.drop(1).any { it.length !in 1..2 }) return null
 
-fun String.rotateLeft(n: Int): String = substring(n) + substring(0, n)
+    val values = parts.map { it.toIntOrNull() ?: return null }
+    if (values.drop(1).any { it !in 0..59 }) return null
 
-fun String.rotateRight(n: Int): String = takeLast(n) + dropLast(n)
-
-fun String.removeIndex(index: Int): String = removeRange(index, index + 1)
-
-fun transform(input: String, key: String, charset: List<Char>): String {
-    val keyList = key.toMutableList()
-    val keyLength = key.length
-    return buildString {
-        input.forEachIndexed { idx, char ->
-            val transformedChar = charset[
-                (charset.indexOf(char) - charset.indexOf(keyList[idx % keyLength]) + idx + charset.size - idx) % charset.size
-            ]
-            append(transformedChar)
-            keyList[idx % keyLength] = transformedChar
-        }
+    return when (values.size) {
+        2 -> values[0] * 60 + values[1]
+        3 -> values[0] * 3600 + values[1] * 60 + values[2]
+        else -> null
     }
 }
 
-fun String.sliceSegment(start: Int, end: Int): String = substring(start, end)
+private fun Char.isDurationSeparator(): Boolean =
+    this == ':' ||
+            this == '.' ||
+            this == ',' ||
+            this == '：' ||
+            this == '．' ||
+            this == '﹕' ||
+            this == '꞉' ||
+            this == '∶' ||
+            this == '٫'
 
-fun String.sliceFrom(start: Int): String = substring(start)
+private fun Char.isIgnorableDurationChar(): Boolean =
+    isWhitespace() ||
+            Character.getType(this) == Character.FORMAT.toInt()
 
-
-fun nSigDecode(n: String): String {
-    val step1 = n.swap(0, 3)
-    val step2 = step1.swap(0, 14)
-    val step3 = step2.reversed()
-    val step4 = step3.swap(0, 17)
-    val step5 = step4.rotateRight(3)
-    val step6 = step5.reversed()
-    val step7 = step6.swap(0, 12)
-    val step8 = step7.reversed()
-    val step9 = step8.removeIndex(0).removeIndex(0)
-
-    val cipherKey = "pdENIJ6"
-    val charset = listOf(
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-        'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-        'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '-', '_'
-    )
-
-    val transformed = transform(step9, cipherKey, charset)
-
-    val result = transformed
-        .rotateLeft(10)
-        .rotateLeft(8)
-        .rotateLeft(8)
-        .removeIndex(8)
-        .reversed()
-        .rotateLeft(8)
-        .removeIndex(6)
-    return result.dropLast(2) + result.last()
+fun isPrivateId(browseId: String): Boolean {
+    return browseId.contains("privately")
 }
 
-fun sigDecode(input: String): String {
-    val result = input.sliceSegment(6, 11) +
-            input[65] +
-            input.sliceSegment(12, 65) +
-            input[0] +
-            input.sliceFrom(66)
-    return result.removeIndex(result.length - 1)
-}
-
-fun createUrl(
-    url: String? = null,
-    cipher: String? = null,
-): String? {
-    val resUrl: URLBuilder
-    var signature = ""
-    var signatureParam = "sig"
-    if (cipher != null) {
-        val params = parseQueryString(cipher)
-        signature = params["s"] ?: return null
-        signatureParam = params["sp"] ?: return null
-        resUrl = params["url"]?.let { URLBuilder(it) } ?: return null
-    } else {
-        resUrl = url?.let { URLBuilder(it) } ?: return null
-    }
-    val n = resUrl.parameters["n"]
-    resUrl.parameters["n"] = nSigDecode(n.toString())
-    if (cipher != null) {
-        resUrl.parameters[signatureParam] = sigDecode(signature)
-    }
-    resUrl.parameters["c"] = "ANDROID_MUSIC"
-    println(signature)
-    println(n)
-    println(resUrl)
-    return resUrl.toString()
-}
+private fun String?.normalizedContinuation(): String? = this?.takeUnless(String::isBlank)

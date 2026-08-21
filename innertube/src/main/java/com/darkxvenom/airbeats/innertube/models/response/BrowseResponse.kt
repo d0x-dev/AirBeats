@@ -1,10 +1,17 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.models.response
 
 import com.darkxvenom.airbeats.innertube.models.Button
 import com.darkxvenom.airbeats.innertube.models.Continuation
 import com.darkxvenom.airbeats.innertube.models.GridRenderer
 import com.darkxvenom.airbeats.innertube.models.Menu
-import com.darkxvenom.airbeats.innertube.models.MusicResponsiveListItemRenderer
+import com.darkxvenom.airbeats.innertube.models.MusicDetailHeaderRenderer
+import com.darkxvenom.airbeats.innertube.models.MusicEditablePlaylistDetailHeaderRenderer
 import com.darkxvenom.airbeats.innertube.models.MusicShelfRenderer
 import com.darkxvenom.airbeats.innertube.models.ResponseContext
 import com.darkxvenom.airbeats.innertube.models.Runs
@@ -12,8 +19,6 @@ import com.darkxvenom.airbeats.innertube.models.SectionListRenderer
 import com.darkxvenom.airbeats.innertube.models.SubscriptionButton
 import com.darkxvenom.airbeats.innertube.models.Tabs
 import com.darkxvenom.airbeats.innertube.models.ThumbnailRenderer
-import com.darkxvenom.airbeats.innertube.models.Thumbnails
-import com.darkxvenom.airbeats.innertube.pages.LibraryContinuationPage
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -24,13 +29,13 @@ data class BrowseResponse(
     val header: Header?,
     val microformat: Microformat?,
     val responseContext: ResponseContext,
-    val background: MusicThumbnailRenderer?,
+    val background: ThumbnailRenderer?
 ) {
     @Serializable
     data class Contents(
         val singleColumnBrowseResultsRenderer: Tabs?,
-        val twoColumnBrowseResultsRenderer: TwoColumnBrowseResultsRenderer?,
         val sectionListRenderer: SectionListRenderer?,
+        val twoColumnBrowseResultsRenderer: TwoColumnBrowseResultsRenderer?,
     )
 
     @Serializable
@@ -38,16 +43,9 @@ data class BrowseResponse(
         val tabs: List<Tabs.Tab?>?,
         val secondaryContents: SecondaryContents?,
     )
-
     @Serializable
     data class SecondaryContents(
         val sectionListRenderer: SectionListRenderer?,
-    )
-
-    @Serializable
-    data class MusicThumbnailRenderer(
-        val thumbnail: Thumbnails?,
-        val thumbnailCrop: String?,
     )
 
     @Serializable
@@ -55,22 +53,23 @@ data class BrowseResponse(
         val sectionListContinuation: SectionListContinuation?,
         val musicPlaylistShelfContinuation: MusicPlaylistShelfContinuation?,
         val gridContinuation: GridContinuation?,
-        val musicShelfContinuation: MusicShelfRenderer?,
+        val musicShelfContinuation: MusicShelfRenderer?
     ) {
         @Serializable
         data class SectionListContinuation(
-            val contents: List<SectionListRenderer.Content>,
+            val contents: List<SectionListRenderer.Content> = emptyList(),
             val continuations: List<Continuation>?,
         )
 
         @Serializable
         data class MusicPlaylistShelfContinuation(
-            val contents: List<MusicShelfRenderer.Content>,
+            val contents: List<MusicShelfRenderer.Content> = emptyList(),
             val continuations: List<Continuation>?,
         )
+
         @Serializable
         data class GridContinuation(
-            val items: List<GridRenderer.Item>,
+            val items: List<GridRenderer.Item> = emptyList(),
             val continuations: List<Continuation>?,
         )
     }
@@ -101,29 +100,9 @@ data class BrowseResponse(
             val playButton: Button?,
             val startRadioButton: Button?,
             val subscriptionButton: SubscriptionButton?,
+            val monthlyListenerCount: Runs? = null,
             val menu: Menu,
         )
-
-        @Serializable
-        data class MusicDetailHeaderRenderer(
-            val title: Runs,
-            val subtitle: Runs,
-            val secondSubtitle: Runs,
-            val description: Runs?,
-            val thumbnail: ThumbnailRenderer,
-            val menu: Menu,
-        )
-
-        @Serializable
-        data class MusicEditablePlaylistDetailHeaderRenderer(
-            val header: Header,
-        ) {
-            @Serializable
-            data class Header(
-                val musicDetailHeaderRenderer: MusicDetailHeaderRenderer?,
-                val musicResponsiveHeaderRenderer: MusicHeaderRenderer?,
-            )
-        }
 
         @Serializable
         data class MusicVisualHeaderRenderer(
@@ -147,15 +126,15 @@ data class BrowseResponse(
             val straplineTextOne: Runs?,
             val straplineThumbnail: MusicThumbnailRenderer?,
         )
-
         @Serializable
         data class MusicThumbnail(
             val url: String?,
-        )
-
+        ) {
+            val normalizedUrl: String? get() = url?.let { if (it.startsWith("//")) "https:$it" else it }
+        }
         @Serializable
         data class MusicThumbnailRenderer(
-            val musicThumbnailRenderer: BrowseResponse.MusicThumbnailRenderer,
+            val musicThumbnailRenderer: MusicThumbnailRenderer,
             val thumbnails: List<MusicThumbnail>?,
         )
     }

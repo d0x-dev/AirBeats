@@ -78,7 +78,7 @@ import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.innertube.models.AlbumItem
-import com.darkxvenom.airbeats.viewmodels.AlbumReleaseType
+import com.darkxvenom.airbeats.innertube.models.AlbumReleaseType
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.ui.component.IconButton
 import com.darkxvenom.airbeats.ui.component.LocalMenuState

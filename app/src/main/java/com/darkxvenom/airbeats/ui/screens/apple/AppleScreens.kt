@@ -430,7 +430,7 @@ fun AppleYtRow(items: List<YTItem>, navController: NavController, playerConnecti
                     is ArtistItem -> "Artist"
                     else -> ""
                 },
-                thumbnailUrl = item.thumbnail.highQualityThumbnail(),
+                thumbnailUrl = item.thumbnail?.highQualityThumbnail() ?: "",
                 onClick = {
                     when (item) {
                         is SongItem -> {

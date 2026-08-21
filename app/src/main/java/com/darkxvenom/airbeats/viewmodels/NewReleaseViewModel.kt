@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.AlbumItem
+import com.darkxvenom.airbeats.innertube.models.AlbumReleaseType
 import com.darkxvenom.airbeats.innertube.models.filterExplicit
 import com.darkxvenom.airbeats.constants.HideExplicitKey
 import com.darkxvenom.airbeats.constants.LastNewReleaseCheckKey
@@ -22,19 +23,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class AlbumReleaseType {
-    ALBUM, SINGLE, EP
-}
 
-val AlbumItem.releaseType: AlbumReleaseType
-    get() {
-        val titleLower = title.lowercase()
-        return when {
-            titleLower.contains("single") -> AlbumReleaseType.SINGLE
-            titleLower.contains("ep") -> AlbumReleaseType.EP
-            else -> AlbumReleaseType.ALBUM
-        }
-    }
+
+
 
 sealed interface NewReleaseUiState {
     data object Loading : NewReleaseUiState

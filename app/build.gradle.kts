@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         applicationId = "com.darkxvenom.airbeats"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 171
         versionName = "6.0.0"
@@ -221,6 +221,7 @@ dependencies {
     implementation(libs.liquid.glass.shape)
 
     implementation(libs.timber)
+    testImplementation(libs.junit)
 }
 
 

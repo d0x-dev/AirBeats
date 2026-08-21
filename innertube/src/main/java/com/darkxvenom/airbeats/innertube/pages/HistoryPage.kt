@@ -1,3 +1,8 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
 
 package com.darkxvenom.airbeats.innertube.pages
 
@@ -22,10 +27,8 @@ data class HistoryPage(
         fun fromMusicShelfRenderer(renderer: MusicShelfRenderer): HistorySection {
             return HistorySection(
                 title = renderer.title?.runs?.firstOrNull()?.text!!,
-                songs = renderer.contents?.mapNotNull {
-                    it.musicResponsiveListItemRenderer?.let { renderer ->
-                        fromMusicResponsiveListItemRenderer(renderer)
-                    }
+                songs = renderer.contents?.getItems()?.mapNotNull {
+                    fromMusicResponsiveListItemRenderer(it)
                 }!!
             )
         }

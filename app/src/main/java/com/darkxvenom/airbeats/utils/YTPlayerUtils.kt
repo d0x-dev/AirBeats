@@ -2,7 +2,7 @@ package com.darkxvenom.airbeats.utils
 
 import android.net.ConnectivityManager
 import androidx.media3.common.PlaybackException
-import com.darkxvenom.airbeats.innertube.NewPipeUtils
+import com.darkxvenom.airbeats.innertube.SongStreamExtractor
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.ANDROID_VR_NO_AUTH
@@ -15,6 +15,7 @@ import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.WEB_REMI
 import com.darkxvenom.airbeats.innertube.models.response.PlayerResponse
 import com.darkxvenom.airbeats.constants.AudioQuality
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import timber.log.Timber
 
 object YTPlayerUtils {
@@ -152,7 +153,7 @@ object YTPlayerUtils {
                     continue
                 }
 
-                val streamUrl = findUrlOrNull(format, videoId)
+                val streamUrl = findUrlOrNull(format, videoId, client)
                 if (streamUrl == null) {
                     Timber.tag(logTag).d("Stream URL not found for format")
                     continue
@@ -166,7 +167,7 @@ object YTPlayerUtils {
                     fallbackCandidateExpires = streamExpiresInSeconds
                 }
 
-                if (validateStatus(streamUrl)) {
+                if (validateStatus(streamUrl, client.userAgent)) {
                     Timber.tag(logTag)
                         .d("Stream validated successfully with client: ${client.clientName}")
                     selectedFormat = format
@@ -250,35 +251,56 @@ object YTPlayerUtils {
      * true the url is likely to work. If this returns false the url might
      * cause an error during playback.
      */
-    private fun validateStatus(url: String): Boolean {
-        Timber.tag(logTag).d("Validating stream URL status")
+    private fun validateStatus(url: String, userAgent: String): Boolean {
+        Timber.tag(logTag).v("Validating stream URL status")
         try {
-            val request = okhttp3.Request.Builder()
-                .head()
-                .url(url)
-                .build()
-            val response = httpClient.newCall(request).execute()
-            response.use {
-                val isSuccessful = it.isSuccessful || it.code == 206 || it.code == 200
-                Timber.tag(logTag)
-                    .d("Stream URL validation result: ${if (isSuccessful) "Success" else "Failed"} (${it.code})")
-                return isSuccessful
+            val httpUrl = url.toHttpUrlOrNull()
+            val clientParam = httpUrl?.queryParameter("c")?.trim().orEmpty()
+
+            val resolvedUserAgent = com.darkxvenom.airbeats.utils.StreamClientUtils.resolveUserAgent(clientParam).ifEmpty { userAgent }
+            val originReferer = com.darkxvenom.airbeats.utils.StreamClientUtils.resolveOriginReferer(clientParam)
+
+            val probeRanges =
+                if (com.darkxvenom.airbeats.utils.StreamClientUtils.isWebClient(clientParam)) {
+                    listOf("bytes=0-0", "bytes=262144-262145", "bytes=1048576-1048577")
+                } else {
+                    listOf("bytes=0-0")
+                }
+
+            for (range in probeRanges) {
+                val rangeRequest =
+                    okhttp3.Request.Builder()
+                        .get()
+                        .header("User-Agent", resolvedUserAgent)
+                        .header("Range", range)
+                        .apply {
+                            originReferer.origin?.let { header("Origin", it) }
+                            originReferer.referer?.let { header("Referer", it) }
+                        }.url(url)
+                        .build()
+
+                val code = httpClient.newCall(rangeRequest).execute().use { response -> response.code }
+                if (code == 403) return false
+                if (code !in 200..399 && code != 416) return false
             }
+
+            return true
         } catch (e: Exception) {
             Timber.tag(logTag).e(e, "Stream URL validation failed with exception")
+            reportException(e)
         }
         return false
     }
 
     /**
-     * Wrapper around the [NewPipeUtils.getSignatureTimestamp] function which
+     * Wrapper around the [SongStreamExtractor.getSignatureTimestamp] function which
      * reports exceptions
      */
     private fun getSignatureTimestampOrNull(
         videoId: String
     ): Int? {
         Timber.tag(logTag).d("Getting signature timestamp for videoId: $videoId")
-        return NewPipeUtils.getSignatureTimestamp(videoId)
+        return SongStreamExtractor.getSignatureTimestamp(videoId)
             .onSuccess { Timber.tag(logTag).d("Signature timestamp obtained: $it") }
             .onFailure {
                 Timber.tag(logTag).e(it, "Failed to get signature timestamp")
@@ -288,20 +310,50 @@ object YTPlayerUtils {
     }
 
     /**
-     * Wrapper around the [NewPipeUtils.getStreamUrl] function which reports
+     * Wrapper around the [SongStreamExtractor.getStreamUrl] function which reports
      * exceptions
      */
     private fun findUrlOrNull(
         format: PlayerResponse.StreamingData.Format,
-        videoId: String
+        videoId: String,
+        client: com.darkxvenom.airbeats.innertube.models.YouTubeClient? = null,
     ): String? {
-        Timber.tag(logTag).d("Finding stream URL for format: ${format.mimeType}, videoId: $videoId")
-        return NewPipeUtils.getStreamUrl(format, videoId)
-            .onSuccess { Timber.tag(logTag).d("Stream URL obtained successfully") }
+        Timber.tag(logTag).i("Finding stream URL for format: , videoId: ")
+        var url = SongStreamExtractor.getStreamUrl(format, videoId, client)
+            .onSuccess { Timber.tag(logTag).i("Stream URL obtained successfully") }
             .onFailure {
                 Timber.tag(logTag).e(it, "Failed to get stream URL")
                 reportException(it)
             }
-            .getOrNull()
+            .getOrNull() ?: return null
+
+        if (client != null) {
+            url = com.darkxvenom.airbeats.utils.StreamClientUtils.patchClientVersion(url, client.clientVersion)
+        }
+
+        return url
+    }
+
+
+
+    private fun isBotDetectionError(reason: String): Boolean {
+        val lower = reason.lowercase(java.util.Locale.US)
+        return "bot" in lower ||
+            "unusual traffic" in lower ||
+            "automated" in lower ||
+            "confirm" in lower && "not a" in lower ||
+            "not a robot" in lower ||
+            "verify" in lower && "human" in lower
+    }
+
+    fun isBotDetectionException(error: androidx.media3.common.PlaybackException): Boolean {
+        val message = error.message.orEmpty()
+        if (isBotDetectionError(message)) return true
+        var cause: Throwable? = error.cause
+        while (cause != null) {
+            if (isBotDetectionError(cause.message.orEmpty())) return true
+            cause = cause.cause
+        }
+        return false
     }
 }

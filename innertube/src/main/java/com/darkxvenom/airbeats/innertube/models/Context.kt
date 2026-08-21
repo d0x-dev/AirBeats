@@ -1,3 +1,9 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.models
 
 import kotlinx.serialization.Serializable
@@ -13,7 +19,11 @@ data class Context(
     data class Client(
         val clientName: String,
         val clientVersion: String,
-        val osVersion: String?,
+        val osName: String? = null,
+        val osVersion: String? = null,
+        val deviceMake: String? = null,
+        val deviceModel: String? = null,
+        val androidSdkVersion: String? = null,
         val gl: String,
         val hl: String,
         val visitorData: String?,

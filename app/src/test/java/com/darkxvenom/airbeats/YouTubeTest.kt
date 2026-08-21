@@ -8,7 +8,7 @@ class YouTubeTest {
     @Test
     fun testPlaylist() = runBlocking {
         // Search for a playlist
-        val searchResult = YouTube.search("The playlist", "playlists")
+        val searchResult = YouTube.search("The playlist", YouTube.SearchFilter.FILTER_FEATURED_PLAYLIST)
         val playlistId = searchResult.getOrNull()?.items?.firstOrNull()?.id
         println("Found playlist ID: $playlistId")
         

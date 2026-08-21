@@ -7,6 +7,7 @@ import com.darkxvenom.airbeats.innertube.pages.SearchSuggestionPage
 import com.darkxvenom.airbeats.innertube.pages.SearchSummaryPage
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import java.io.File
 
@@ -30,6 +31,7 @@ class JsonParseTest {
     @Test
     fun testParseSuggestions() {
         val file = File("C:/Users/Dark/.gemini/antigravity/scratch/suggestions_response.json")
+        assumeTrue("Missing local suggestions_response.json fixture", file.exists())
         val content = file.readText()
         val parsed = json.decodeFromString<GetSearchSuggestionsResponse>(content)
         println("Suggestions contents count: ${parsed.contents?.size}")
@@ -53,6 +55,7 @@ class JsonParseTest {
     @Test
     fun testParseSearch() {
         val file = File("C:/Users/Dark/.gemini/antigravity/scratch/search_response.json")
+        assumeTrue("Missing local search_response.json fixture", file.exists())
         val content = file.readText()
         val parsed = json.decodeFromString<SearchResponse>(content)
         val contents = parsed.contents?.tabbedSearchResultsRenderer?.tabs?.firstOrNull()?.tabRenderer?.content?.sectionListRenderer?.contents

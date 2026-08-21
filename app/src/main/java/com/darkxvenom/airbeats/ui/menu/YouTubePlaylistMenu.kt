@@ -49,7 +49,7 @@ import coil.compose.AsyncImage
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
 import com.darkxvenom.airbeats.innertube.models.SongItem
-import com.darkxvenom.airbeats.innertube.utils.completed
+import com.darkxvenom.airbeats.innertube.utils.completedPlaylistPage
 import com.darkxvenom.airbeats.LocalDatabase
 import com.darkxvenom.airbeats.LocalDownloadUtil
 import com.darkxvenom.airbeats.LocalPlayerConnection
@@ -113,7 +113,7 @@ fun YouTubePlaylistMenu(
         onGetSong = { targetPlaylist ->
             val allSongs = songs
                 .ifEmpty {
-                    YouTube.playlist(targetPlaylist.id).completed().getOrNull()?.songs.orEmpty()
+                    YouTube.playlist(targetPlaylist.id).completedPlaylistPage().getOrNull()?.songs.orEmpty()
                 }.map {
                     it.toMediaMetadata()
                 }
@@ -154,7 +154,7 @@ fun YouTubePlaylistMenu(
                                 insert(playlistEntity)
                                 coroutineScope.launch(Dispatchers.IO) {
                                     songs.ifEmpty {
-                                        YouTube.playlist(playlist.id).completed()
+                                        YouTube.playlist(playlist.id).completedPlaylistPage()
                                             .getOrNull()?.songs.orEmpty()
                                     }.map { it.toMediaMetadata() }
                                         .onEach(::insert)
@@ -289,7 +289,7 @@ fun YouTubePlaylistMenu(
         onGetSong = {
             val allSongs = songs
                 .ifEmpty {
-                    YouTube.playlist(playlist.id).completed().getOrNull()?.songs.orEmpty()
+                    YouTube.playlist(playlist.id).completedPlaylistPage().getOrNull()?.songs.orEmpty()
                 }.map {
                     it.toMediaMetadata()
                 }
@@ -403,7 +403,7 @@ fun YouTubePlaylistMenu(
                         withContext(Dispatchers.IO) {
                             YouTube
                                 .playlist(playlist.id)
-                                .completed()
+                                .completedPlaylistPage()
                                 .getOrNull()
                                 ?.songs
                                 .orEmpty()
@@ -424,7 +424,7 @@ fun YouTubePlaylistMenu(
                         withContext(Dispatchers.IO) {
                             YouTube
                                 .playlist(playlist.id)
-                                .completed()
+                                .completedPlaylistPage()
                                 .getOrNull()
                                 ?.songs
                                 .orEmpty()

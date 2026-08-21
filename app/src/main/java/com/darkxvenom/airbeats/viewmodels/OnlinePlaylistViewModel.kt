@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
 import com.darkxvenom.airbeats.innertube.models.SongItem
-import com.darkxvenom.airbeats.innertube.utils.completed
+import com.darkxvenom.airbeats.innertube.utils.completedPlaylistPage
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -97,7 +97,7 @@ class OnlinePlaylistViewModel @Inject constructor(
 
             YouTube
                 .playlist(playlistId)
-                .completed()
+                .completedPlaylistPage()
                 .onSuccess { playlistPage ->
                     playlist.value = playlistPage.playlist
                     playlistSongs.value = playlistPage.songs.distinctBy { it.id }

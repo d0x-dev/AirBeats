@@ -1,3 +1,9 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.models.body
 
 import com.darkxvenom.airbeats.innertube.models.Context
@@ -10,8 +16,6 @@ data class PlayerBody(
     val playlistId: String?,
     val playbackContext: PlaybackContext? = null,
     val serviceIntegrityDimensions: ServiceIntegrityDimensions? = null,
-    val contentCheckOk: Boolean = true,
-    val racyCheckOk: Boolean = true,
 ) {
     @Serializable
     data class PlaybackContext(

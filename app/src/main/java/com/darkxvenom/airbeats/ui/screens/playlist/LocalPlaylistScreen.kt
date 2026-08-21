@@ -116,7 +116,7 @@ import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.extensions.togglePlayPause
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.SongItem
-import com.darkxvenom.airbeats.innertube.utils.completed
+import com.darkxvenom.airbeats.innertube.utils.completedPlaylistPage
 import com.darkxvenom.airbeats.models.toMediaMetadata
 import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.ListQueue
@@ -907,7 +907,7 @@ fun LocalPlaylistScreen(
                                             } else if (playlist.playlist.browseId != null) {
                                                 coroutineScope.launch(Dispatchers.IO) {
                                                     val playlistPage = YouTube.playlist(playlist.playlist.browseId!!)
-                                                        .completed()
+                                                        .completedPlaylistPage()
                                                         .getOrNull() ?: return@launch
                                                     database.transaction {
                                                         clearPlaylist(playlist.id)

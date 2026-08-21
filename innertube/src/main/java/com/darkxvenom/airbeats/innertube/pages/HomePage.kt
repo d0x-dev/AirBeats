@@ -1,5 +1,12 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.pages
 
+import com.darkxvenom.airbeats.innertube.models.Album
 import com.darkxvenom.airbeats.innertube.models.AlbumItem
 import com.darkxvenom.airbeats.innertube.models.Artist
 import com.darkxvenom.airbeats.innertube.models.ArtistItem
@@ -7,13 +14,33 @@ import com.darkxvenom.airbeats.innertube.models.BrowseEndpoint
 import com.darkxvenom.airbeats.innertube.models.MusicCarouselShelfRenderer
 import com.darkxvenom.airbeats.innertube.models.MusicTwoRowItemRenderer
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
+import com.darkxvenom.airbeats.innertube.models.SectionListRenderer
 import com.darkxvenom.airbeats.innertube.models.SongItem
 import com.darkxvenom.airbeats.innertube.models.YTItem
 import com.darkxvenom.airbeats.innertube.models.oddElements
+import com.darkxvenom.airbeats.innertube.models.filterExplicit
 
 data class HomePage(
+    val chips: List<Chip>?,
     val sections: List<Section>,
+    val continuation: String? = null,
 ) {
+    data class Chip(
+        val title: String,
+        val endpoint: BrowseEndpoint?,
+        val deselectEndPoint: BrowseEndpoint?,
+    ) {
+        companion object {
+            fun fromChipCloudChipRenderer(renderer: SectionListRenderer.Header.ChipCloudRenderer.Chip): Chip? {
+                return Chip(
+                    title = renderer.chipCloudChipRenderer.text?.runs?.firstOrNull()?.text ?: return null,
+                    endpoint = renderer.chipCloudChipRenderer.navigationEndpoint.browseEndpoint,
+                    deselectEndPoint = renderer.chipCloudChipRenderer.onDeselectedCommand?.browseEndpoint,
+                )
+            }
+        }
+    }
+
     data class Section(
         val title: String,
         val label: String?,
@@ -41,24 +68,36 @@ data class HomePage(
             private fun fromMusicTwoRowItemRenderer(renderer: MusicTwoRowItemRenderer): YTItem? {
                 return when {
                     renderer.isSong -> {
+                        val subtitleRuns = renderer.subtitle?.runs ?: return null
+                        val (artistRuns, albumRuns) = subtitleRuns.partition { run ->
+                            run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("UC") == true
+                        }
+                        val artists = artistRuns.map {
+                            Artist(
+                                name = it.text,
+                                id = it.navigationEndpoint?.browseEndpoint?.browseId ?: return null
+                            )
+                        }
                         SongItem(
                             id = renderer.navigationEndpoint.watchEndpoint?.videoId ?: return null,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
-                            artists = listOfNotNull(renderer.subtitle?.runs?.firstOrNull()?.let {
-                                Artist(
-                                    name = it.text,
-                                    id = it.navigationEndpoint?.browseEndpoint?.browseId
+                            artists = artists,
+                            album = albumRuns.firstOrNull { run ->
+                                run.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPREb_") == true
+                            }?.let { run ->
+                                val endpoint = run.navigationEndpoint?.browseEndpoint ?: return null
+                                Album(
+                                    name = run.text,
+                                    id = endpoint.browseId
                                 )
-                            }),
-                            album = null,
+                            },
                             duration = null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
-                            explicit = renderer.subtitleBadges?.find {
+                            explicit = renderer.subtitleBadges?.any {
                                 it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
-                            } != null
+                            } == true
                         )
                     }
-
                     renderer.isAlbum -> {
                         AlbumItem(
                             browseId = renderer.navigationEndpoint.browseEndpoint?.browseId ?: return null,
@@ -72,7 +111,7 @@ data class HomePage(
                                     id = it.navigationEndpoint?.browseEndpoint?.browseId
                                 )
                             },
-                            year = renderer.subtitle?.runs?.lastOrNull()?.text?.toIntOrNull(),
+                            year = null,
                             thumbnail = renderer.thumbnailRenderer.musicThumbnailRenderer?.getThumbnailUrl() ?: return null,
                             explicit = renderer.subtitleBadges?.find {
                                 it.musicInlineBadgeRenderer?.icon?.iconType == "MUSIC_EXPLICIT_BADGE"
@@ -81,7 +120,6 @@ data class HomePage(
                     }
 
                     renderer.isPlaylist -> {
-                        // Playlist from YouTube Music
                         PlaylistItem(
                             id = renderer.navigationEndpoint.browseEndpoint?.browseId?.removePrefix("VL") ?: return null,
                             title = renderer.title.runs?.firstOrNull()?.text ?: return null,
@@ -124,11 +162,11 @@ data class HomePage(
         }
     }
 
-//    fun filterExplicit(enabled: Boolean = true) =
-//        if (enabled) {
-//            copy(sections = sections.map {
-//                it.copy(items = it.items.filterExplicit())
-//            })
-//        } else this
+    fun filterExplicit(enabled: Boolean = true) =
+        if (enabled) {
+            copy(sections = sections.map {
+                it.copy(items = it.items.filterExplicit())
+            })
+        } else this
 
 }

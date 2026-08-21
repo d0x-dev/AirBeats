@@ -60,7 +60,7 @@ class HomeViewModel @Inject constructor(
 
         if (isJioSaavn) {
             com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.getTrendingSongs().onSuccess { songs ->
-                homePage.value = HomePage(
+                homePage.value = HomePage(chips = null, 
                     sections = listOf(
                         HomePage.Section(
                             title = "Trending Songs",

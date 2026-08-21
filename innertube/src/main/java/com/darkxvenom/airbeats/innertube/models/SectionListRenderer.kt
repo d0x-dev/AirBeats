@@ -1,6 +1,11 @@
+/*
+ * OpenTune Project Original (2026)
+ * Arturo254 (github.com/Arturo254)
+ * Licensed Under GPL-3.0 | see git history for contributors
+ */
+
 package com.darkxvenom.airbeats.innertube.models
 
-import com.darkxvenom.airbeats.innertube.models.response.BrowseResponse
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNames
@@ -27,7 +32,7 @@ data class SectionListRenderer(
                 data class ChipCloudChipRenderer(
                     val isSelected: Boolean,
                     val navigationEndpoint: NavigationEndpoint,
-                    val onDeselectedCommand: NavigationEndpoint? = null, // agregado
+                    val onDeselectedCommand: NavigationEndpoint? = null,
                     // The close button doesn't have the following two fields
                     val text: Runs?,
                     val uniqueId: String?,
@@ -45,9 +50,24 @@ data class SectionListRenderer(
         val musicCardShelfRenderer: MusicCardShelfRenderer?,
         val musicPlaylistShelfRenderer: MusicPlaylistShelfRenderer?,
         val musicDescriptionShelfRenderer: MusicDescriptionShelfRenderer?,
-        val musicResponsiveHeaderRenderer: BrowseResponse.Header.MusicHeaderRenderer?, // mantiene compatibilidad
-        val musicEditablePlaylistDetailHeaderRenderer: BrowseResponse.Header.MusicEditablePlaylistDetailHeaderRenderer?, // mantiene compatibilidad
+        val musicResponsiveHeaderRenderer: MusicResponsiveHeaderRenderer?,
+        val musicEditablePlaylistDetailHeaderRenderer: MusicEditablePlaylistDetailHeaderRenderer?,
         val gridRenderer: GridRenderer?,
         val itemSectionRenderer: ItemSectionRenderer?,
     )
+
+    @Serializable
+    data class ItemSectionRenderer(
+        val contents: List<ItemSectionContent>?,
+    ) {
+        @Serializable
+        data class ItemSectionContent(
+            val musicResponsiveListItemRenderer: MusicResponsiveListItemRenderer? = null,
+            val gridRenderer: GridRenderer? = null,
+            val musicShelfRenderer: MusicShelfRenderer? = null,
+        )
+    }
 }
+
+fun List<SectionListRenderer.ItemSectionRenderer.ItemSectionContent>.getItems(): List<MusicResponsiveListItemRenderer> =
+    mapNotNull { it.musicResponsiveListItemRenderer }

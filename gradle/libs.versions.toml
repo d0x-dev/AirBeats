@@ -1,4 +1,7 @@
 [versions]
+re2j = "1.8"
+rhino = "1.9.1"
+okhttp-dns = "5.3.2"
 androidGradlePlugin = "8.13.2"
 annotation = "1.9.1"
 json = "20241224"
@@ -16,7 +19,8 @@ okhttp = "5.0.0-alpha.14"
 loggingInterceptor = "5.0.0-alpha.14"
 blurry = "4.0.1"
 materialRipple = "1.9.4"
-extractor = "66722f6eedcc154e64bdf139b16d7be824bfeca1"
+brave-newpipe = "fa5d4a8b4c"
+pipepipe = "208e43b184"
 composeReorderable = "3.0.0"
 uiAndroid = "1.9.2"
 materialIconsExtended = "1.7.6"
@@ -35,6 +39,9 @@ haze = "1.7.2"
 
 
 [libraries]
+re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
+rhino = { module = "org.mozilla:rhino", version.ref = "rhino" }
+okhttp-dnsoverhttps = { group = "com.squareup.okhttp3", name = "okhttp-dnsoverhttps", version.ref = "okhttp-dns" }
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 guava = { group = "com.google.guava", name = "guava", version = "33.4.0-android" }
 coroutines-guava = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-guava", version = "1.10.1" }
@@ -98,7 +105,8 @@ junit = { group = "junit", name = "junit", version = "4.13.2" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 
-newpipe-extractor = { module = "com.github.MetrolistGroup.MetrolistExtractor:extractor", version.ref = "extractor" }
+brave-extractor = { module = "com.github.maxrave-dev:BravePipeExtractor", version.ref = "brave-newpipe" }
+pipepipe-extractor = { module = "com.github.maxrave-dev:PipePipeExtractor", version.ref = "pipepipe" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }
