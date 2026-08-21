@@ -35,6 +35,7 @@ import androidx.media3.common.Player.REPEAT_MODE_ONE
 import androidx.media3.common.Player.STATE_IDLE
 import androidx.media3.common.Timeline
 import androidx.media3.common.audio.SonicAudioProcessor
+import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.ResolvingDataSource
@@ -1465,7 +1466,32 @@ class MusicService :
             .setFlags(FLAG_IGNORE_CACHE_ON_ERROR)
 
     private fun createDataSourceFactory(): DataSource.Factory {
-        val songUrlCache = HashMap<String, Pair<String, Long>>()
+        data class CachedSongUrl(
+            val url: String,
+            val expiresAt: Long,
+            val contentLength: Long?,
+        )
+
+        fun DataSpec.withStreamUrl(url: String, contentLength: Long?): DataSpec {
+            val resolved = withUri(url.toUri())
+            if (resolved.length != C.LENGTH_UNSET.toLong()) return resolved
+
+            val remainingLength =
+                contentLength
+                    ?.takeIf { it > resolved.position }
+                    ?.let { it - resolved.position }
+                    ?: C.LENGTH_UNSET.toLong()
+
+            return if (remainingLength != C.LENGTH_UNSET.toLong()) {
+                resolved.buildUpon()
+                    .setLength(remainingLength)
+                    .build()
+            } else {
+                resolved
+            }
+        }
+
+        val songUrlCache = HashMap<String, CachedSongUrl>()
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
             if (dataSpec.uri.scheme == "content" || dataSpec.uri.scheme == "file") {
                 return@Factory dataSpec
@@ -1484,9 +1510,9 @@ class MusicService :
                 return@Factory dataSpec
             }
 
-            songUrlCache[mediaId]?.takeIf { it.second > System.currentTimeMillis() }?.let {
+            songUrlCache[mediaId]?.takeIf { it.expiresAt > System.currentTimeMillis() }?.let {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                return@Factory dataSpec.withUri(it.first.toUri())
+                return@Factory dataSpec.withStreamUrl(it.url, it.contentLength)
             }
 
             if (mediaId.startsWith("JS:")) {
@@ -1495,7 +1521,11 @@ class MusicService :
                         com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.getStreamUrl(mediaId)
                     }
                     if (streamUrl != null) {
-                        songUrlCache[mediaId] = streamUrl to (System.currentTimeMillis() + 3600000L)
+                        songUrlCache[mediaId] = CachedSongUrl(
+                            url = streamUrl,
+                            expiresAt = System.currentTimeMillis() + 3600000L,
+                            contentLength = null,
+                        )
                         scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
                         return@Factory dataSpec.withUri(streamUrl.toUri())
                     } else {
@@ -1571,9 +1601,12 @@ class MusicService :
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId, playbackData) }
                 val streamUrl = playbackData.streamUrl
 
-                songUrlCache[mediaId] =
-                    streamUrl to System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L)
-                return@Factory dataSpec.withUri(streamUrl.toUri())
+                songUrlCache[mediaId] = CachedSongUrl(
+                    url = streamUrl,
+                    expiresAt = System.currentTimeMillis() + (playbackData.streamExpiresInSeconds * 1000L),
+                    contentLength = format.contentLength,
+                )
+                return@Factory dataSpec.withStreamUrl(streamUrl, format.contentLength)
             } catch (e: Exception) {
                 Timber.tag(ytLogTag).e(e, "YouTube playback error, trying JossRed as fallback")
 
