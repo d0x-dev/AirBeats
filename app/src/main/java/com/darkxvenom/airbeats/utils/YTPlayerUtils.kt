@@ -230,11 +230,17 @@ object YTPlayerUtils {
         val format = playerResponse.streamingData?.adaptiveFormats
             ?.filter { it.isAudio }
             ?.maxByOrNull {
-                it.bitrate * when (audioQuality) {
+                val qualityScore = it.bitrate * when (audioQuality) {
                     AudioQuality.AUTO -> if (connectivityManager.isActiveNetworkMetered) -1 else 1
                     AudioQuality.HIGH -> 1
                     AudioQuality.LOW -> -1
-                } + (if (it.mimeType.startsWith("audio/webm")) 10240 else 0) // prefer opus stream
+                }
+                val containerScore = when {
+                    it.mimeType.startsWith("audio/mp4") -> 20480
+                    it.mimeType.startsWith("audio/webm") -> 0
+                    else -> -20480
+                }
+                qualityScore + containerScore
             }
 
         if (format != null) {
