@@ -11,7 +11,6 @@ package com.darkxvenom.airbeats.utils
 import android.net.ConnectivityManager
 import androidx.media3.common.PlaybackException
 import com.darkxvenom.airbeats.constants.AudioQuality
-import com.darkxvenom.airbeats.constants.PlayerStreamClient
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient
@@ -121,9 +120,7 @@ object YTPlayerUtils {
             System.currentTimeMillis() + FAILED_CLIENT_BACKOFF_MS
     }
 
-    fun markPreferredClientFailed(videoId: String, client: PlayerStreamClient, httpStatusCode: Int?) {
-        markStreamClientFailed(videoId, client.name, httpStatusCode)
-    }
+    
 
     private fun isStreamClientTemporarilyBlocked(videoId: String, clientKey: String?): Boolean {
         val normalizedClientKey = normalizeStreamClientKey(clientKey)
@@ -169,14 +166,13 @@ object YTPlayerUtils {
         playlistId: String? = null,
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
-        preferredStreamClient: PlayerStreamClient = PlayerStreamClient.ANDROID_VR,
         // if provided, this preference overrides ConnectivityManager.isActiveNetworkMetered
         networkMetered: Boolean? = null,
         avoidCodecs: Set<String> = emptySet(),
     ): Result<PlaybackData> = runCatching {
         val attempts =
             when (audioQuality) {
-                AudioQuality.HIGHEST -> listOf(AudioQuality.HIGHEST, AudioQuality.HIGH)
+                
                 AudioQuality.AUTO -> listOf(AudioQuality.AUTO, AudioQuality.HIGH)
                 else -> listOf(audioQuality)
             }.distinct()
@@ -190,7 +186,6 @@ object YTPlayerUtils {
                         playlistId = playlistId,
                         audioQuality = attempt,
                         connectivityManager = connectivityManager,
-                        preferredStreamClient = preferredStreamClient,
                         networkMetered = networkMetered,
                         avoidCodecs = avoidCodecs,
                     )
@@ -206,7 +201,6 @@ object YTPlayerUtils {
         playlistId: String?,
         audioQuality: AudioQuality,
         connectivityManager: ConnectivityManager,
-        preferredStreamClient: PlayerStreamClient,
         networkMetered: Boolean?,
         avoidCodecs: Set<String>,
     ): PlaybackData {
@@ -232,17 +226,10 @@ object YTPlayerUtils {
                 }
                 ).distinct()
 
-        val preferredYouTubeClient =
-            when (preferredStreamClient) {
-                PlayerStreamClient.ANDROID_VR -> ANDROID_VR_NO_AUTH
-                PlayerStreamClient.WEB_REMIX -> WEB_REMIX
-                PlayerStreamClient.IOS -> IOS
-                PlayerStreamClient.TVHTML5 -> TVHTML5
-                PlayerStreamClient.ANDROID_MUSIC -> ANDROID_MUSIC
-            }
+        val preferredYouTubeClient = ANDROID_VR_NO_AUTH
 
         val metadataClient =
-            preferredYouTubeClient.takeIf { preferredStreamClient == PlayerStreamClient.ANDROID_VR } ?: MAIN_CLIENT
+            preferredYouTubeClient
 
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
         val metadataPlayerResponse =
@@ -494,7 +481,7 @@ object YTPlayerUtils {
 
         val effectiveQuality =
             when (audioQuality) {
-                AudioQuality.AUTO -> if (networkMetered) AudioQuality.HIGH else AudioQuality.HIGHEST
+                AudioQuality.AUTO -> if (networkMetered) AudioQuality.HIGH else AudioQuality.HIGH
                 else -> audioQuality
             }
 
@@ -502,7 +489,6 @@ object YTPlayerUtils {
             when (effectiveQuality) {
                 AudioQuality.LOW -> 70_000
                 AudioQuality.HIGH -> 160_000
-                AudioQuality.HIGHEST -> 320_000
                 AudioQuality.AUTO -> null
             }
 
