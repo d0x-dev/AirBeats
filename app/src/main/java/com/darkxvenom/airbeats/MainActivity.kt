@@ -814,6 +814,14 @@ class MainActivity : ComponentActivity() {
 
                                         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)
                                             ?.toUri() ?: return@Consumer
+                                        
+                                        if (uri.host == "listentogether.airbeats.app") {
+                                            val code = uri.getQueryParameter("code")
+                                            if (code != null) {
+                                                ListenTogetherSync.joinSession(code)
+                                                return@Consumer
+                                            }
+                                        }
                                         when (val path = uri.pathSegments.firstOrNull()) {
                                             "playlist" ->
                                                 (uri.getQueryParameter("id") ?: uri.getQueryParameter("list"))?.let { playlistId ->
