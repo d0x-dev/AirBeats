@@ -161,6 +161,7 @@ import androidx.compose.foundation.layout.PaddingValues
 @Composable
 fun HomeScreen(
     navController: NavController,
+    onSearchClick: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 )
 {
@@ -444,7 +445,8 @@ fun HomeScreen(
                 // ModernHomeTopBarInline is now inside the LazyColumn
                 item {
                     ModernHomeTopBarInline(
-                        navController = navController
+                        navController = navController,
+                        onSearchClick = onSearchClick
                     )
                 }
 
@@ -994,7 +996,8 @@ fun HomeScreen(
 }
 @Composable
 fun ModernHomeTopBarInline(
-    navController: NavController
+    navController: NavController,
+    onSearchClick: () -> Unit
 ) {
     val context = LocalContext.current
     val avatarManager = remember { AvatarPreferenceManager(context) }
@@ -1128,7 +1131,7 @@ fun ModernHomeTopBarInline(
 
                 CircleIconButton(
                     icon = R.drawable.search,
-                    onClick = { navController.navigate("search") }
+                    onClick = onSearchClick
                 )
 
                 CircleIconButton(
@@ -1257,3 +1260,4 @@ fun AnimatedBeatsRing(
         }
     }
 }
+

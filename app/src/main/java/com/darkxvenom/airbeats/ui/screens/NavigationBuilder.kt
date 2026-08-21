@@ -73,7 +73,7 @@ fun NavGraphBuilder.navigationBuilder(
         } else if (homeScreenStyle == HomeScreenStyle.APPLE) {
             com.darkxvenom.airbeats.ui.screens.apple.AppleHomeScreen(navController = navController)
         } else {
-            HomeScreen(navController = navController)
+            HomeScreen(navController = navController, onSearchClick = onSearchClick)
         }
     }
 
@@ -124,27 +124,6 @@ fun NavGraphBuilder.navigationBuilder(
         }
     }
     composable(Screens.Search.route) {
-        val (navBarStyle, _) = rememberEnumPreference(
-            com.darkxvenom.airbeats.constants.NavBarStyleKey,
-            defaultValue = com.darkxvenom.airbeats.constants.NavBarStyle.CLASSIC
-        )
-        val (homeScreenStyle, _) = rememberEnumPreference(
-            HomeScreenStyleKey,
-            defaultValue = HomeScreenStyle.CLASSIC
-        )
-        
-        val useNeon = navBarStyle == com.darkxvenom.airbeats.constants.NavBarStyle.NEON || (navBarStyle !in listOf(com.darkxvenom.airbeats.constants.NavBarStyle.APPLE, com.darkxvenom.airbeats.constants.NavBarStyle.SPOTIFY) && homeScreenStyle == HomeScreenStyle.NEON)
-        val useApple = navBarStyle == com.darkxvenom.airbeats.constants.NavBarStyle.APPLE || (navBarStyle !in listOf(com.darkxvenom.airbeats.constants.NavBarStyle.NEON, com.darkxvenom.airbeats.constants.NavBarStyle.SPOTIFY) && homeScreenStyle == HomeScreenStyle.APPLE)
-
-        if (useNeon) {
-            com.darkxvenom.airbeats.ui.screens.search.NeonSearchScreen(navController = navController)
-        } else if (useApple) {
-            com.darkxvenom.airbeats.ui.screens.apple.AppleSearchScreen(navController = navController)
-        } else {
-            SpotifySearchScreen(navController = navController)
-        }
-    }
-    composable("search") {
         val (navBarStyle, _) = rememberEnumPreference(
             com.darkxvenom.airbeats.constants.NavBarStyleKey,
             defaultValue = com.darkxvenom.airbeats.constants.NavBarStyle.CLASSIC
@@ -456,4 +435,7 @@ fun NavGraphBuilder.navigationBuilder(
         AlwaysOnDisplayScreen(navController)
     }
 }
+
+
+
 

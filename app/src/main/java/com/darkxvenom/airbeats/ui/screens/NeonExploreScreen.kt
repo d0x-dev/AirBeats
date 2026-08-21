@@ -107,7 +107,7 @@ fun NeonExploreScreen(
                     .height(50.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (isDarkTheme) Color(0xFF1E1E24) else Color(0xFFF0F0F0))
-                    .clickable { navController.navigate("search") }
+                    .clickable { navController.navigate("neon_search") }
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -233,3 +233,4 @@ fun MoodCard(
         }
     }
 }
+
