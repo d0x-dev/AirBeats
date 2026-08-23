@@ -387,9 +387,17 @@ class MusicService :
             .distinctUntilChanged()
             .collect(scope) { enabled ->
                 if (enabled && Settings.canDrawOverlays(this)) {
-                    startService(Intent(this, DynamicIslandService::class.java))
+                    try {
+                        startService(Intent(this, DynamicIslandService::class.java))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 } else {
-                    stopService(Intent(this, DynamicIslandService::class.java))
+                    try {
+                        stopService(Intent(this, DynamicIslandService::class.java))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
 
@@ -1323,6 +1331,16 @@ class MusicService :
         if (playWhenReady) {
             setupLoudnessEnhancer()
             setupEqualizer()
+            scope.launch {
+                val enabled = dataStore.get(DynamicIslandKey, false)
+                if (enabled && Settings.canDrawOverlays(this@MusicService)) {
+                    try {
+                        startService(Intent(this@MusicService, DynamicIslandService::class.java))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
 
         // Actualizar notificación cuando cambia el estado de reproducción
@@ -1889,3 +1907,5 @@ class MusicService :
         private const val TAG = "MusicService"
     }
 }
+
+

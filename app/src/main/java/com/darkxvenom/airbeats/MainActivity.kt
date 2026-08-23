@@ -341,6 +341,20 @@ class MainActivity : ComponentActivity() {
         super.onStop()
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            val enabled = dataStore.get(com.darkxvenom.airbeats.constants.DynamicIslandKey, false)
+            if (enabled && android.provider.Settings.canDrawOverlays(this@MainActivity)) {
+                try {
+                    startService(android.content.Intent(this@MainActivity, com.darkxvenom.airbeats.playback.DynamicIslandService::class.java))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (dataStore.get(
@@ -2172,6 +2186,9 @@ fun AnimatedBar(
             )
     )
 }
+
+
+
 
 
 
