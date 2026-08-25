@@ -36,19 +36,30 @@ jobs:
           STATS_API_KEY: ${{ secrets.STATS_API_KEY }}
           STATS_BASE_URL: ${{ secrets.STATS_BASE_URL }}
           AUTH_API_BASE_URL: ${{ secrets.AUTH_API_BASE_URL }}
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
         run: |
           echo "${GOOGLE_SERVICES_JSON}" | base64 --decode > app/google-services.json
+          echo "${SIGNING_KEY_BASE64}" | base64 --decode > app/keystore.jks
           
           echo "google.api.key=${GOOGLE_API_KEY}" >> local.properties
           echo "stats.api.key=${STATS_API_KEY}" >> local.properties
           echo "stats.base.url=${STATS_BASE_URL}" >> local.properties
           echo "auth.api.base.url=${AUTH_API_BASE_URL}" >> local.properties
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=pwd/app/keystore.jks \
+            -Pandroid.injected.signing.store.password="${KEYSTORE_PASSWORD}" \
+            -Pandroid.injected.signing.key.alias="${KEY_ALIAS}" \
+            -Pandroid.injected.signing.key.password="${KEY_PASSWORD}"
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk AirBeats-Nightly.apk
+        run: mv app/build/outputs/apk/release/app-release.apk AirBeats-Nightly.apk
 
       - name: Update Nightly Release
         uses: softprops/action-gh-release@v2
