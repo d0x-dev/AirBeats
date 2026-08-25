@@ -51,6 +51,8 @@ jobs:
           git add app/build.gradle.kts
           git commit -m "chore: Bump version to $NEW_VERSION_NAME (Nightly)"
           git push
+          
+          echo "NEW_VERSION_NAME=$NEW_VERSION_NAME" >> $GITHUB_ENV
 
       - name: Inject Secrets
         env:
@@ -87,8 +89,9 @@ jobs:
       - name: Update Nightly Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: nightly
-          name: "AirBeats Nightly Build"
+          tag_name: "v${{ env.NEW_VERSION_NAME }}"
+          name: "Airbeats-Nights v${{ env.NEW_VERSION_NAME }}"
           body: "This is the latest automatic nightly build generated from the main branch."
           prerelease: true
           files: AirBeats-Nightly.apk
+
