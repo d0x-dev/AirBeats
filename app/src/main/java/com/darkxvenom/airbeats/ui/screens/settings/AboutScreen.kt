@@ -221,12 +221,21 @@ fun UserCard(
 
                 if (commits != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "$commits Commits",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = "$commits Commits",
+                            modifier = Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 4.dp
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
@@ -635,7 +644,7 @@ fun AboutScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = stringResource(R.string.contributors),
+                            text = "Founders",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -746,6 +755,10 @@ fun AboutScreen(
         }
     }
 }
+
+
+
+
 
 
 
