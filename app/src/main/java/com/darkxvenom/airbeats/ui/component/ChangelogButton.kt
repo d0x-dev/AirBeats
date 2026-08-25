@@ -344,7 +344,7 @@ private fun ErrorContent(error: String, onRetry: () -> Unit) {
                 modifier = Modifier.size(24.dp)
             )
             Text(
-                text = "Error al cargar",
+                text = "Error loading",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -361,7 +361,7 @@ private fun ErrorContent(error: String, onRetry: () -> Unit) {
                     contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
-                Text("Reintentar")
+                Text("Retry")
             }
         }
     }
@@ -1086,7 +1086,7 @@ class ChangelogViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     isLoadingReleases = false,
-                    releasesError = "Error al cargar releases: ${e.message}"
+                    releasesError = "Error loading releases: ${e.message}"
                 )
             }
         }
@@ -1125,7 +1125,7 @@ class ChangelogViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     isLoadingCommits = false,
-                    commitsError = "Error al cargar commits: ${e.message}"
+                    commitsError = "Error loading commits: ${e.message}"
                 )
             }
         }
@@ -1248,3 +1248,5 @@ class ChangelogViewModel : ViewModel() {
         return formatter.format(Date())
     }
 }
+
+
