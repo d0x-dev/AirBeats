@@ -21,7 +21,7 @@
 
 <br>
 <a href="https://snapcraft.io/airbeats"><img alt="Get it from the Snap Store" src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" height="42"/></a>
-<a href="https://airbeats.en.uptodown.com/android"><img alt="Download on Uptodown" src="https://stc.uptodown.com/img/badges/uptodown-badge-en.png" height="42"/></a>
+<a href="https://airbeats.en.uptodown.com/android"><img alt="Download on Uptodown" src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" height="42"/></a>
 
 </div>
 
