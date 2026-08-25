@@ -663,7 +663,11 @@ fun UpdateDownloadDialog(
                             WaterDropButton(
                                 onClick = {
                                     downloadStatus = DownloadStatus.REDIRECTING
-                                    val downloadUrl = "https://github.com/d0x-dev/AirBeats/releases/download/$latestVersion/AirBeats_v${latestVersion}_signed.apk"
+                                    val downloadUrl = if (com.darkxvenom.airbeats.BuildConfig.IS_NIGHTLY) {
+                                        "https://github.com/d0x-dev/AirBeats/releases/download/v${latestVersion}-nightly/Airbeats-v${latestVersion}-Nightly.apk"
+                                    } else {
+                                        "https://github.com/d0x-dev/AirBeats/releases/download/v$latestVersion/AirBeats_v${latestVersion}_signed.apk"
+                                    }
                                     uriHandler.openUri(downloadUrl)
                                     downloadStatus = DownloadStatus.COMPLETED
                                     onDismiss()
@@ -737,12 +741,29 @@ enum class DownloadStatus {
 
 suspend fun checkForUpdates(): String? = withContext(Dispatchers.IO) {
     try {
-        val url = URL("https://api.github.com/repos/d0x-dev/AirBeats/releases/latest")
-        val connection = url.openConnection()
-        connection.connect()
-        val json = connection.getInputStream().bufferedReader().use { it.readText() }
-        val jsonObject = JSONObject(json)
-        return@withContext jsonObject.getString("tag_name")
+        if (com.darkxvenom.airbeats.BuildConfig.IS_NIGHTLY) {
+            val url = java.net.URL("https://api.github.com/repos/d0x-dev/AirBeats/releases")
+            val connection = url.openConnection()
+            connection.connect()
+            val json = connection.getInputStream().bufferedReader().use { it.readText() }
+            val jsonArray = org.json.JSONArray(json)
+            for (i in 0 until jsonArray.length()) {
+                val release = jsonArray.getJSONObject(i)
+                if (release.getBoolean("prerelease")) {
+                    val tagName = release.getString("tag_name")
+                    return@withContext tagName.removePrefix("v").removeSuffix("-nightly").trim()
+                }
+            }
+            return@withContext null
+        } else {
+            val url = java.net.URL("https://api.github.com/repos/d0x-dev/AirBeats/releases/latest")
+            val connection = url.openConnection()
+            connection.connect()
+            val json = connection.getInputStream().bufferedReader().use { it.readText() }
+            val jsonObject = org.json.JSONObject(json)
+            val tagName = jsonObject.getString("tag_name")
+            return@withContext tagName.removePrefix("v").trim()
+        }
     } catch (e: Exception) {
         e.printStackTrace()
         return@withContext null

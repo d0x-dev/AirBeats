@@ -51,11 +51,13 @@ android {
     buildTypes {
         create("nightly") {
             initWith(getByName("release"))
+            buildConfigField("boolean", "IS_NIGHTLY", "true")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         release {
+            buildConfigField("boolean", "IS_NIGHTLY", "false")
             isMinifyEnabled = true
             isShrinkResources = true
             isCrunchPngs = true
@@ -65,6 +67,7 @@ android {
             )
         }
         debug {
+            buildConfigField("boolean", "IS_NIGHTLY", "false")
             applicationIdSuffix = ".debug"
         }
     }
@@ -229,6 +232,8 @@ dependencies {
     implementation(libs.timber)
     testImplementation(libs.junit)
 }
+
+
 
 
 
