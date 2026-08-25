@@ -106,6 +106,7 @@ fun UserCard(
     imageUrl: String,
     name: String,
     role: String,
+    commits: Int? = null,
     githubUrl: String? = null,
     telegramUrl: String? = null,
     instagramUrl: String? = null,
@@ -215,6 +216,16 @@ fun UserCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (commits != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$commits Commits",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -631,10 +642,27 @@ fun AboutScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "2 Contributors",
+                            text = "2 Founders",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
+                    }
+
+                    val client = remember { com.darkxvenom.airbeats.utils.GitHubApiClient() }
+                    var contributors by remember { mutableStateOf<List<com.darkxvenom.airbeats.utils.GitHubContributor>>(emptyList()) }
+                    var founderCommits by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+                    var isLoadingContributors by remember { mutableStateOf(true) }
+
+                    LaunchedEffect(Unit) {
+                        try {
+                            val fetched = client.getContributors("d0x-dev", "AirBeats")
+                            founderCommits = fetched.associate { it.login to it.contributions }
+                            contributors = fetched.filter { it.login != "d0x-dev" && it.login != "drkvenom786" }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            isLoadingContributors = false
+                        }
                     }
 
                     // Contributors Cards - SIDE-BY-SIDE VERTICAL CARDS
@@ -648,6 +676,7 @@ fun AboutScreen(
                             imageUrl = "https://avatars.githubusercontent.com/u/218248866",
                             name = "Darkboy",
                             role = "Lead Developer",
+                            commits = founderCommits["d0x-dev"],
                             githubUrl = "https://github.com/d0x-dev",
                             telegramUrl = "https://t.me/songpy",
                             instagramUrl = "https://instagram.com/dark__336",
@@ -660,6 +689,7 @@ fun AboutScreen(
                             imageUrl = "https://avatars.githubusercontent.com/u/241423835",
                             name = "Venom",
                             role = "UI/UX Specialist",
+                            commits = founderCommits["drkvenom786"],
                             githubUrl = "https://github.com/drkvenom786",
                             websiteUrl = "https://venomx.pro",
                             modifier = Modifier.weight(1f),
@@ -669,16 +699,6 @@ fun AboutScreen(
                     Spacer(Modifier.height(24.dp))
                     
                     // Dynamic Contributors Section
-                    val client = remember { com.darkxvenom.airbeats.utils.GitHubApiClient() }
-                    var contributors by remember { mutableStateOf<List<com.darkxvenom.airbeats.utils.GitHubContributor>>(emptyList()) }
-                    var isLoadingContributors by remember { mutableStateOf(true) }
-
-                    LaunchedEffect(Unit) {
-                        val fetched = client.getContributors("d0x-dev", "AirBeats")
-                        // Exclude the main ones already displayed
-                        contributors = fetched.filter { it.login != "d0x-dev" && it.login != "drkvenom786" }
-                        isLoadingContributors = false
-                    }
 
                     if (isLoadingContributors) {
                         CircularProgressIndicator(
@@ -707,7 +727,8 @@ fun AboutScreen(
                                     UserCard(
                                         imageUrl = contributor.avatar_url,
                                         name = contributor.login,
-                                        role = "${contributor.contributions} Commits",
+                                        role = "Contributor",
+                                        commits = contributor.contributions,
                                         githubUrl = contributor.html_url,
                                         modifier = Modifier.weight(1f),
                                         onClick = { navController.navigate("contributor/${contributor.login}") }
@@ -725,4 +746,10 @@ fun AboutScreen(
         }
     }
 }
+
+
+
+
+
+
 
