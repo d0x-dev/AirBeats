@@ -51,7 +51,6 @@ android {
     buildTypes {
         create("nightly") {
             initWith(getByName("release"))
-            applicationIdSuffix = ".nightly"
         }
         release {
             isMinifyEnabled = true
@@ -227,6 +226,7 @@ dependencies {
     implementation(libs.timber)
     testImplementation(libs.junit)
 }
+
 
 
 
