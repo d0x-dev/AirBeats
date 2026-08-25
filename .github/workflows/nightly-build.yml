@@ -52,14 +52,14 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          ./gradlew assembleRelease \
+          ./gradlew assembleNightly \
             -Pandroid.injected.signing.store.file="${GITHUB_WORKSPACE}/app/keystore.jks" \
             -Pandroid.injected.signing.store.password="${KEYSTORE_PASSWORD}" \
             -Pandroid.injected.signing.key.alias="${KEY_ALIAS}" \
             -Pandroid.injected.signing.key.password="${KEY_PASSWORD}"
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk AirBeats-Nightly.apk
+        run: mv app/build/outputs/apk/nightly/app-nightly.apk AirBeats-Nightly.apk
 
       - name: Update Nightly Release
         uses: softprops/action-gh-release@v2
@@ -69,3 +69,4 @@ jobs:
           body: "This is the latest automatic nightly build generated from the main branch."
           prerelease: true
           files: AirBeats-Nightly.apk
+

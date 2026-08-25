@@ -561,6 +561,22 @@ fun AboutScreen(
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         )
 
+                        if (BuildConfig.BUILD_TYPE == "nightly") {
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "NIGHTLY",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier
+                                    .border(
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        width = 1.dp,
+                                        shape = CircleShape
+                                    )
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+
                         if (BuildConfig.DEBUG) {
                             Spacer(Modifier.width(4.dp))
                             Text(
@@ -709,3 +725,4 @@ fun AboutScreen(
         }
     }
 }
+
