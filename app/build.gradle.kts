@@ -51,6 +51,9 @@ android {
     buildTypes {
         create("nightly") {
             initWith(getByName("release"))
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         release {
             isMinifyEnabled = true
@@ -226,6 +229,7 @@ dependencies {
     implementation(libs.timber)
     testImplementation(libs.junit)
 }
+
 
 
 
