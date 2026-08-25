@@ -89,11 +89,12 @@ jobs:
       - name: Update Nightly Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "nightly"
+          tag_name: "vnightly"
           name: "Airbeats-Nights v${{ env.NEW_VERSION_NAME }}"
           body: "This is the latest automatic nightly build generated from the main branch."
           prerelease: true
           files: Airbeats-v${{ env.NEW_VERSION_NAME }}-Nightly.apk
+
 
 
 
