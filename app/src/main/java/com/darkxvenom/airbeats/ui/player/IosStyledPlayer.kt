@@ -87,7 +87,7 @@ import com.darkxvenom.airbeats.ui.menu.PlayerMenu
 import com.darkxvenom.airbeats.utils.makeTimeString
 import com.skydoves.cloudy.cloudy
 
-private fun String?.highRes(): String = this?.replace("w54-h54", "w512-h512") ?: ""
+private fun String?.highRes(): String = this?.replace(Regex("w\\d+-h\\d+"), "w8192-h8192") ?: ""
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1061,3 +1061,6 @@ private fun AudioDeviceInfo.outputName(): String {
         else -> if (isBleHeadset(this)) "BLE headset" else "Device"
     }
 }
+
+
+

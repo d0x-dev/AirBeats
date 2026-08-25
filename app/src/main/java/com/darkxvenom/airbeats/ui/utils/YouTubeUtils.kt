@@ -10,7 +10,7 @@ fun String.resize(
 
     if (this.contains("googleusercontent.com") || this.contains("ggpht.com")) {
         if (this.contains(Regex("=w\\d+-h\\d+"))) {
-            return this.replace(Regex("=w\\d+-h\\d+.*"), "=w$w-h$h-p-l90-rj")
+            return this.replace(Regex("=w\\d+-h\\d+.*"), "=w$w-h$h-l90-rj")
         } else if (this.contains(Regex("=s\\d+"))) {
             return this.replace(Regex("=s\\d+.*"), "=s$w")
         }
@@ -26,4 +26,5 @@ fun String.resize(
 }
 
 fun String.highQualityThumbnail(): String =
-    resize(2160, 2160)
+    resize(8192, 8192)
+
