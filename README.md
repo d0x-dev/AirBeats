@@ -17,9 +17,28 @@
 [![Android](https://img.shields.io/badge/Platform-Android%206.0+-3DDC84.svg?style=for-the-badge&logo=android&logoColor=white&labelColor=161B22)](https://www.android.com)
 [![GitHub Stars](https://img.shields.io/github/stars/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/d0x-dev/airbeats?style=for-the-badge&logo=github&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/network)
-[![Crowdin](https://img.shields.io/badge/𝐓𝐑𝐀𝐍𝐒𝐋𝐀𝐓𝐄-2E3340?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/airbeats)
+[![Crowdin](https://img.shields.io/badge/🌍_Translations-Crowdin-2E3340?style=for-the-badge&logo=crowdin&logoColor=white)](https://crowdin.com/project/airbeats)
+
+<br>
+<a href="https://snapcraft.io/airbeats"><img alt="Get it from the Snap Store" src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" height="42"/></a>
+<a href="https://airbeats.en.uptodown.com/android"><img alt="Download on Uptodown" src="https://stc.uptodown.com/img/badges/uptodown-badge-en.png" height="42"/></a>
 
 </div>
+
+---
+
+## 💻 AirBeats Desktop
+
+AirBeats isn't just for Android! You can enjoy the exact same seamless YouTube Music integration on **Mac**, **Linux**, and **Windows**. 
+
+Head over to our official desktop repository to get the desktop client:
+👉 **[d0x-dev/airbeats-desktop](https://github.com/d0x-dev/airbeats-desktop)**
+
+### 🐧 Linux Users
+AirBeats Desktop is officially available on the Snap Store!
+```bash
+sudo snap install airbeats
+```
 
 ---
 
