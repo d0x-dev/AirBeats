@@ -193,6 +193,12 @@ fun NavGraphBuilder.navigationBuilder(
     composable("account") {
         AccountScreen(navController, scrollBehavior)
     }
+    composable("spotify_login") {
+        SpotifyLoginScreen(navController)
+    }
+    composable("spotify_account") {
+        com.darkxvenom.airbeats.ui.screens.settings.SpotifyAccountScreen(navController)
+    }
     composable("new_release") {
         NewReleaseScreen(navController, scrollBehavior)
     }

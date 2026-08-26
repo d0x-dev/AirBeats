@@ -49,6 +49,10 @@ import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.flow.first
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import androidx.datastore.preferences.core.edit
+import com.darkxvenom.airbeats.utils.dataStore
+import kotlinx.coroutines.flow.map
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountSettings(
@@ -562,6 +566,41 @@ fun AccountSettings(
                                 )
                             }
                         },
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Spotify Group
+                val hasSpotifyCookie by context.dataStore.data.map { it.contains(com.darkxvenom.airbeats.constants.SpotifyCookieKey) }.collectAsState(initial = false)
+                SettingsGeneralCategory(
+                    title = "Spotify",
+                    items = listOf(
+                        {
+                            PreferenceEntry(
+                                title = { Text(if (hasSpotifyCookie) "Connected" else "Login to Spotify") },
+                                description = if (hasSpotifyCookie) "Connected to Spotify account" else "Sign in to see your feed and playlists",
+                                icon = { Icon(painterResource(R.drawable.music_note), null) },
+                                trailingContent = {
+                                    if (hasSpotifyCookie) {
+                                        OutlinedButton(onClick = {
+                                            scope.launch {
+                                                context.dataStore.edit { it.remove(com.darkxvenom.airbeats.constants.SpotifyCookieKey) }
+                                            }
+                                        }) {
+                                            Text(stringResource(R.string.logout))
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    if (!hasSpotifyCookie) {
+                                        navController.navigate("spotify_login")
+                                    } else {
+                                        navController.navigate("spotify_account")
+                                    }
+                                }
+                            )
+                        }
                     )
                 )
 
