@@ -1510,6 +1510,8 @@ class MusicService :
         }
 
         val songUrlCache = HashMap<String, CachedSongUrl>()
+        val spotifyMatchCache = HashMap<String, String>()
+        
         return ResolvingDataSource.Factory(createCacheDataSource()) { dataSpec ->
             if (dataSpec.uri.scheme == "content" || dataSpec.uri.scheme == "file") {
                 return@Factory dataSpec
@@ -1562,12 +1564,42 @@ class MusicService :
                 }
             }
 
+            var actualMediaId = mediaId
+            if (mediaId.startsWith("sp:")) {
+                val matchedId = spotifyMatchCache[mediaId]
+                if (matchedId != null) {
+                    actualMediaId = matchedId
+                } else {
+                    val mediaMetadata = kotlinx.coroutines.runBlocking(Dispatchers.Main) {
+                        player.mediaItems.find { it.mediaId == mediaId }?.metadata
+                    }
+                    if (mediaMetadata != null) {
+                        val artistName = mediaMetadata.artists.firstOrNull()?.name ?: ""
+                        val query = "${mediaMetadata.title} $artistName"
+                        val searchResult = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                            YouTube.search(query, com.darkxvenom.airbeats.innertube.YouTube.SearchFilter.FILTER_SONG).getOrNull()
+                        }
+                        val songItem = searchResult?.items?.firstOrNull() as? com.darkxvenom.airbeats.innertube.models.SongItem
+                        if (songItem != null) {
+                            actualMediaId = songItem.id
+                            spotifyMatchCache[mediaId] = actualMediaId
+                        } else {
+                            throw androidx.media3.common.PlaybackException(
+                                "Spotify track match not found on YouTube",
+                                null,
+                                androidx.media3.common.PlaybackException.ERROR_CODE_REMOTE_ERROR
+                            )
+                        }
+                    }
+                }
+            }
+
             // Intentar YouTube primero (fuente principal)
             val ytLogTag = "YouTube"
             try {
-                val playbackData = runBlocking(Dispatchers.IO) {
+                val playbackData = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
                     YTPlayerUtils.playerResponseForPlayback(
-                        mediaId,
+                        actualMediaId,
                         audioQuality = audioQuality,
                         connectivityManager = connectivityManager,
                     )
