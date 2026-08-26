@@ -217,6 +217,7 @@ dependencies {
     implementation(projects.kugou)
     implementation(projects.lrclib)
     implementation(projects.kizzy)
+    implementation(projects.spotify)
     implementation(project(":jossredconnect"))
     implementation(project(":shazamkit"))
     implementation(project(":betterlyrics"))

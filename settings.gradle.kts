@@ -25,6 +25,5 @@ include(":material-color-utilities")
 include(":jossredconnect")
 include(":betterlyrics")
 include(":shazamkit")
-
-include(":shazamkit")
+include(":spotify")
 
