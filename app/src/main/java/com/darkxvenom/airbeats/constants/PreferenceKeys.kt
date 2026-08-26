@@ -370,6 +370,7 @@ val LastBackupTimestampKey = longPreferencesKey("last_backup_timestamp")
 val AccountNameKey = stringPreferencesKey("accountName")
 val AccountEmailKey = stringPreferencesKey("accountEmail")
 val AccountChannelHandleKey = stringPreferencesKey("accountChannelHandle")
+val SpotifyCookieKey = stringPreferencesKey("spotifyCookie")
 val UseLoginForBrowse = booleanPreferencesKey("useLoginForBrowse")
 
 val LanguageCodeToName =

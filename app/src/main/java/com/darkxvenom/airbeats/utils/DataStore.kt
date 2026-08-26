@@ -41,7 +41,7 @@ suspend fun <T> DataStore<Preferences>.getSuspend(key: Preferences.Key<T>): T? {
     @Suppress("UNCHECKED_CAST")
     if (dataStoreCache.containsKey(cacheKey)) return dataStoreCache[cacheKey] as? T
     val value = data.first()[key]
-    val finalValue = if (value is String && (cacheKey == "discordToken" || cacheKey == "innerTubeCookie" || cacheKey == "accountEmail")) {
+    val finalValue = if (value is String && (cacheKey == "discordToken" || cacheKey == "innerTubeCookie" || cacheKey == "accountEmail" || cacheKey == "spotifyCookie")) {
         CryptoManager.decrypt(value) as T
     } else {
         value
@@ -60,7 +60,7 @@ suspend fun DataStore<Preferences>.initializeCache() {
     val prefs = data.first()
     prefs.asMap().forEach { (key, value) ->
         val cacheKey = key.name
-        val decryptedValue = if (value is String && (cacheKey == "discordToken" || cacheKey == "innerTubeCookie" || cacheKey == "accountEmail")) {
+        val decryptedValue = if (value is String && (cacheKey == "discordToken" || cacheKey == "innerTubeCookie" || cacheKey == "accountEmail" || cacheKey == "spotifyCookie")) {
             CryptoManager.decrypt(value)
         } else {
             value
