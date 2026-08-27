@@ -684,10 +684,14 @@ fun AppearanceSettings(
                                     } else {
                                         onEnableDynamicIslandChange(newValue)
                                         val serviceIntent = Intent(context, com.darkxvenom.airbeats.playback.DynamicIslandService::class.java)
-                                        if (newValue) {
-                                            context.startService(serviceIntent)
-                                        } else {
-                                            context.stopService(serviceIntent)
+                                        try {
+                                            if (newValue) {
+                                                context.startService(serviceIntent)
+                                            } else {
+                                                context.stopService(serviceIntent)
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
                                         }
                                     }
                                 }
