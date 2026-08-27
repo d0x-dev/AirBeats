@@ -65,6 +65,10 @@ private fun <T> List<T>.sortedWithCollator(selector: (T) -> String): List<T> {
 @Dao
 interface DatabaseDao {
     @Transaction
+    @Query("SELECT * FROM song WHERE title LIKE '%' || :query || '%' OR albumName LIKE '%' || :query || '%' ORDER BY rowId DESC")
+    fun searchLocalSongs(query: String): Flow<List<Song>>
+
+    @Transaction
     @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL ORDER BY rowId")
     fun songsByRowIdAsc(): Flow<List<Song>>
 
