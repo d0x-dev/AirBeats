@@ -405,9 +405,9 @@ fun AccountSettings(
                                     Text(
                                         if (isLoggedIn) {
                                             getAccountDisplayName.takeIf { it.isNotBlank() }
-                                                ?: stringResource(R.string.login)
+                                                ?: "Login to YouTube"
                                         } else {
-                                            stringResource(R.string.login)
+                                            "Login to YouTube"
                                         }
                                     )
                                 },
@@ -430,7 +430,7 @@ fun AccountSettings(
                                 },
                                 onClick = {
                                     if (!isLoggedIn)
-                                        navController.navigate("login")
+                                        navController.navigate("youtube_login")
                                 }
                             )
                         },
@@ -499,7 +499,7 @@ fun AccountSettings(
                                     },
                                     onClick = {
                                         if (currentGoogleEmail.isBlank()) {
-                                            navController.navigate("login")
+                                            navController.navigate("youtube_login")
                                         }
                                     }
                                 )
@@ -729,3 +729,7 @@ fun AccountSettings(
         )
     }
 }
+
+
+
+

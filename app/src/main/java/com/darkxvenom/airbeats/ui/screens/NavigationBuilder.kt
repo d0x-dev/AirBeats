@@ -416,8 +416,11 @@ fun NavGraphBuilder.navigationBuilder(
         DiscordSettings(navController, scrollBehavior)
     }
     composable("settings/experimental") {
-        com.darkxvenom.airbeats.ui.screens.settings.DebugSettings(navController)
-    }
+            com.darkxvenom.airbeats.ui.screens.settings.DebugSettings(navController)
+        }
+        composable("settings/voice_assistant") {
+            com.darkxvenom.airbeats.ui.screens.settings.VoiceAssistantSettings(navController, scrollBehavior)
+        }
     composable("settings/discord/login") {
         DiscordLoginScreen(navController)
     }
@@ -425,8 +428,11 @@ fun NavGraphBuilder.navigationBuilder(
         AboutScreen(navController, scrollBehavior)
     }
     composable("login") {
-        LoginScreen(navController)
-    }
+            LoginScreen(navController)
+        }
+        composable("youtube_login") {
+            YouTubeLoginScreen(navController)
+        }
     composable("contributor/{username}") { backStackEntry ->
         val username = backStackEntry.arguments?.getString("username") ?: return@composable
         ContributorProfileScreen(navController, username)
@@ -441,6 +447,8 @@ fun NavGraphBuilder.navigationBuilder(
         AlwaysOnDisplayScreen(navController)
     }
 }
+
+
 
 
 
