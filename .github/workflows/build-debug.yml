@@ -38,7 +38,20 @@ jobs:
           STATS_BASE_URL: ${{ secrets.STATS_BASE_URL }}
           AUTH_API_BASE_URL: ${{ secrets.AUTH_API_BASE_URL }}
         run: |
-          echo "${GOOGLE_SERVICES_JSON}" | base64 --decode > app/google-services.json
+          if [ -z "${GOOGLE_SERVICES_JSON}" ]; then
+            cat <<EOF > app/google-services.json
+          {
+            "project_info": { "project_number": "1234567890", "project_id": "dummy-project" },
+            "client": [ 
+              { "client_info": { "mobilesdk_app_id": "1:1234567890:android:abcdef123456", "android_client_info": { "package_name": "com.darkxvenom.airbeats" } }, "api_key": [ { "current_key": "dummy-key" } ] },
+              { "client_info": { "mobilesdk_app_id": "1:1234567890:android:abcdef123456", "android_client_info": { "package_name": "com.darkxvenom.airbeats.debug" } }, "api_key": [ { "current_key": "dummy-key" } ] }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          else
+            echo "${GOOGLE_SERVICES_JSON}" | base64 --decode > app/google-services.json
+          fi
           
           echo "google.api.key=${GOOGLE_API_KEY}" >> local.properties
           echo "stats.api.key=${STATS_API_KEY}" >> local.properties
