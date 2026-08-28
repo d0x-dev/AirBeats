@@ -84,6 +84,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import com.darkxvenom.airbeats.ui.component.LocalBackdrop
+import com.darkxvenom.airbeats.ui.component.drawBackdropCustomShape
+import com.darkxvenom.airbeats.constants.LiquidGlassKey
+import com.darkxvenom.airbeats.utils.rememberPreference
+import androidx.compose.animation.core.Animatable
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
@@ -980,6 +986,10 @@ private fun ListenTogetherStatusCard(
 internal fun InAppEqualizerSheet(onDismiss: () -> Unit) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val equalizerState by playerConnection.service.equalizerState.collectAsState()
+    val (enableLiquidGlass) = rememberPreference(LiquidGlassKey, false)
+    val backdrop = LocalBackdrop.current
+    val layer = rememberGraphicsLayer()
+    val luminanceAnimation = remember { Animatable(0.3f) }
 
     LaunchedEffect(Unit) {
         playerConnection.service.ensureEqualizer()
@@ -988,7 +998,8 @@ internal fun InAppEqualizerSheet(onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = if (enableLiquidGlass && backdrop != null) Color.Transparent else MaterialTheme.colorScheme.surface,
+        modifier = Modifier.then(if (enableLiquidGlass && backdrop != null) { Modifier.drawBackdropCustomShape(backdrop = backdrop, layer = layer, luminanceAnimation = luminanceAnimation.value, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)) } else Modifier),
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -1310,3 +1321,4 @@ fun <T> ValueAdjuster(
         }
     }
 }
+
