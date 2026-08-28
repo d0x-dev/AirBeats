@@ -1345,7 +1345,7 @@ fun LibraryHeroFavoriteTile(
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = if (iconRes == R.drawable.spotify) Color.Unspecified else animatedColor,
+                    tint = if (iconRes == R.drawable.spotify || iconRes == R.drawable.youtube) Color.Unspecified else animatedColor,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -1455,7 +1455,7 @@ fun LibraryPinnedCollectionTile(
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = if (iconRes == R.drawable.spotify) Color.Unspecified else animatedColor,
+                    tint = if (iconRes == R.drawable.spotify || iconRes == R.drawable.youtube) Color.Unspecified else animatedColor,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -2491,3 +2491,4 @@ fun LocalAlbumsGrid(
     fillMaxWidth = fillMaxWidth,
     modifier = modifier,
 )
+
