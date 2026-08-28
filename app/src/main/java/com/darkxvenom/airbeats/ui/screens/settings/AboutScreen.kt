@@ -766,3 +766,21 @@ fun AboutScreen(
 
 
 
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun AboutScreenPreview() {
+    com.darkxvenom.airbeats.ui.theme.AirBeatsTheme {
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets provides androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+        ) {
+            val scrollBehavior = androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+            AboutScreen(
+                navController = androidx.navigation.compose.rememberNavController(),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    }
+}
+

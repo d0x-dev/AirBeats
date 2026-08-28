@@ -485,6 +485,12 @@ fun HomeScreen(
 
                 quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
                     item {
+                        NavigationTitle(
+                            title = stringResource(R.string.quick_picks),
+                            modifier = Modifier.animateItem()
+                        )
+                    }
+                    item {
                         val distinctPicks = remember(picks) { picks.distinctBy { it.id } }
                         HorizontalCenteredHeroCarousel(
                             state = rememberCarouselState { distinctPicks.size },
