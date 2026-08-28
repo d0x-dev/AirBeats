@@ -17,6 +17,7 @@ import com.darkxvenom.airbeats.db.entities.LocalItem
 import com.darkxvenom.airbeats.db.entities.Playlist
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.models.SimilarRecommendation
+import com.darkxvenom.airbeats.models.toMediaMetadata
 import com.darkxvenom.airbeats.utils.dataStore
 import com.darkxvenom.airbeats.utils.get
 import com.darkxvenom.airbeats.utils.reportException
@@ -83,9 +84,14 @@ class HomeViewModel @Inject constructor(
             .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
 
         val finalQuickPicks = if (rawQuickPicks.isEmpty()) {
-            database.mostPlayedSongs(0L, limit = 20, offset = 0)
-                .first()
-                .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
+            val recentSong = database.recentSongs(limit = 1).first().firstOrNull()
+            if (recentSong != null && !isJioSaavn) {
+                val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
+                if (endpoint != null) {
+                    val page = YouTube.related(endpoint).getOrNull()
+                    page?.songs?.map { it.toMediaMetadata().toSongEntity() as Song } ?: emptyList<Song>()
+                } else emptyList<Song>()
+            } else emptyList<Song>()
         } else {
             rawQuickPicks
         }
@@ -98,17 +104,17 @@ class HomeViewModel @Inject constructor(
             .shuffled().take(20)
 
         val fromTimeStamp = System.currentTimeMillis() - 86400000 * 7 * 2
-        val keepListeningSongs = database.mostPlayedSongs(fromTimeStamp, limit = 50, offset = 0)
+        val keepListeningSongs = database.recentSongs(limit = 50, offset = 0)
             .first()
             .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
             .shuffled().take(10)
             
-        val keepListeningAlbums = database.mostPlayedAlbums(fromTimeStamp, limit = 50, offset = 0)
+        val keepListeningAlbums = database.recentAlbums(limit = 50, offset = 0)
             .first().filter { it.album.thumbnailUrl != null }
             .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
             .shuffled().take(5)
             
-        val keepListeningArtists = database.mostPlayedArtists(fromTimeStamp, limit = 50, offset = 0)
+        val keepListeningArtists = database.recentArtists(limit = 50, offset = 0)
             .first().filter { it.artist.isYouTubeArtist && it.artist.thumbnailUrl != null }
             .filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }
             .shuffled().take(5)
@@ -132,7 +138,7 @@ class HomeViewModel @Inject constructor(
 
             // Similar to artists
             val artistRecommendations =
-                database.mostPlayedArtists(fromTimeStamp, limit = 10).first()
+                database.recentArtists(limit = 10).first()
                     .filter { it.artist.isYouTubeArtist }
                     .shuffled().take(3)
                     .mapNotNull {
@@ -150,7 +156,7 @@ class HomeViewModel @Inject constructor(
                     }
             // Similar to songs
             val songRecommendations =
-                database.mostPlayedSongs(fromTimeStamp, limit = 10).first()
+                database.recentSongs(limit = 10).first()
                     .filter { it.album != null }
                     .shuffled().take(2)
                     .mapNotNull { song ->

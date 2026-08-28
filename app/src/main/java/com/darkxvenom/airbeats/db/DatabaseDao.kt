@@ -1324,4 +1324,25 @@ interface DatabaseDao {
     fun checkpoint() {
         raw("PRAGMA wal_checkpoint(FULL)".toSQLiteQuery())
     }
+
+    @Transaction
+    @Query("SELECT song.* FROM event JOIN song ON song.id = event.songId GROUP BY song.id ORDER BY MAX(event.timestamp) DESC LIMIT :limit OFFSET :offset")
+    fun recentSongs(limit: Int, offset: Int = 0): Flow<List<Song>>
+
+    @Query("SELECT *, (SELECT COUNT(1) FROM song_artist_map JOIN song ON song_artist_map.songId = song.id WHERE song_artist_map.artistId = artist.id AND song.inLibrary IS NOT NULL) AS songCount FROM artist JOIN(SELECT artistId, MAX(songTimestamp) AS lastPlayTime FROM song_artist_map JOIN (SELECT songId, MAX(timestamp) AS songTimestamp FROM event GROUP BY songId) AS e ON song_artist_map.songId = e.songId GROUP BY artistId ORDER BY lastPlayTime DESC LIMIT :limit OFFSET :offset) ON artist.id = artistId")
+    fun recentArtists(limit: Int, offset: Int = 0): Flow<List<Artist>>
+
+    @Query(
+        """
+        SELECT album.*, 
+               (SELECT COUNT(1) FROM song_album_map JOIN song ON song_album_map.songId = song.id WHERE song_album_map.albumId = album.id AND song.inLibrary IS NOT NULL) AS songCount
+        FROM album
+        JOIN song_album_map ON album.id = song_album_map.albumId
+        JOIN event ON song_album_map.songId = event.songId
+        GROUP BY album.id
+        ORDER BY MAX(event.timestamp) DESC
+        LIMIT :limit OFFSET :offset
+        """
+    )
+    fun recentAlbums(limit: Int, offset: Int = 0): Flow<List<Album>>
 }
