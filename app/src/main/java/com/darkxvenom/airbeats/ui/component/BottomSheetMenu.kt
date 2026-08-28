@@ -23,6 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import com.darkxvenom.airbeats.constants.DisableBlurKey
+import com.darkxvenom.airbeats.utils.rememberPreference
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.remember
 
 val LocalMenuState = compositionLocalOf { MenuState() }
 
@@ -54,6 +59,10 @@ fun BottomSheetMenu(
     background: Color = MaterialTheme.colorScheme.surface,
 ) {
     val focusManager = LocalFocusManager.current
+    val (disableBlur) = rememberPreference(DisableBlurKey, false)
+    val backdrop = LocalBackdrop.current
+    val layer = rememberGraphicsLayer()
+    val luminanceAnimation = remember { Animatable(0.3f) }
 
     if (state.isVisible) {
         ModalBottomSheet(
@@ -61,7 +70,7 @@ fun BottomSheetMenu(
                 focusManager.clearFocus()
                 state.isVisible = false
             },
-            containerColor = background,
+            containerColor = if (!disableBlur && backdrop != null) Color.Transparent else background,
             contentColor = MaterialTheme.colorScheme.onSurface,
             dragHandle = {
                 Box(
@@ -72,7 +81,7 @@ fun BottomSheetMenu(
                         .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                 )
             },
-            modifier = modifier.fillMaxHeight()
+            modifier = modifier.fillMaxHeight().then(if (!disableBlur && backdrop != null) { Modifier.drawBackdropCustomShape(backdrop = backdrop, layer = layer, luminanceAnimation = luminanceAnimation.value, shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)) } else Modifier)
         ) {
             Column(
                 modifier = Modifier
@@ -84,3 +93,6 @@ fun BottomSheetMenu(
         }
     }
 }
+
+
+
