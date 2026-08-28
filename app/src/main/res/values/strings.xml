@@ -823,4 +823,29 @@
     <string name="aod_control_style_accent">Accent</string>
     <string name="aod_control_style_minimal_flat">Flat</string>
     <string name="AOD">AOD</string>
+    <string name="voice_permission_required">Permission required</string>
+    <string name="voice_assistant">Voice Assistant</string>
+    <string name="enable_voice_assistant">Enable Voice Assistant</string>
+    <string name="enable_voice_assistant_desc">Allows hands-free voice control</string>
+    <string name="voice_grant_mic_permission">Grant Microphone Permission</string>
+    <string name="voice_mic_permission_desc">Required to listen for voice commands</string>
+    <string name="voice_disable_battery_opt">Disable Battery Optimization</string>
+    <string name="voice_disable_battery_opt_desc">Ensures the voice assistant runs in background</string>
+    <string name="voice_direct_commands">Direct Commands</string>
+    <string name="voice_direct_commands_desc">Execute commands without wake word</string>
+    <string name="voice_tts_feedback">Spoken Feedback</string>
+    <string name="voice_tts_feedback_desc">Read out actions when performed</string>
+    <string name="voice_auto_start_boot">Start on Boot</string>
+    <string name="voice_auto_start_boot_desc">Automatically start voice service when device turns on</string>
+    <string name="voice_test_assistant">Test Voice Assistant</string>
+    <string name="voice_commands_guide">Voice Commands Guide</string>
+    <string name="voice_playing_feedback">Playing %s</string>
+    <string name="voice_playing_simple">Playing music</string>
+    <string name="voice_song_not_found">Song not found</string>
+    <string name="voice_notification_title">Voice Assistant Running</string>
+    <string name="voice_notification_text">Listening for commands...</string>
+    <string name="voice_notification_stop">Stop</string>
+    <string name="voice_notification_channel">Voice Assistant</string>
+    <string name="voice_assistant_desc">Control music with your voice</string>
 </resources>
+
