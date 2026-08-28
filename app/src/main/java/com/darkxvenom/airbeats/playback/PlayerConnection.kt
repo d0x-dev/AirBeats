@@ -413,8 +413,12 @@ class PlayerConnection(
     fun seekToPrevious() {
         try {
             Log.d(TAG, "Seeking to previous track")
-            if (player.hasPreviousMediaItem() || player.currentPosition > 3000) {
-                player.seekToPrevious()
+            if (player.hasPreviousMediaItem()) {
+                player.seekToPreviousMediaItem()
+                player.prepare()
+                player.playWhenReady = true
+            } else {
+                player.seekTo(0)
                 player.prepare()
                 player.playWhenReady = true
             }
