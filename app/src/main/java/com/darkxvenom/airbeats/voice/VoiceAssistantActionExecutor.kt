@@ -16,6 +16,7 @@ import com.darkxvenom.airbeats.constants.MusicProviderKey
 import com.darkxvenom.airbeats.constants.SongSortType
 import com.darkxvenom.airbeats.constants.VoiceAssistantTtsFeedbackKey
 import com.darkxvenom.airbeats.db.entities.Song
+import com.darkxvenom.airbeats.db.entities.SongEntity
 import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.SongItem
@@ -192,9 +193,31 @@ class VoiceAssistantActionExecutor(
             }
             is VoiceCommand.ToggleLike -> {
                 scope.launch(Dispatchers.Main) {
-                    showToast("Added to favorites", R.drawable.favorite)
                     val service = ensureMusicService()
-                    service?.toggleLike()
+                    val metadata = service?.currentMediaMetadata?.value ?: PlayerConnection.instance?.currentMediaMetadata?.value
+                    if (metadata != null && metadata.id.isNotBlank()) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                val database = App.instance.database
+                                val dbSong = database.song(metadata.id).firstOrNull()
+                                if (dbSong != null) {
+                                    database.update(dbSong.song.toggleLike())
+                                    if (dbSong.song.inLibrary == null) {
+                                        database.update(dbSong.song.toggleLibrary())
+                                    }
+                                } else {
+                                    database.insert(metadata, SongEntity::toggleLike)
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error adding song to liked library")
+                            }
+                        }
+                        showToast("Added to favorites", R.drawable.favorite)
+                        speak("Added ${metadata.title} to favorites")
+                    } else {
+                        showToast("No song currently playing", R.drawable.favorite_border)
+                        speak("No song is currently playing")
+                    }
                 }
             }
             is VoiceCommand.StartRadio -> {
