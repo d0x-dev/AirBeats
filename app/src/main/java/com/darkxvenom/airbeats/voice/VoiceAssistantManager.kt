@@ -57,7 +57,7 @@ class VoiceAssistantManager(
         isRunning = true
 
         mainHandler.post {
-            muteSystemSound()
+            enterCommunicationMode()
             ensureRecognizer()
             startRecognitionInternal()
         }
@@ -75,7 +75,7 @@ class VoiceAssistantManager(
             }
             _isListening.value = false
             isCurrentlyRecognizing = false
-            restoreSystemSound()
+            exitCommunicationMode()
         }
     }
 
@@ -108,17 +108,10 @@ class VoiceAssistantManager(
         }
     }
 
-    private fun muteSystemSound() {
-        if (isSystemMuted) return
+    private fun enterCommunicationMode() {
         try {
             audioManager?.let { am ->
-                if (originalSystemVolume == -1) {
-                    originalSystemVolume = am.getStreamVolume(AudioManager.STREAM_SYSTEM)
-                }
-                if (originalNotificationVolume == -1) {
-                    originalNotificationVolume = am.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
-                }
-
+                am.mode = AudioManager.MODE_IN_COMMUNICATION
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
                     try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
@@ -132,13 +125,15 @@ class VoiceAssistantManager(
                 try { am.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (_: Exception) {}
                 isSystemMuted = true
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Timber.e(e, "Error entering communication mode")
+        }
     }
 
-    private fun restoreSystemSound() {
-        if (!isSystemMuted) return
+    private fun exitCommunicationMode() {
         try {
             audioManager?.let { am ->
+                am.mode = AudioManager.MODE_NORMAL
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
                     try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
@@ -157,7 +152,9 @@ class VoiceAssistantManager(
                 }
                 isSystemMuted = false
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Timber.e(e, "Error exiting communication mode")
+        }
     }
 
     private fun startRecognitionInternal() {
@@ -184,26 +181,13 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.SUPPRESS_SOUND", true)
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
-                putExtra("android.speech.extra.AUDIO_SOURCE", 6)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 25000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                putExtra("android.speech.extra.AUDIO_SOURCE", 7) // VOICE_COMMUNICATION with hardware AEC
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 30000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 6000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 6000L)
             }
 
-            muteSystemSound()
-
-            // If music is not currently playing, temporarily mute STREAM_MUSIC during recognition start to silence ding
-            try {
-                val isPlaying = com.darkxvenom.airbeats.playback.MusicService.instance?.player?.isPlaying == true
-                if (!isPlaying) {
-                    audioManager?.let { am ->
-                        am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
-                        mainHandler.postDelayed({
-                            try { am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                        }, 350)
-                    }
-                }
-            } catch (_: Exception) {}
+            enterCommunicationMode()
 
             if (isCurrentlyRecognizing) {
                 try { recognizer.cancel() } catch (_: Exception) {}
@@ -305,7 +289,7 @@ class VoiceAssistantManager(
     fun destroy() {
         stop()
         mainHandler.post {
-            restoreSystemSound()
+            exitCommunicationMode()
             try {
                 speechRecognizer?.destroy()
             } catch (e: Exception) {
