@@ -34,6 +34,7 @@ class VoiceAssistantManager(
     private var audioRecord: AudioRecord? = null
     private var isAudioRecordRunning = false
     private var audioRecordThread: Thread? = null
+    private var lastTriggerTimestamp = 0L
 
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -152,19 +153,27 @@ class VoiceAssistantManager(
                                 silenceFrames++
                                 utteranceEnergies.add(db.toFloat())
 
-                                // End of speech detected (approx 600ms silence after speech)
-                                if (silenceFrames >= 10) {
+                                // End of speech detected (approx 700ms silence after speech)
+                                if (silenceFrames >= 12) {
                                     isCollectingSpeech = false
                                     speechFrames = 0
                                     silenceFrames = 0
 
-                                    // Process voice utterance
                                     val totalDurationFrames = utteranceEnergies.size
-                                    if (totalDurationFrames in 6..180) {
+                                    val now = System.currentTimeMillis()
+                                    if (totalDurationFrames in 8..200 && (now - lastTriggerTimestamp > 4500L)) {
+                                        lastTriggerTimestamp = now
+                                        val isPlaying = com.darkxvenom.airbeats.playback.MusicService.instance?.player?.isPlaying == true
+
                                         mainHandler.post {
-                                            _lastRecognizedText.value = "AirBeats Command"
+                                            _lastRecognizedText.value = "Voice Command"
                                             onWakeWordHeard?.invoke("AirBeats")
-                                            onCommandRecognized(VoiceCommand.PlayGenericMusic, "play music")
+
+                                            if (isPlaying && totalDurationFrames < 25) {
+                                                onCommandRecognized(VoiceCommand.Pause, "pause")
+                                            } else {
+                                                onCommandRecognized(VoiceCommand.PlayGenericMusic, "play songs")
+                                            }
                                         }
                                     }
                                     utteranceEnergies.clear()

@@ -122,7 +122,7 @@ class VoiceAssistantActionExecutor(
 
         when (command) {
             is VoiceCommand.PlayGenericMusic -> {
-                showToast("Loading music...", R.drawable.music_note)
+                showToast("Playing songs", R.drawable.music_note)
                 handlePlayGenericMusic()
             }
             is VoiceCommand.PlayCachedSongs -> {
@@ -297,9 +297,9 @@ class VoiceAssistantActionExecutor(
                                 it.service.player.play()
                             }
                         }
-                        showToast("Playing recommended songs based on your taste")
+                        showToast("Playing songs")
                     }
-                    speak("Playing recommended songs based on your taste")
+                    speak("Playing songs")
                     return@launch
                 }
 
@@ -336,9 +336,9 @@ class VoiceAssistantActionExecutor(
                                 it.service.player.play()
                             }
                         }
-                        showToast("Playing recommended songs")
+                        showToast("Playing songs")
                     }
-                    speak("Playing recommended songs")
+                    speak("Playing songs")
                 } else {
                     handlePlayCachedSongs()
                 }
