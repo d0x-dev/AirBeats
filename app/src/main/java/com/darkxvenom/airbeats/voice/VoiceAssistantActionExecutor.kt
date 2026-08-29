@@ -238,19 +238,13 @@ class VoiceAssistantActionExecutor(
     private suspend fun getAllLocalCachedSongs(): List<Song> = withContext(Dispatchers.IO) {
         try {
             val database = App.instance.database
-            // 1. Try allSongs() which contains every cached & played song stored in the app
-            val all = database.allSongs().firstOrNull()
-            if (!all.isNullOrEmpty()) return@withContext all
+            val librarySongs = try { database.getAllLibrarySongsSync() } catch (_: Exception) { emptyList() }
+            val downloaded = try { database.downloadedSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val library = try { database.songs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val liked = try { database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val all = try { database.allSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
 
-            // 2. Try songs in library
-            val library = database.songs(SongSortType.CREATE_DATE, true).firstOrNull()
-            if (!library.isNullOrEmpty()) return@withContext library
-
-            // 3. Try liked songs
-            val liked = database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull()
-            if (!liked.isNullOrEmpty()) return@withContext liked
-
-            emptyList()
+            (librarySongs + downloaded + library + liked + all).distinctBy { it.id }.filter { it.id.isNotBlank() }
         } catch (e: Exception) {
             Timber.e(e, "Error querying local cached songs")
             emptyList()
@@ -282,20 +276,25 @@ class VoiceAssistantActionExecutor(
                 }
 
                 if (userTasteSeeds.isNotEmpty()) {
-                    // Pick a seed song from user favorites to generate personalized endless radio tailored to their taste
-                    val seedSong = userTasteSeeds.take(20).shuffled().first()
+                    // Pick a random seed song from user favorites to generate personalized endless radio tailored to their taste
+                    val rng = java.util.Random(System.nanoTime())
+                    val seedSong = userTasteSeeds.shuffled(rng).first()
                     val queue = YouTubeQueue.radio(seedSong.toMediaMetadata())
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
@@ -316,20 +315,25 @@ class VoiceAssistantActionExecutor(
                     ?.filterExplicit(hideExplicit)
 
                 if (!songs.isNullOrEmpty()) {
-                    val shuffled = songs.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffled = songs.shuffled(rng)
                     val first = shuffled.first()
                     val queue = YouTubeQueue.radio(first.toMediaMetadata())
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
@@ -352,23 +356,34 @@ class VoiceAssistantActionExecutor(
                 val songs = getAllLocalCachedSongs()
 
                 if (songs.isNotEmpty()) {
-                    val shuffledSongs = songs.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffledSongs = songs.shuffled(rng)
                     val mediaItems = shuffledSongs.map { it.toMediaItem() }
+                    val randomStartIndex = if (mediaItems.size > 1) rng.nextInt(mediaItems.size) else 0
+
                     val queue = ListQueue(
                         title = "Library Songs",
-                        items = mediaItems
+                        items = mediaItems,
+                        startIndex = randomStartIndex,
+                        position = 0L
                     )
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.seekTo(randomStartIndex, 0L)
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.seekTo(randomStartIndex, 0L)
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
@@ -401,23 +416,34 @@ class VoiceAssistantActionExecutor(
                 }
 
                 if (!liked.isNullOrEmpty()) {
-                    val shuffledLiked = liked.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffledLiked = liked.shuffled(rng)
                     val mediaItems = shuffledLiked.map { it.toMediaItem() }
+                    val randomStartIndex = if (mediaItems.size > 1) rng.nextInt(mediaItems.size) else 0
+
                     val queue = ListQueue(
                         title = "Liked Songs",
-                        items = mediaItems
+                        items = mediaItems,
+                        startIndex = randomStartIndex,
+                        position = 0L
                     )
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.seekTo(randomStartIndex, 0L)
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.seekTo(randomStartIndex, 0L)
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
