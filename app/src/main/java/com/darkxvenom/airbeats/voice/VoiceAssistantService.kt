@@ -114,6 +114,7 @@ class VoiceAssistantService : Service() {
             onCommandRecognized = { command, text ->
                 Timber.i("VoiceAssistantService received command: %s (from text: '%s')", command, text)
                 overlayManager?.updateSpokenText(text)
+                updateNotificationText("Executing: \"$text\"")
                 actionExecutor.execute(command)
             }
         )
@@ -164,7 +165,7 @@ class VoiceAssistantService : Service() {
         }
     }
 
-    private fun buildForegroundNotification(): Notification {
+    private fun buildForegroundNotification(statusText: String? = null): Notification {
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
@@ -183,10 +184,12 @@ class VoiceAssistantService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val text = statusText ?: getString(R.string.voice_notification_text)
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.airbeats_monochrome)
             .setContentTitle(getString(R.string.voice_notification_title))
-            .setContentText(getString(R.string.voice_notification_text))
+            .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -197,6 +200,21 @@ class VoiceAssistantService : Service() {
                 stopIntent
             )
             .build()
+    }
+
+    fun updateNotificationText(statusText: String) {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, buildForegroundNotification(statusText))
+
+            // Revert back to default status after 4 seconds
+            serviceScope.launch {
+                delay(4000)
+                notificationManager.notify(NOTIFICATION_ID, buildForegroundNotification(null))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error updating notification text")
+        }
     }
 
     private fun createNotificationChannel() {
