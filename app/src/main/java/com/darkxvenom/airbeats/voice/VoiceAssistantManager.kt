@@ -1,39 +1,35 @@
 package com.darkxvenom.airbeats.voice
 
-import android.annotation.SuppressLint
 import android.content.Context
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import kotlin.math.abs
-import kotlin.math.log10
-import kotlin.math.sqrt
 
 /**
- * Pure AudioRecord-based Voice Assistant Engine.
- * 100% offline, zero Google SpeechRecognizer dependencies, zero beeps, zero audio ducking.
+ * High-accuracy On-Device Voice Assistant Manager.
+ * Transcribes spoken voice into exact commands without continuous background beep loops.
  */
 class VoiceAssistantManager(
     private val context: Context,
     private val onWakeWordHeard: ((String) -> Unit)? = null,
     private val onCommandRecognized: (VoiceCommand, String) -> Unit
-) {
+) : RecognitionListener {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    private var speechRecognizer: SpeechRecognizer? = null
     private var isRunning = false
     private var requireWakeWord = true
-
-    // Native AudioRecord Streaming Engine
-    private var audioRecord: AudioRecord? = null
-    private var isAudioRecordRunning = false
-    private var audioRecordThread: Thread? = null
+    private var isListeningSessionActive = false
     private var lastTriggerTimestamp = 0L
 
     private val _isListening = MutableStateFlow(false)
@@ -45,25 +41,31 @@ class VoiceAssistantManager(
     private val _audioRms = MutableStateFlow(0f)
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
-    companion object {
-        private const val SAMPLE_RATE = 16000
-        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-    }
-
     fun start(requireWakeWord: Boolean = true) {
         this.requireWakeWord = requireWakeWord
         if (isRunning) return
         isRunning = true
         _isListening.value = true
 
-        startContinuousAudioRecord()
+        mainHandler.post {
+            ensureRecognizer()
+            startListeningInternal()
+        }
     }
 
     fun stop() {
         isRunning = false
         _isListening.value = false
-        stopContinuousAudioRecord()
+        isListeningSessionActive = false
+
+        mainHandler.post {
+            try {
+                speechRecognizer?.stopListening()
+                speechRecognizer?.cancel()
+            } catch (e: Exception) {
+                Timber.e(e, "Error stopping SpeechRecognizer")
+            }
+        }
     }
 
     fun updateSettings(requireWakeWord: Boolean) {
@@ -71,145 +73,189 @@ class VoiceAssistantManager(
     }
 
     fun triggerListeningSession() {
-        if (!isRunning) {
-            start(requireWakeWord = false)
-        }
         mainHandler.post {
-            onWakeWordHeard?.invoke("Listening...")
+            try {
+                speechRecognizer?.cancel()
+            } catch (_: Exception) {}
+            isListeningSessionActive = false
+            startListeningInternal()
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private fun startContinuousAudioRecord() {
-        if (isAudioRecordRunning) return
-        isAudioRecordRunning = true
-
-        audioRecordThread = Thread({
-            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
-            val minBufSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-            val bufferSize = (minBufSize * 2).coerceAtLeast(4096)
-
+    private fun ensureRecognizer() {
+        if (speechRecognizer == null) {
             try {
-                val record = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                    SAMPLE_RATE,
-                    CHANNEL_CONFIG,
-                    AUDIO_FORMAT,
-                    bufferSize
-                )
-
-                if (record.state != AudioRecord.STATE_INITIALIZED) {
-                    Timber.e("AudioRecord failed to initialize")
-                    record.release()
-                    return@Thread
+                speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } else if (SpeechRecognizer.isRecognitionAvailable(context)) {
+                    SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } else {
+                    null
                 }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to create on-device SpeechRecognizer, falling back to default")
+                try {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
 
-                audioRecord = record
-                record.startRecording()
-                Timber.i("Continuous silent AudioRecord started (Pure native audio, ZERO beeps, NO volume ducking)")
+    private fun startListeningInternal() {
+        if (!isRunning) return
+        ensureRecognizer()
 
-                val buffer = ShortArray(1024)
-                var ambientNoiseFloor = 0.0
-                var speechFrames = 0
-                var silenceFrames = 0
-                var isCollectingSpeech = false
-                val utteranceEnergies = mutableListOf<Float>()
+        val recognizer = speechRecognizer ?: run {
+            Timber.w("SpeechRecognizer unavailable")
+            return
+        }
 
-                while (isRunning && isAudioRecordRunning) {
-                    val read = record.read(buffer, 0, buffer.size)
-                    if (read > 0) {
-                        var sum = 0.0
-                        var maxVal = 0
-                        for (i in 0 until read) {
-                            val v = buffer[i].toInt()
-                            sum += v * v
-                            val absV = abs(v)
-                            if (absV > maxVal) maxVal = absV
-                        }
-                        val rms = sqrt(sum / read)
-                        val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
-                        _audioRms.value = db.toFloat()
+        if (isListeningSessionActive) return
 
-                        if (ambientNoiseFloor == 0.0) {
-                            ambientNoiseFloor = db
-                        } else {
-                            ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
-                        }
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+                putExtra("android.speech.extra.DICTATION_MODE", true)
+                putExtra("android.speech.extra.GET_AUDIO_FOCUS", false)
+                putExtra("android.speech.extra.AUDIO_FOCUS", false)
+                putExtra("android.speech.extra.SUPPRESS_SOUND", true)
+                putExtra("android.speech.extra.BEEP", false)
+                putExtra("android.speech.extra.SILENT_RECORDING", true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 40000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+            }
 
-                        val speechThreshold = (ambientNoiseFloor + 12.0).coerceIn(35.0, 68.0)
+            recognizer.startListening(intent)
+            isListeningSessionActive = true
+            _isListening.value = true
+        } catch (e: Exception) {
+            Timber.e(e, "Error starting speech recognition")
+            isListeningSessionActive = false
+        }
+    }
 
-                        if (db >= speechThreshold) {
-                            speechFrames++
-                            silenceFrames = 0
-                            if (speechFrames >= 2 && !isCollectingSpeech) {
-                                isCollectingSpeech = true
-                                utteranceEnergies.clear()
-                            }
-                            if (isCollectingSpeech) {
-                                utteranceEnergies.add(db.toFloat())
-                            }
-                        } else {
-                            if (isCollectingSpeech) {
-                                silenceFrames++
-                                utteranceEnergies.add(db.toFloat())
+    override fun onReadyForSpeech(params: Bundle?) {
+        isListeningSessionActive = true
+        _isListening.value = true
+    }
 
-                                // End of speech detected (approx 700ms silence after speech)
-                                if (silenceFrames >= 12) {
-                                    isCollectingSpeech = false
-                                    speechFrames = 0
-                                    silenceFrames = 0
+    override fun onBeginningOfSpeech() {
+        isListeningSessionActive = true
+    }
 
-                                    val totalDurationFrames = utteranceEnergies.size
-                                    val now = System.currentTimeMillis()
-                                    if (totalDurationFrames in 8..200 && (now - lastTriggerTimestamp > 4500L)) {
-                                        lastTriggerTimestamp = now
-                                        val isPlaying = com.darkxvenom.airbeats.playback.MusicService.instance?.player?.isPlaying == true
+    override fun onRmsChanged(rmsdB: Float) {
+        _audioRms.value = rmsdB
+    }
 
-                                        mainHandler.post {
-                                            _lastRecognizedText.value = "Voice Command"
-                                            onWakeWordHeard?.invoke("AirBeats")
+    override fun onBufferReceived(buffer: ByteArray?) {}
 
-                                            if (isPlaying && totalDurationFrames < 25) {
-                                                onCommandRecognized(VoiceCommand.Pause, "pause")
-                                            } else {
-                                                onCommandRecognized(VoiceCommand.PlayGenericMusic, "play songs")
-                                            }
-                                        }
-                                    }
-                                    utteranceEnergies.clear()
-                                }
-                            } else {
-                                speechFrames = 0
-                            }
-                        }
+    override fun onEndOfSpeech() {
+        isListeningSessionActive = false
+    }
+
+    override fun onError(error: Int) {
+        isListeningSessionActive = false
+        Timber.d("SpeechRecognizer onError: %d", error)
+
+        if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || error == SpeechRecognizer.ERROR_NO_MATCH) {
+            if (isRunning) {
+                mainHandler.postDelayed({ startListeningInternal() }, 1500L)
+            }
+            return
+        }
+
+        if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT) {
+            try {
+                speechRecognizer?.destroy()
+            } catch (_: Exception) {}
+            speechRecognizer = null
+        }
+
+        if (isRunning) {
+            mainHandler.postDelayed({ startListeningInternal() }, 2000L)
+        }
+    }
+
+    override fun onResults(results: Bundle?) {
+        isListeningSessionActive = false
+
+        val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        if (!matches.isNullOrEmpty()) {
+            val topText = matches.first().trim()
+            _lastRecognizedText.value = topText
+            Timber.i("Spoken command candidate: %s", topText)
+
+            val now = System.currentTimeMillis()
+            if (now - lastTriggerTimestamp > 3000L) {
+                lastTriggerTimestamp = now
+
+                var matchedCommand: VoiceCommand? = null
+                var matchedText = topText
+
+                for (candidate in matches) {
+                    val parsed = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = requireWakeWord)
+                    if (parsed !is VoiceCommand.Unknown) {
+                        matchedCommand = parsed
+                        matchedText = candidate.trim()
+                        break
                     }
                 }
 
-                try {
-                    record.stop()
-                    record.release()
-                } catch (_: Exception) {}
-                audioRecord = null
-            } catch (e: Exception) {
-                Timber.e(e, "Error in AudioRecord continuous loop")
+                // If not matched directly with wake word, check if direct command or specific song name
+                if (matchedCommand == null || matchedCommand is VoiceCommand.Unknown) {
+                    val directParsed = VoiceCommandParser.parse(topText, requireWakeWord = false)
+                    if (directParsed !is VoiceCommand.Unknown) {
+                        matchedCommand = directParsed
+                    } else if (topText.isNotBlank()) {
+                        // User spoke a specific song title like "Starboy" or "Blinding Lights"
+                        matchedCommand = VoiceCommand.PlaySong(topText)
+                    }
+                }
+
+                matchedCommand?.let { cmd ->
+                    onWakeWordHeard?.invoke(matchedText)
+                    onCommandRecognized(cmd, matchedText)
+                }
             }
-        }, "AirBeats-Silent-AudioRecord-Thread").apply {
-            start()
+        }
+
+        if (isRunning) {
+            mainHandler.postDelayed({ startListeningInternal() }, 1000L)
         }
     }
 
-    private fun stopContinuousAudioRecord() {
-        isAudioRecordRunning = false
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (_: Exception) {}
-        audioRecord = null
-        audioRecordThread?.interrupt()
-        audioRecordThread = null
+    override fun onPartialResults(partialResults: Bundle?) {
+        val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+        val partialText = matches?.firstOrNull()?.trim()
+        if (!partialText.isNullOrBlank()) {
+            _lastRecognizedText.value = partialText
+            if (VoiceCommandParser.containsWakeWord(partialText)) {
+                onWakeWordHeard?.invoke(partialText)
+            }
+        }
     }
+
+    override fun onEvent(eventType: Int, params: Bundle?) {}
 
     fun destroy() {
         stop()
+        mainHandler.post {
+            try {
+                speechRecognizer?.destroy()
+            } catch (e: Exception) {
+                Timber.e(e, "Error destroying SpeechRecognizer")
+            }
+            speechRecognizer = null
+        }
     }
 }
