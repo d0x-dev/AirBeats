@@ -500,6 +500,14 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(useDarkTheme) {
                 setSystemBarAppearance(useDarkTheme)
             }
+            val (isVoiceAssistantEnabled) = rememberPreference(com.darkxvenom.airbeats.constants.EnableVoiceAssistantKey, defaultValue = false)
+            LaunchedEffect(isVoiceAssistantEnabled) {
+                if (isVoiceAssistantEnabled) {
+                    com.darkxvenom.airbeats.voice.VoiceAssistantService.start(this@MainActivity)
+                } else {
+                    com.darkxvenom.airbeats.voice.VoiceAssistantService.stop(this@MainActivity)
+                }
+            }
             var themeColor by rememberSaveable(stateSaver = ColorSaver) {
                 mutableStateOf(DefaultThemeColor)
             }
