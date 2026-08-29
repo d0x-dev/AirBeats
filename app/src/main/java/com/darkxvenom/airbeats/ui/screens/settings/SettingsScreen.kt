@@ -963,16 +963,6 @@ fun SettingsScreen(
                                 onClick = { navController.navigate("settings/appearance") }
                             ),
                             SettingsCategoryItem(
-                                icon = painterResource(R.drawable.mic),
-                                title = {
-                                    Text(
-                                        "Voice Assistant",
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/voice_assistant") }
-                            ),
-                            SettingsCategoryItem(
                                 icon = painterResource(R.drawable.schedule),
                                 title = {
                                     Text(
@@ -1011,6 +1001,16 @@ fun SettingsScreen(
                                     )
                                 },
                                 onClick = { navController.navigate("settings/player") }
+                            ),
+                            SettingsCategoryItem(
+                                icon = painterResource(R.drawable.mic),
+                                title = {
+                                    Text(
+                                        "Voice Assistant",
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = { navController.navigate("settings/voice_assistant") }
                             ),
                             SettingsCategoryItem(
                                 icon = painterResource(R.drawable.group),

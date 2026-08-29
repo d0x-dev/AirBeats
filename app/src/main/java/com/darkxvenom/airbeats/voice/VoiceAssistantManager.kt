@@ -93,18 +93,38 @@ class VoiceAssistantManager(
 
     private fun muteSystemSound() {
         try {
-            audioManager?.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
-            audioManager?.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0)
-            isSystemMuted = true
+            audioManager?.let { am ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_MUTE, 0)
+                } else {
+                    am.setStreamMute(AudioManager.STREAM_SYSTEM, true)
+                    am.setStreamMute(AudioManager.STREAM_NOTIFICATION, true)
+                    am.setStreamMute(AudioManager.STREAM_RING, true)
+                }
+                isSystemMuted = true
+            }
         } catch (_: Exception) {}
     }
 
     private fun restoreSystemSound() {
         if (!isSystemMuted) return
         try {
-            audioManager?.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
-            audioManager?.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0)
-            isSystemMuted = false
+            audioManager?.let { am ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0)
+                    am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0)
+                } else {
+                    am.setStreamMute(AudioManager.STREAM_SYSTEM, false)
+                    am.setStreamMute(AudioManager.STREAM_NOTIFICATION, false)
+                    am.setStreamMute(AudioManager.STREAM_RING, false)
+                }
+                isSystemMuted = false
+            }
         } catch (_: Exception) {}
     }
 
@@ -133,12 +153,17 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
                 putExtra("android.speech.extra.AUDIO_SOURCE", 6) // VOICE_RECOGNITION with echo cancellation
+                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 2500L)
+                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
+                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
             }
 
-            // Mute system sound temporarily to prevent Google SpeechRecognizer start ding/beep
+            // Mute system sounds temporarily to silence Google SpeechRecognizer start ding/beep
             muteSystemSound()
 
-            recognizer.cancel()
+            if (isCurrentlyRecognizing) {
+                try { recognizer.cancel() } catch (_: Exception) {}
+            }
             recognizer.startListening(intent)
             _isListening.value = true
             isCurrentlyRecognizing = true
@@ -146,7 +171,7 @@ class VoiceAssistantManager(
             // Unmute system sound shortly after start listening initializes
             mainHandler.postDelayed({
                 restoreSystemSound()
-            }, 350)
+            }, 450)
         } catch (e: Exception) {
             Timber.e(e, "Error in startRecognitionInternal")
             restoreSystemSound()
