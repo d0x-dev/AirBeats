@@ -41,8 +41,8 @@ class VoiceAssistantManager(
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     companion object {
-        private const val RESTART_DELAY_MS = 500L
-        private const val ERROR_RETRY_DELAY_MS = 1000L
+        private const val RESTART_DELAY_MS = 2000L
+        private const val ERROR_RETRY_DELAY_MS = 2500L
     }
 
     private val restartRunnable = Runnable {
@@ -185,12 +185,25 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
                 putExtra("android.speech.extra.AUDIO_SOURCE", 6)
-                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 10000L)
-                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
-                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 25000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
             }
 
             muteSystemSound()
+
+            // If music is not currently playing, temporarily mute STREAM_MUSIC during recognition start to silence ding
+            try {
+                val isPlaying = com.darkxvenom.airbeats.playback.MusicService.instance?.player?.isPlaying == true
+                if (!isPlaying) {
+                    audioManager?.let { am ->
+                        am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
+                        mainHandler.postDelayed({
+                            try { am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
+                        }, 350)
+                    }
+                }
+            } catch (_: Exception) {}
 
             if (isCurrentlyRecognizing) {
                 try { recognizer.cancel() } catch (_: Exception) {}
