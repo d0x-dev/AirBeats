@@ -189,6 +189,16 @@ class VoiceAssistantManager(
 
             enterCommunicationMode()
 
+            // Mute STREAM_MUSIC during the 350ms start window so Google's start ding is 100% silent
+            try {
+                audioManager?.let { am ->
+                    am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
+                    mainHandler.postDelayed({
+                        try { am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
+                    }, 350)
+                }
+            } catch (_: Exception) {}
+
             if (isCurrentlyRecognizing) {
                 try { recognizer.cancel() } catch (_: Exception) {}
             }
