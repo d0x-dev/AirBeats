@@ -2,7 +2,6 @@ package com.darkxvenom.airbeats.voice
 
 import android.content.Context
 import android.content.Intent
-import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -22,14 +21,10 @@ class VoiceAssistantManager(
 ) : RecognitionListener {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
     private var speechRecognizer: SpeechRecognizer? = null
     private var isRunning = false
     private var requireWakeWord = true
     private var isCurrentlyRecognizing = false
-    private var isSystemMuted = false
-    private var originalSystemVolume = -1
-    private var originalNotificationVolume = -1
 
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -41,7 +36,6 @@ class VoiceAssistantManager(
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     companion object {
-        private const val RESTART_DELAY_MS = 2000L
         private const val ERROR_RETRY_DELAY_MS = 2500L
     }
 
@@ -57,7 +51,6 @@ class VoiceAssistantManager(
         isRunning = true
 
         mainHandler.post {
-            enterCommunicationMode()
             ensureRecognizer()
             startRecognitionInternal()
         }
@@ -75,12 +68,25 @@ class VoiceAssistantManager(
             }
             _isListening.value = false
             isCurrentlyRecognizing = false
-            exitCommunicationMode()
         }
     }
 
     fun updateSettings(requireWakeWord: Boolean) {
         this.requireWakeWord = requireWakeWord
+    }
+
+    fun triggerListeningSession() {
+        if (!isRunning) {
+            start(requireWakeWord = false)
+            return
+        }
+        mainHandler.post {
+            try {
+                speechRecognizer?.cancel()
+            } catch (_: Exception) {}
+            isCurrentlyRecognizing = false
+            startRecognitionInternal()
+        }
     }
 
     private fun ensureRecognizer() {
@@ -98,62 +104,13 @@ class VoiceAssistantManager(
                     null
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to create on-device SpeechRecognizer, falling back to default")
+                Timber.e(e, "Failed to create SpeechRecognizer, falling back to default")
                 try {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
                         setRecognitionListener(this@VoiceAssistantManager)
                     }
                 } catch (_: Exception) {}
             }
-        }
-    }
-
-    private fun enterCommunicationMode() {
-        try {
-            audioManager?.let { am ->
-                am.mode = AudioManager.MODE_IN_COMMUNICATION
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
-                } else {
-                    try { am.setStreamMute(AudioManager.STREAM_SYSTEM, true) } catch (_: Exception) {}
-                    try { am.setStreamMute(AudioManager.STREAM_NOTIFICATION, true) } catch (_: Exception) {}
-                    try { am.setStreamMute(AudioManager.STREAM_RING, true) } catch (_: Exception) {}
-                }
-                try { am.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (_: Exception) {}
-                isSystemMuted = true
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Error entering communication mode")
-        }
-    }
-
-    private fun exitCommunicationMode() {
-        try {
-            audioManager?.let { am ->
-                am.mode = AudioManager.MODE_NORMAL
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                    try { am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                } else {
-                    try { am.setStreamMute(AudioManager.STREAM_SYSTEM, false) } catch (_: Exception) {}
-                    try { am.setStreamMute(AudioManager.STREAM_NOTIFICATION, false) } catch (_: Exception) {}
-                    try { am.setStreamMute(AudioManager.STREAM_RING, false) } catch (_: Exception) {}
-                }
-                if (originalSystemVolume != -1) {
-                    try { am.setStreamVolume(AudioManager.STREAM_SYSTEM, originalSystemVolume, 0) } catch (_: Exception) {}
-                }
-                if (originalNotificationVolume != -1) {
-                    try { am.setStreamVolume(AudioManager.STREAM_NOTIFICATION, originalNotificationVolume, 0) } catch (_: Exception) {}
-                }
-                isSystemMuted = false
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Error exiting communication mode")
         }
     }
 
@@ -181,23 +138,10 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.SUPPRESS_SOUND", true)
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
-                putExtra("android.speech.extra.AUDIO_SOURCE", 7) // VOICE_COMMUNICATION with hardware AEC
                 putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 60000L)
                 putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
                 putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
             }
-
-            enterCommunicationMode()
-
-            // Mute STREAM_MUSIC during the 350ms start window so Google's start ding is 100% silent
-            try {
-                audioManager?.let { am ->
-                    am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
-                    mainHandler.postDelayed({
-                        try { am.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
-                    }, 350)
-                }
-            } catch (_: Exception) {}
 
             recognizer.startListening(intent)
             _isListening.value = true
@@ -209,7 +153,7 @@ class VoiceAssistantManager(
         }
     }
 
-    private fun scheduleRestart(delayMs: Long = RESTART_DELAY_MS) {
+    private fun scheduleRestart(delayMs: Long = ERROR_RETRY_DELAY_MS) {
         if (!isRunning) return
         mainHandler.removeCallbacks(restartRunnable)
         mainHandler.postDelayed(restartRunnable, delayMs)
@@ -239,7 +183,7 @@ class VoiceAssistantManager(
         isCurrentlyRecognizing = false
 
         if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || error == SpeechRecognizer.ERROR_NO_MATCH) {
-            // Normal silence timeouts: immediately continue listening without dropping active state
+            // Normal silence: seamlessly continue listening
             if (isRunning) {
                 mainHandler.post { startRecognitionInternal() }
             }
@@ -274,7 +218,7 @@ class VoiceAssistantManager(
             }
         }
 
-        // Immediately seamlessly continue listening
+        // Continue listening seamlessly
         if (isRunning) {
             mainHandler.post { startRecognitionInternal() }
         }
@@ -296,7 +240,6 @@ class VoiceAssistantManager(
     fun destroy() {
         stop()
         mainHandler.post {
-            exitCommunicationMode()
             try {
                 speechRecognizer?.destroy()
             } catch (e: Exception) {

@@ -48,6 +48,7 @@ class VoiceAssistantService : Service() {
         const val NOTIFICATION_ID = 2001
         const val CHANNEL_ID = "voice_assistant_channel"
         const val ACTION_STOP_VOICE_ASSISTANT = "com.darkxvenom.airbeats.voice.STOP"
+        const val ACTION_TRIGGER_LISTEN = "com.darkxvenom.airbeats.voice.LISTEN"
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -133,16 +134,26 @@ class VoiceAssistantService : Service() {
         }
     }
 
+    fun triggerListening() {
+        overlayManager?.showListening()
+        voiceAssistantManager.triggerListeningSession()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP_VOICE_ASSISTANT) {
-            Timber.i("Stopping VoiceAssistantService via notification action")
-            serviceScope.launch {
-                dataStore.edit { preferences ->
-                    preferences[EnableVoiceAssistantKey] = false
+        when (intent?.action) {
+            ACTION_STOP_VOICE_ASSISTANT -> {
+                Timber.i("Stopping VoiceAssistantService via notification action")
+                serviceScope.launch {
+                    dataStore.edit { preferences ->
+                        preferences[EnableVoiceAssistantKey] = false
+                    }
                 }
+                stopSelf()
+                return START_NOT_STICKY
             }
-            stopSelf()
-            return START_NOT_STICKY
+            ACTION_TRIGGER_LISTEN -> {
+                triggerListening()
+            }
         }
         return START_STICKY
     }
@@ -176,6 +187,15 @@ class VoiceAssistantService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val listenIntent = PendingIntent.getService(
+            this,
+            2,
+            Intent(this, VoiceAssistantService::class.java).apply {
+                action = ACTION_TRIGGER_LISTEN
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val stopIntent = PendingIntent.getService(
             this,
             1,
@@ -195,6 +215,11 @@ class VoiceAssistantService : Service() {
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(
+                R.drawable.mic,
+                "Speak",
+                listenIntent
+            )
             .addAction(
                 R.drawable.airbeats_monochrome,
                 getString(R.string.voice_notification_stop),

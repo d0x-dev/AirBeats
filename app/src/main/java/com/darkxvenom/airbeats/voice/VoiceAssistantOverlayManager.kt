@@ -200,12 +200,18 @@ class VoiceAssistantOverlayManager(private val context: Context) {
             }
             actionIconView = iconView
             iconFrame.addView(iconView)
+            iconFrame.setOnClickListener {
+                VoiceAssistantService.instance?.triggerListening()
+            }
             headerRow.addView(iconFrame)
 
             // Text column (Status + Spoken/Action Text)
             val textCol = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnClickListener {
+                    VoiceAssistantService.instance?.triggerListening()
+                }
             }
 
             // Status label
