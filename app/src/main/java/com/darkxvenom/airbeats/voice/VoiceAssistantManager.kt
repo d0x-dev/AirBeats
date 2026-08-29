@@ -1,7 +1,11 @@
 package com.darkxvenom.airbeats.voice
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -9,10 +13,16 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.math.log10
+import kotlin.math.sqrt
 
 class VoiceAssistantManager(
     private val context: Context,
@@ -21,10 +31,17 @@ class VoiceAssistantManager(
 ) : RecognitionListener {
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val scope = CoroutineScope(Dispatchers.Default + Job())
+
     private var speechRecognizer: SpeechRecognizer? = null
     private var isRunning = false
     private var requireWakeWord = true
-    private var isCurrentlyRecognizing = false
+    private var isSpeechRecognizerActive = false
+
+    // AudioRecord Continuous Microphone Engine
+    private var audioRecord: AudioRecord? = null
+    private var isAudioRecordRunning = false
+    private var audioRecordThread: Thread? = null
 
     private val _isListening = MutableStateFlow(false)
     val isListening: StateFlow<Boolean> = _isListening.asStateFlow()
@@ -36,29 +53,25 @@ class VoiceAssistantManager(
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     companion object {
-        private const val ERROR_RETRY_DELAY_MS = 2500L
-    }
-
-    private val restartRunnable = Runnable {
-        if (isRunning) {
-            startRecognitionInternal()
-        }
+        private const val SAMPLE_RATE = 16000
+        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
+        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
     }
 
     fun start(requireWakeWord: Boolean = true) {
         this.requireWakeWord = requireWakeWord
         if (isRunning) return
         isRunning = true
+        _isListening.value = true
 
-        mainHandler.post {
-            ensureRecognizer()
-            startRecognitionInternal()
-        }
+        startContinuousAudioRecord()
     }
 
     fun stop() {
         isRunning = false
-        mainHandler.removeCallbacks(restartRunnable)
+        _isListening.value = false
+        stopContinuousAudioRecord()
+
         mainHandler.post {
             try {
                 speechRecognizer?.stopListening()
@@ -66,8 +79,7 @@ class VoiceAssistantManager(
             } catch (e: Exception) {
                 Timber.e(e, "Error stopping SpeechRecognizer")
             }
-            _isListening.value = false
-            isCurrentlyRecognizing = false
+            isSpeechRecognizerActive = false
         }
     }
 
@@ -78,15 +90,106 @@ class VoiceAssistantManager(
     fun triggerListeningSession() {
         if (!isRunning) {
             start(requireWakeWord = false)
-            return
         }
         mainHandler.post {
-            try {
-                speechRecognizer?.cancel()
-            } catch (_: Exception) {}
-            isCurrentlyRecognizing = false
-            startRecognitionInternal()
+            startSpeechRecognizerSession()
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startContinuousAudioRecord() {
+        if (isAudioRecordRunning) return
+        isAudioRecordRunning = true
+
+        audioRecordThread = Thread({
+            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
+            val minBufSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
+            val bufferSize = (minBufSize * 2).coerceAtLeast(4096)
+
+            try {
+                val record = AudioRecord(
+                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                    SAMPLE_RATE,
+                    CHANNEL_CONFIG,
+                    AUDIO_FORMAT,
+                    bufferSize
+                )
+
+                if (record.state != AudioRecord.STATE_INITIALIZED) {
+                    Timber.e("AudioRecord failed to initialize")
+                    record.release()
+                    mainHandler.post { startSpeechRecognizerSession() }
+                    return@Thread
+                }
+
+                audioRecord = record
+                record.startRecording()
+                Timber.i("Continuous silent AudioRecord started (always listening)")
+
+                val buffer = ShortArray(1024)
+                var ambientNoiseFloor = 0.0
+                var consecutiveSpeechFrames = 0
+
+                while (isRunning && isAudioRecordRunning) {
+                    val read = record.read(buffer, 0, buffer.size)
+                    if (read > 0) {
+                        var sum = 0.0
+                        for (i in 0 until read) {
+                            sum += buffer[i] * buffer[i]
+                        }
+                        val rms = sqrt(sum / read)
+                        val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
+                        _audioRms.value = db.toFloat()
+
+                        if (ambientNoiseFloor == 0.0) {
+                            ambientNoiseFloor = db
+                        } else {
+                            ambientNoiseFloor = ambientNoiseFloor * 0.96 + db * 0.04
+                        }
+
+                        val speechThreshold = (ambientNoiseFloor + 12.0).coerceIn(32.0, 65.0)
+
+                        if (db >= speechThreshold) {
+                            consecutiveSpeechFrames++
+                            if (consecutiveSpeechFrames >= 3) {
+                                // Sustained human voice detected
+                                consecutiveSpeechFrames = 0
+                                if (!isSpeechRecognizerActive) {
+                                    mainHandler.post {
+                                        startSpeechRecognizerSession()
+                                    }
+                                }
+                            }
+                        } else {
+                            if (consecutiveSpeechFrames > 0) {
+                                consecutiveSpeechFrames--
+                            }
+                        }
+                    }
+                }
+
+                try {
+                    record.stop()
+                    record.release()
+                } catch (_: Exception) {}
+                audioRecord = null
+            } catch (e: Exception) {
+                Timber.e(e, "Error in AudioRecord loop")
+            }
+        }, "AirBeats-AudioRecord-Thread").apply {
+            start()
+        }
+    }
+
+    private fun stopContinuousAudioRecord() {
+        isAudioRecordRunning = false
+        try {
+            audioRecord?.stop()
+            audioRecord?.release()
+        } catch (_: Exception) {}
+        audioRecord = null
+        audioRecordThread?.interrupt()
+        audioRecordThread = null
     }
 
     private fun ensureRecognizer() {
@@ -104,7 +207,7 @@ class VoiceAssistantManager(
                     null
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to create SpeechRecognizer, falling back to default")
+                Timber.e(e, "Failed to create on-device SpeechRecognizer, falling back to default")
                 try {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
                         setRecognitionListener(this@VoiceAssistantManager)
@@ -114,17 +217,12 @@ class VoiceAssistantManager(
         }
     }
 
-    private fun startRecognitionInternal() {
+    private fun startSpeechRecognizerSession() {
         if (!isRunning) return
-        if (speechRecognizer == null) {
-            ensureRecognizer()
-        }
+        ensureRecognizer()
 
-        val recognizer = speechRecognizer ?: run {
-            Timber.w("SpeechRecognizer is not available on this device")
-            scheduleRestart(ERROR_RETRY_DELAY_MS)
-            return
-        }
+        val recognizer = speechRecognizer ?: return
+        if (isSpeechRecognizerActive) return
 
         try {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -138,34 +236,26 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.SUPPRESS_SOUND", true)
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 60000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
             }
 
             recognizer.startListening(intent)
+            isSpeechRecognizerActive = true
             _isListening.value = true
-            isCurrentlyRecognizing = true
         } catch (e: Exception) {
-            Timber.e(e, "Error in startRecognitionInternal")
-            isCurrentlyRecognizing = false
-            scheduleRestart(ERROR_RETRY_DELAY_MS)
+            Timber.e(e, "Error starting SpeechRecognizer session")
+            isSpeechRecognizerActive = false
         }
     }
 
-    private fun scheduleRestart(delayMs: Long = ERROR_RETRY_DELAY_MS) {
-        if (!isRunning) return
-        mainHandler.removeCallbacks(restartRunnable)
-        mainHandler.postDelayed(restartRunnable, delayMs)
-    }
-
     override fun onReadyForSpeech(params: Bundle?) {
-        _isListening.value = true
-        isCurrentlyRecognizing = true
+        isSpeechRecognizerActive = true
     }
 
     override fun onBeginningOfSpeech() {
-        _isListening.value = true
+        isSpeechRecognizerActive = true
     }
 
     override fun onRmsChanged(rmsdB: Float) {
@@ -175,20 +265,12 @@ class VoiceAssistantManager(
     override fun onBufferReceived(buffer: ByteArray?) {}
 
     override fun onEndOfSpeech() {
-        isCurrentlyRecognizing = false
+        isSpeechRecognizerActive = false
     }
 
     override fun onError(error: Int) {
+        isSpeechRecognizerActive = false
         Timber.d("SpeechRecognizer onError: %d", error)
-        isCurrentlyRecognizing = false
-
-        if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || error == SpeechRecognizer.ERROR_NO_MATCH) {
-            // Normal silence: seamlessly continue listening
-            if (isRunning) {
-                mainHandler.post { startRecognitionInternal() }
-            }
-            return
-        }
 
         if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT) {
             try {
@@ -196,12 +278,10 @@ class VoiceAssistantManager(
             } catch (_: Exception) {}
             speechRecognizer = null
         }
-
-        scheduleRestart(ERROR_RETRY_DELAY_MS)
     }
 
     override fun onResults(results: Bundle?) {
-        isCurrentlyRecognizing = false
+        isSpeechRecognizerActive = false
 
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         if (!matches.isNullOrEmpty()) {
@@ -216,11 +296,6 @@ class VoiceAssistantManager(
                     break
                 }
             }
-        }
-
-        // Continue listening seamlessly
-        if (isRunning) {
-            mainHandler.post { startRecognitionInternal() }
         }
     }
 
