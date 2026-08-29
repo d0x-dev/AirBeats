@@ -1,4 +1,4 @@
-﻿package com.darkxvenom.airbeats.db
+package com.darkxvenom.airbeats.db
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -1350,9 +1350,11 @@ interface DatabaseDao {
     )
     fun recentAlbums(limit: Int, offset: Int = 0): Flow<List<Album>>
 
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR localPath IS NOT NULL")
+    @Transaction
+    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR dateDownload IS NOT NULL")
     fun getAllLibrarySongs(): Flow<List<Song>>
 
-    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR localPath IS NOT NULL")
+    @Transaction
+    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR dateDownload IS NOT NULL")
     suspend fun getAllLibrarySongsSync(): List<Song>
 }
