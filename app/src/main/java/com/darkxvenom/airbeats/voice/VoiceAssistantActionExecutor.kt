@@ -65,7 +65,17 @@ class VoiceAssistantActionExecutor(
         }
     }
 
+    private var lastToastMsg: String? = null
+    private var lastToastTime: Long = 0L
+
     fun showToast(message: String, iconResId: Int = R.drawable.music_note) {
+        val now = System.currentTimeMillis()
+        if (message == lastToastMsg && now - lastToastTime < 2500L) {
+            return
+        }
+        lastToastMsg = message
+        lastToastTime = now
+
         overlayManager?.showActionResult(message, iconResId)
         mainHandler.post {
             try {
@@ -122,19 +132,15 @@ class VoiceAssistantActionExecutor(
 
         when (command) {
             is VoiceCommand.PlayGenericMusic -> {
-                showToast("Playing songs", R.drawable.music_note)
                 handlePlayGenericMusic()
             }
             is VoiceCommand.PlayCachedSongs -> {
-                showToast("Loading library songs...", R.drawable.library_music)
                 handlePlayCachedSongs()
             }
             is VoiceCommand.PlayLikedSongs -> {
-                showToast("Loading liked songs...", R.drawable.favorite)
                 handlePlayLikedSongs()
             }
             is VoiceCommand.PlaySong -> {
-                showToast("Searching: \"${command.query}\"", R.drawable.search)
                 handlePlaySong(command.query)
             }
             is VoiceCommand.Pause -> {
