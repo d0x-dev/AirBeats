@@ -251,11 +251,12 @@ class VoiceAssistantOverlayManager(private val context: Context) {
                 else
                     WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.BOTTOM
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                y = dpToPx(20f).toInt()
                 windowAnimations = android.R.style.Animation_Toast
             }
 

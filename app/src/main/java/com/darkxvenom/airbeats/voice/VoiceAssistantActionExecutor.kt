@@ -637,16 +637,20 @@ class VoiceAssistantActionExecutor(
     }
 
     private fun ensureMusicService(): MusicService? {
-        val service = getMusicService() ?: PlayerConnection.instance?.service
+        val service = MusicService.instance ?: getMusicService() ?: PlayerConnection.instance?.service
         if (service == null) {
             try {
                 val intent = Intent(context, MusicService::class.java)
-                context.startService(intent)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start MusicService")
             }
         }
-        return service
+        return service ?: MusicService.instance ?: PlayerConnection.instance?.service
     }
 
     fun release() {

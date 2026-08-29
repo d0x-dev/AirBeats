@@ -55,6 +55,7 @@ class VoiceAssistantManager(
         isRunning = true
 
         mainHandler.post {
+            muteSystemSound()
             ensureRecognizer()
             startRecognitionInternal()
         }
@@ -64,7 +65,6 @@ class VoiceAssistantManager(
         isRunning = false
         mainHandler.removeCallbacks(restartRunnable)
         mainHandler.post {
-            restoreSystemSound()
             try {
                 speechRecognizer?.stopListening()
                 speechRecognizer?.cancel()
@@ -73,6 +73,7 @@ class VoiceAssistantManager(
             }
             _isListening.value = false
             isCurrentlyRecognizing = false
+            restoreSystemSound()
         }
     }
 
@@ -93,6 +94,7 @@ class VoiceAssistantManager(
     }
 
     private fun muteSystemSound() {
+        if (isSystemMuted) return
         try {
             audioManager?.let { am ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -145,7 +147,7 @@ class VoiceAssistantManager(
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                 putExtra("android.speech.extra.DICTATION_MODE", true)
                 putExtra("android.speech.extra.GET_AUDIO_FOCUS", false)
@@ -154,12 +156,12 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
                 putExtra("android.speech.extra.AUDIO_SOURCE", 6) // VOICE_RECOGNITION with echo cancellation
-                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 2500L)
-                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
-                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
+                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 3000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
             }
 
-            // Mute system sounds temporarily to silence Google SpeechRecognizer start ding/beep
+            // Ensure system sounds are muted to prevent Google SpeechRecognizer ding
             muteSystemSound()
 
             if (isCurrentlyRecognizing) {
@@ -168,14 +170,8 @@ class VoiceAssistantManager(
             recognizer.startListening(intent)
             _isListening.value = true
             isCurrentlyRecognizing = true
-
-            // Unmute system sound shortly after start listening initializes
-            mainHandler.postDelayed({
-                restoreSystemSound()
-            }, 450)
         } catch (e: Exception) {
             Timber.e(e, "Error in startRecognitionInternal")
-            restoreSystemSound()
             _isListening.value = false
             isCurrentlyRecognizing = false
             scheduleRestart(ERROR_RETRY_DELAY_MS)
@@ -191,12 +187,10 @@ class VoiceAssistantManager(
     override fun onReadyForSpeech(params: Bundle?) {
         _isListening.value = true
         isCurrentlyRecognizing = true
-        restoreSystemSound()
     }
 
     override fun onBeginningOfSpeech() {
         _isListening.value = true
-        restoreSystemSound()
     }
 
     override fun onRmsChanged(rmsdB: Float) {
@@ -208,13 +202,11 @@ class VoiceAssistantManager(
     override fun onEndOfSpeech() {
         _isListening.value = false
         isCurrentlyRecognizing = false
-        restoreSystemSound()
     }
 
     override fun onError(error: Int) {
         _isListening.value = false
         isCurrentlyRecognizing = false
-        restoreSystemSound()
         Timber.d("SpeechRecognizer onError: %d", error)
 
         val delay = when (error) {
@@ -237,7 +229,6 @@ class VoiceAssistantManager(
     override fun onResults(results: Bundle?) {
         _isListening.value = false
         isCurrentlyRecognizing = false
-        restoreSystemSound()
 
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
         if (!matches.isNullOrEmpty()) {
@@ -245,12 +236,10 @@ class VoiceAssistantManager(
             _lastRecognizedText.value = topText
             Timber.i("Spoken candidates recognized: %s", matches.joinToString(" | "))
 
-            var foundCommand = false
             for (candidate in matches) {
                 val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = requireWakeWord)
                 if (command !is VoiceCommand.Unknown) {
                     onCommandRecognized(command, candidate.trim())
-                    foundCommand = true
                     break
                 }
             }

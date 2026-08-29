@@ -287,6 +287,7 @@ class MusicService :
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
         super.onCreate()
+        instance = this
         setMediaNotificationProvider(
             DefaultMediaNotificationProvider(
                 this,
@@ -1904,6 +1905,9 @@ class MusicService :
         player.removeListener(this)
         player.removeListener(sleepTimer)
         player.release()
+        if (instance == this) {
+            instance = null
+        }
         super.onDestroy()
     }
 
@@ -1924,6 +1928,10 @@ class MusicService :
     }
 
     companion object {
+        @Volatile
+        var instance: MusicService? = null
+            private set
+
         const val ROOT = "root"
         const val SONG = "song"
         const val ARTIST = "artist"

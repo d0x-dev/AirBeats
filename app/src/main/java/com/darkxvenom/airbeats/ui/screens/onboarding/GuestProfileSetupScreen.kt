@@ -154,7 +154,7 @@ fun GuestProfileSetupScreen(navController: NavController) {
                         },
                         placeholder = {
                             Text(
-                                text = "e.g. Venom",
+                                text = "Enter your name...",
                                 color = subTextColor.copy(alpha = 0.6f)
                             )
                         },

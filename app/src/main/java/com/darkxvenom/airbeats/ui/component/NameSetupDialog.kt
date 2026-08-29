@@ -177,7 +177,7 @@ fun NameSetupDialog(
                         },
                         placeholder = {
                             Text(
-                                text = "e.g. Alex, Venom...",
+                                text = "Enter your name...",
                                 color = subTextColor.copy(alpha = 0.7f)
                             )
                         },
