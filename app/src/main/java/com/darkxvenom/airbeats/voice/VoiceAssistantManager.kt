@@ -39,8 +39,8 @@ class VoiceAssistantManager(
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     companion object {
-        private const val RESTART_DELAY_MS = 300L
-        private const val ERROR_RETRY_DELAY_MS = 800L
+        private const val RESTART_DELAY_MS = 1200L
+        private const val ERROR_RETRY_DELAY_MS = 2000L
     }
 
     private val restartRunnable = Runnable {
@@ -82,13 +82,26 @@ class VoiceAssistantManager(
     }
 
     private fun ensureRecognizer() {
-        if (speechRecognizer == null && SpeechRecognizer.isRecognitionAvailable(context)) {
+        if (speechRecognizer == null) {
             try {
-                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
-                    setRecognitionListener(this@VoiceAssistantManager)
+                speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+                    SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } else if (SpeechRecognizer.isRecognitionAvailable(context)) {
+                    SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } else {
+                    null
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to create SpeechRecognizer")
+                Timber.e(e, "Failed to create SpeechRecognizer, falling back to default")
+                try {
+                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+                        setRecognitionListener(this@VoiceAssistantManager)
+                    }
+                } catch (_: Exception) {}
             }
         }
     }
@@ -98,15 +111,16 @@ class VoiceAssistantManager(
         try {
             audioManager?.let { am ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_MUTE, 0)
+                    try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_MUTE, 0) } catch (_: Exception) {}
                 } else {
-                    am.setStreamMute(AudioManager.STREAM_SYSTEM, true)
-                    am.setStreamMute(AudioManager.STREAM_NOTIFICATION, true)
-                    am.setStreamMute(AudioManager.STREAM_RING, true)
+                    try { am.setStreamMute(AudioManager.STREAM_SYSTEM, true) } catch (_: Exception) {}
+                    try { am.setStreamMute(AudioManager.STREAM_NOTIFICATION, true) } catch (_: Exception) {}
+                    try { am.setStreamMute(AudioManager.STREAM_RING, true) } catch (_: Exception) {}
                 }
+                try { am.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (_: Exception) {}
                 isSystemMuted = true
             }
         } catch (_: Exception) {}
@@ -117,14 +131,14 @@ class VoiceAssistantManager(
         try {
             audioManager?.let { am ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0)
-                    am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0)
+                    try { am.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
+                    try { am.adjustStreamVolume(AudioManager.STREAM_ALARM, AudioManager.ADJUST_UNMUTE, 0) } catch (_: Exception) {}
                 } else {
-                    am.setStreamMute(AudioManager.STREAM_SYSTEM, false)
-                    am.setStreamMute(AudioManager.STREAM_NOTIFICATION, false)
-                    am.setStreamMute(AudioManager.STREAM_RING, false)
+                    try { am.setStreamMute(AudioManager.STREAM_SYSTEM, false) } catch (_: Exception) {}
+                    try { am.setStreamMute(AudioManager.STREAM_NOTIFICATION, false) } catch (_: Exception) {}
+                    try { am.setStreamMute(AudioManager.STREAM_RING, false) } catch (_: Exception) {}
                 }
                 isSystemMuted = false
             }
@@ -156,9 +170,9 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
                 putExtra("android.speech.extra.AUDIO_SOURCE", 6) // VOICE_RECOGNITION with echo cancellation
-                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 3000L)
-                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
-                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 15000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 3500L)
+                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 3500L)
             }
 
             // Ensure system sounds are muted to prevent Google SpeechRecognizer ding

@@ -255,8 +255,9 @@ class VoiceAssistantOverlayManager(private val context: Context) {
                         WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-                y = dpToPx(20f).toInt()
+                gravity = Gravity.BOTTOM or Gravity.FILL_HORIZONTAL
+                x = 0
+                y = 0
                 windowAnimations = android.R.style.Animation_Toast
             }
 
