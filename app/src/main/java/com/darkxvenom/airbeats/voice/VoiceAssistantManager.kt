@@ -182,9 +182,9 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
                 putExtra("android.speech.extra.AUDIO_SOURCE", 7) // VOICE_COMMUNICATION with hardware AEC
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 30000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 6000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 6000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 60000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 10000L)
             }
 
             enterCommunicationMode()
@@ -199,15 +199,11 @@ class VoiceAssistantManager(
                 }
             } catch (_: Exception) {}
 
-            if (isCurrentlyRecognizing) {
-                try { recognizer.cancel() } catch (_: Exception) {}
-            }
             recognizer.startListening(intent)
             _isListening.value = true
             isCurrentlyRecognizing = true
         } catch (e: Exception) {
             Timber.e(e, "Error in startRecognitionInternal")
-            _isListening.value = false
             isCurrentlyRecognizing = false
             scheduleRestart(ERROR_RETRY_DELAY_MS)
         }
@@ -235,34 +231,32 @@ class VoiceAssistantManager(
     override fun onBufferReceived(buffer: ByteArray?) {}
 
     override fun onEndOfSpeech() {
-        _isListening.value = false
         isCurrentlyRecognizing = false
     }
 
     override fun onError(error: Int) {
-        _isListening.value = false
-        isCurrentlyRecognizing = false
         Timber.d("SpeechRecognizer onError: %d", error)
+        isCurrentlyRecognizing = false
 
-        val delay = when (error) {
-            SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
-            SpeechRecognizer.ERROR_NO_MATCH -> RESTART_DELAY_MS
-            SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
-            SpeechRecognizer.ERROR_CLIENT -> {
-                try {
-                    speechRecognizer?.destroy()
-                } catch (_: Exception) {}
-                speechRecognizer = null
-                ERROR_RETRY_DELAY_MS
+        if (error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT || error == SpeechRecognizer.ERROR_NO_MATCH) {
+            // Normal silence timeouts: immediately continue listening without dropping active state
+            if (isRunning) {
+                mainHandler.post { startRecognitionInternal() }
             }
-            else -> ERROR_RETRY_DELAY_MS
+            return
         }
 
-        scheduleRestart(delay)
+        if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY || error == SpeechRecognizer.ERROR_CLIENT) {
+            try {
+                speechRecognizer?.destroy()
+            } catch (_: Exception) {}
+            speechRecognizer = null
+        }
+
+        scheduleRestart(ERROR_RETRY_DELAY_MS)
     }
 
     override fun onResults(results: Bundle?) {
-        _isListening.value = false
         isCurrentlyRecognizing = false
 
         val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -280,7 +274,10 @@ class VoiceAssistantManager(
             }
         }
 
-        scheduleRestart(RESTART_DELAY_MS)
+        // Immediately seamlessly continue listening
+        if (isRunning) {
+            mainHandler.post { startRecognitionInternal() }
+        }
     }
 
     override fun onPartialResults(partialResults: Bundle?) {
