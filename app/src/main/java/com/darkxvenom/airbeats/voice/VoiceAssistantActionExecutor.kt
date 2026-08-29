@@ -238,13 +238,12 @@ class VoiceAssistantActionExecutor(
     private suspend fun getAllLocalCachedSongs(): List<Song> = withContext(Dispatchers.IO) {
         try {
             val database = App.instance.database
-            val librarySongs = try { database.getAllLibrarySongsSync() } catch (_: Exception) { emptyList() }
-            val downloaded = try { database.downloadedSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
-            val library = try { database.songs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
-            val liked = try { database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
-            val all = try { database.allSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val librarySongs: List<Song> = try { database.getAllLibrarySongsSync() } catch (_: Exception) { emptyList() }
+            val library: List<Song> = try { database.songs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val liked: List<Song> = try { database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val all: List<Song> = try { database.allSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
 
-            (librarySongs + downloaded + library + liked + all).distinctBy { it.id }.filter { it.id.isNotBlank() }
+            (librarySongs + library + liked + all).distinctBy { it.id }.filter { it.id.isNotBlank() }
         } catch (e: Exception) {
             Timber.e(e, "Error querying local cached songs")
             emptyList()
