@@ -408,28 +408,11 @@ fun PlaylistMenu(
                     val savingToastMsg = context.getString(R.string.saving_playlist_to_storage, playlist.playlist.name)
                     val playlistName = playlist.playlist.name
                     android.widget.Toast.makeText(context, savingToastMsg, android.widget.Toast.LENGTH_SHORT).show()
-                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                            .savePlaylistToMusicFolder(context, playlistName, songs.map { it.toMediaMetadata() })
-                            .onSuccess { count ->
-                                launch(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Saved $count songs to Music/AirBeats/$playlistName",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                            .onFailure { e ->
-                                launch(kotlinx.coroutines.Dispatchers.Main) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Save failed: ${e.message}",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                    }
+                    com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                        context = context,
+                        playlistName = playlistName,
+                        mediaList = songs.map { it.toMediaMetadata() }
+                    )
                     onDismiss()
                 }
             }

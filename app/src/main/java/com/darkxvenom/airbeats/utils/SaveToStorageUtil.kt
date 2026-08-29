@@ -9,12 +9,18 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.models.MediaMetadata
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -27,6 +33,9 @@ object SaveToStorageUtil {
     private const val TAG = "SaveToStorageUtil"
     private const val CHANNEL_ID = "airbeats_storage_downloads"
     private const val CHANNEL_NAME = "Storage Downloads"
+
+    // Global application coroutine scope that survives Compose lifecycle / menu dismissals
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val httpClient = OkHttpClient.Builder()
         .proxy(YouTube.proxy)
@@ -109,11 +118,81 @@ object SaveToStorageUtil {
         }
     }
 
+    fun saveToMusicFolderAsync(
+        context: Context,
+        mediaMetadata: MediaMetadata,
+        onSuccess: (() -> Unit)? = null,
+        onFailure: ((Throwable) -> Unit)? = null,
+    ) {
+        val appContext = context.applicationContext
+        applicationScope.launch {
+            saveToFolder(
+                context = appContext,
+                mediaMetadata = mediaMetadata,
+                relativeFolder = "AirBeats",
+                notificationId = 20000 + (mediaMetadata.id.hashCode() and 0x7FFF),
+            ).onSuccess {
+                withContext(Dispatchers.Main) {
+                    onSuccess?.invoke() ?: Toast.makeText(
+                        appContext,
+                        appContext.getString(R.string.song_saved_successfully),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }.onFailure { e ->
+                if (e !is CancellationException) {
+                    withContext(Dispatchers.Main) {
+                        onFailure?.invoke(e) ?: Toast.makeText(
+                            appContext,
+                            "${appContext.getString(R.string.song_save_failed)}: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
+    }
+
+    fun savePlaylistToMusicFolderAsync(
+        context: Context,
+        playlistName: String,
+        mediaList: List<MediaMetadata>,
+        onSuccess: ((Int) -> Unit)? = null,
+        onFailure: ((Throwable) -> Unit)? = null,
+    ) {
+        val appContext = context.applicationContext
+        applicationScope.launch {
+            savePlaylistToMusicFolder(
+                context = appContext,
+                playlistName = playlistName,
+                mediaList = mediaList,
+            ).onSuccess { count ->
+                withContext(Dispatchers.Main) {
+                    onSuccess?.invoke(count) ?: Toast.makeText(
+                        appContext,
+                        "Saved $count songs to Music/AirBeats/$playlistName",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }.onFailure { e ->
+                if (e !is CancellationException) {
+                    withContext(Dispatchers.Main) {
+                        onFailure?.invoke(e) ?: Toast.makeText(
+                            appContext,
+                            "Save failed: ${e.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+        }
+    }
+
     suspend fun savePlaylistToMusicFolder(
         context: Context,
         playlistName: String,
         mediaList: List<MediaMetadata>,
-    ): Result<Int> = withContext(Dispatchers.IO) {
+    ): Result<Int> = withContext(Dispatchers.IO + NonCancellable) {
         runCatching {
             val subFolder = playlistName.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim().take(50)
             val relativeSubPath = if (subFolder.isNotEmpty()) "AirBeats/$subFolder" else "AirBeats"
@@ -125,7 +204,7 @@ object SaveToStorageUtil {
                     val subText = "${index + 1}/$total"
                     val notificationId = 20000 + (mediaMetadata.id.hashCode() and 0x7FFF)
                     saveToFolder(
-                        context = context,
+                        context = context.applicationContext,
                         mediaMetadata = mediaMetadata,
                         relativeFolder = relativeSubPath,
                         notificationId = notificationId,
@@ -134,7 +213,9 @@ object SaveToStorageUtil {
                         savedCount++
                     }
                 } catch (e: Exception) {
-                    Timber.tag(TAG).e(e, "Error saving song ${mediaMetadata.title} in playlist")
+                    if (e !is CancellationException) {
+                        Timber.tag(TAG).e(e, "Error saving song ${mediaMetadata.title} in playlist")
+                    }
                 }
             }
             savedCount
@@ -145,7 +226,7 @@ object SaveToStorageUtil {
         context: Context,
         mediaMetadata: MediaMetadata,
     ): Result<String> = saveToFolder(
-        context = context,
+        context = context.applicationContext,
         mediaMetadata = mediaMetadata,
         relativeFolder = "AirBeats",
         notificationId = 20000 + (mediaMetadata.id.hashCode() and 0x7FFF),
@@ -158,13 +239,14 @@ object SaveToStorageUtil {
         relativeFolder: String,
         notificationId: Int = 20000 + (mediaMetadata.id.hashCode() and 0x7FFF),
         subText: String? = null,
-    ): Result<String> = withContext(Dispatchers.IO) {
+    ): Result<String> = withContext(Dispatchers.IO + NonCancellable) {
         runCatching {
+            val appContext = context.applicationContext
             Timber.tag(TAG).d("Starting save for: ${mediaMetadata.title} into $relativeFolder")
-            showProgressNotification(context, notificationId, mediaMetadata.title, 0, subText)
+            showProgressNotification(appContext, notificationId, mediaMetadata.title, 0, subText)
 
             // 1. Resolve stream URL and format using robust playerResponseForPlayback with fallbacks
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val playbackData = YTPlayerUtils.playerResponseForPlayback(
                 videoId = mediaMetadata.id,
                 playlistId = null,
@@ -221,7 +303,7 @@ object SaveToStorageUtil {
                         lastUpdateMs = now
                         val percent = ((totalBytesRead * 100) / contentLength).toInt().coerceIn(0, 100)
                         showProgressNotification(
-                            context = context,
+                            context = appContext,
                             notificationId = notificationId,
                             title = mediaMetadata.title,
                             progress = percent,
@@ -255,7 +337,7 @@ object SaveToStorageUtil {
                         put(MediaStore.Audio.Media.IS_PENDING, 1)
                     }
 
-                    val resolver = context.contentResolver
+                    val resolver = appContext.contentResolver
                     val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, contentValues)
                         ?: throw Exception("Failed to create MediaStore entry")
 
@@ -284,7 +366,7 @@ object SaveToStorageUtil {
 
                     // Notify media scanner
                     MediaScannerConnection.scanFile(
-                        context,
+                        appContext,
                         arrayOf(outputFile.absolutePath),
                         arrayOf(mimeType),
                         null
@@ -295,7 +377,7 @@ object SaveToStorageUtil {
             }
 
             showCompleteNotification(
-                context = context,
+                context = appContext,
                 notificationId = notificationId,
                 title = mediaMetadata.title,
                 success = true,
@@ -303,14 +385,16 @@ object SaveToStorageUtil {
             )
             fileName
         }.onFailure { e ->
-            Timber.tag(TAG).e(e, "Failed to save song to local storage")
-            showCompleteNotification(
-                context = context,
-                notificationId = notificationId,
-                title = mediaMetadata.title,
-                success = false,
-                message = "Failed to download: ${e.message}",
-            )
+            if (e !is CancellationException) {
+                Timber.tag(TAG).e(e, "Failed to save song to local storage")
+                showCompleteNotification(
+                    context = context.applicationContext,
+                    notificationId = notificationId,
+                    title = mediaMetadata.title,
+                    success = false,
+                    message = "Failed to download: ${e.message}",
+                )
+            }
         }
     }
 }

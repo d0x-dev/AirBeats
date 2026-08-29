@@ -344,28 +344,11 @@ fun AlbumMenu(
                     val albumTitle = album.album.title
                     val savingToastMsg = context.getString(R.string.saving_playlist_to_storage, albumTitle)
                     android.widget.Toast.makeText(context, savingToastMsg, android.widget.Toast.LENGTH_SHORT).show()
-                    scope.launch(Dispatchers.IO) {
-                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                            .savePlaylistToMusicFolder(context, albumTitle, songs.map { it.toMediaMetadata() })
-                            .onSuccess { count ->
-                                launch(Dispatchers.Main) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Saved $count songs to Music/AirBeats/$albumTitle",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                            .onFailure { e ->
-                                launch(Dispatchers.Main) {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "Save failed: ${e.message}",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                    }
+                    com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                        context = context,
+                        playlistName = albumTitle,
+                        mediaList = songs.map { it.toMediaMetadata() }
+                    )
                     onDismiss()
                 }
             }
