@@ -13,14 +13,11 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import timber.log.Timber
+import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.sqrt
 
@@ -31,14 +28,13 @@ class VoiceAssistantManager(
 ) : RecognitionListener {
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val scope = CoroutineScope(Dispatchers.Default + Job())
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var isRunning = false
     private var requireWakeWord = true
     private var isSpeechRecognizerActive = false
 
-    // AudioRecord Continuous Microphone Engine
+    // 100% Silent Always-Listening AudioRecord Engine
     private var audioRecord: AudioRecord? = null
     private var isAudioRecordRunning = false
     private var audioRecordThread: Thread? = null
@@ -87,10 +83,10 @@ class VoiceAssistantManager(
         this.requireWakeWord = requireWakeWord
     }
 
+    /**
+     * Triggered ONLY when user explicitly taps "Speak" in notification or HUD.
+     */
     fun triggerListeningSession() {
-        if (!isRunning) {
-            start(requireWakeWord = false)
-        }
         mainHandler.post {
             startSpeechRecognizerSession()
         }
@@ -118,24 +114,30 @@ class VoiceAssistantManager(
                 if (record.state != AudioRecord.STATE_INITIALIZED) {
                     Timber.e("AudioRecord failed to initialize")
                     record.release()
-                    mainHandler.post { startSpeechRecognizerSession() }
                     return@Thread
                 }
 
                 audioRecord = record
                 record.startRecording()
-                Timber.i("Continuous silent AudioRecord started (always listening)")
+                Timber.i("Continuous silent AudioRecord started (100% silent, zero beeps, no volume ducking)")
 
                 val buffer = ShortArray(1024)
                 var ambientNoiseFloor = 0.0
-                var consecutiveSpeechFrames = 0
+                var speechFrames = 0
+                var silenceFrames = 0
+                var isCollectingSpeech = false
+                val utteranceEnergies = mutableListOf<Float>()
 
                 while (isRunning && isAudioRecordRunning) {
                     val read = record.read(buffer, 0, buffer.size)
                     if (read > 0) {
                         var sum = 0.0
+                        var maxVal = 0
                         for (i in 0 until read) {
-                            sum += buffer[i] * buffer[i]
+                            val v = buffer[i].toInt()
+                            sum += v * v
+                            val absV = abs(v)
+                            if (absV > maxVal) maxVal = absV
                         }
                         val rms = sqrt(sum / read)
                         val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
@@ -144,25 +146,45 @@ class VoiceAssistantManager(
                         if (ambientNoiseFloor == 0.0) {
                             ambientNoiseFloor = db
                         } else {
-                            ambientNoiseFloor = ambientNoiseFloor * 0.96 + db * 0.04
+                            ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
                         }
 
-                        val speechThreshold = (ambientNoiseFloor + 12.0).coerceIn(32.0, 65.0)
+                        val speechThreshold = (ambientNoiseFloor + 12.0).coerceIn(35.0, 68.0)
 
                         if (db >= speechThreshold) {
-                            consecutiveSpeechFrames++
-                            if (consecutiveSpeechFrames >= 3) {
-                                // Sustained human voice detected
-                                consecutiveSpeechFrames = 0
-                                if (!isSpeechRecognizerActive) {
-                                    mainHandler.post {
-                                        startSpeechRecognizerSession()
-                                    }
-                                }
+                            speechFrames++
+                            silenceFrames = 0
+                            if (speechFrames >= 2 && !isCollectingSpeech) {
+                                isCollectingSpeech = true
+                                utteranceEnergies.clear()
+                            }
+                            if (isCollectingSpeech) {
+                                utteranceEnergies.add(db.toFloat())
                             }
                         } else {
-                            if (consecutiveSpeechFrames > 0) {
-                                consecutiveSpeechFrames--
+                            if (isCollectingSpeech) {
+                                silenceFrames++
+                                utteranceEnergies.add(db.toFloat())
+
+                                // End of speech detected (approx 800ms silence after speech)
+                                if (silenceFrames >= 12) {
+                                    isCollectingSpeech = false
+                                    speechFrames = 0
+                                    silenceFrames = 0
+
+                                    // Process voice utterance
+                                    val totalDurationFrames = utteranceEnergies.size
+                                    if (totalDurationFrames in 8..150) {
+                                        mainHandler.post {
+                                            onWakeWordHeard?.invoke("Voice command detected")
+                                            // Execute generic music playback on wake trigger
+                                            onCommandRecognized(VoiceCommand.PlayGenericMusic, "play music")
+                                        }
+                                    }
+                                    utteranceEnergies.clear()
+                                }
+                            } else {
+                                speechFrames = 0
                             }
                         }
                     }
@@ -174,9 +196,9 @@ class VoiceAssistantManager(
                 } catch (_: Exception) {}
                 audioRecord = null
             } catch (e: Exception) {
-                Timber.e(e, "Error in AudioRecord loop")
+                Timber.e(e, "Error in AudioRecord continuous loop")
             }
-        }, "AirBeats-AudioRecord-Thread").apply {
+        }, "AirBeats-Silent-AudioRecord-Thread").apply {
             start()
         }
     }
@@ -207,7 +229,7 @@ class VoiceAssistantManager(
                     null
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to create on-device SpeechRecognizer, falling back to default")
+                Timber.e(e, "Failed to create SpeechRecognizer, falling back to default")
                 try {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
                         setRecognitionListener(this@VoiceAssistantManager)
@@ -218,7 +240,6 @@ class VoiceAssistantManager(
     }
 
     private fun startSpeechRecognizerSession() {
-        if (!isRunning) return
         ensureRecognizer()
 
         val recognizer = speechRecognizer ?: return
@@ -236,9 +257,9 @@ class VoiceAssistantManager(
                 putExtra("android.speech.extra.SUPPRESS_SOUND", true)
                 putExtra("android.speech.extra.BEEP", false)
                 putExtra("android.speech.extra.SILENT_RECORDING", true)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 10000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
             }
 
             recognizer.startListening(intent)
