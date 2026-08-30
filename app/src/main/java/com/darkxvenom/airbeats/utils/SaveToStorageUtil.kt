@@ -427,7 +427,7 @@ object SaveToStorageUtil {
                         ?: throw Exception("Failed to create MediaStore entry")
 
                     resolver.openOutputStream(uri)?.use { outputStream ->
-                        outputStream.write(audioBytes)
+                        outputStream.write(finalAudioBytes)
                     } ?: throw Exception("Failed to open output stream")
 
                     // Mark as complete
@@ -446,7 +446,7 @@ object SaveToStorageUtil {
 
                     val outputFile = File(musicDir, fileName)
                     FileOutputStream(outputFile).use { fos ->
-                        fos.write(audioBytes)
+                        fos.write(finalAudioBytes)
                     }
 
                     // Notify media scanner
@@ -459,7 +459,6 @@ object SaveToStorageUtil {
 
                     Timber.tag(TAG).d("Saved via direct file write: ${outputFile.absolutePath}")
                 }
-            }
 
             showCompleteNotification(
                 context = appContext,
