@@ -578,6 +578,23 @@ fun AutoPlaylistScreen(
                                                         contentDescription = null,
                                                     )
                                                 }
+
+                                                if (playlistType == PlaylistType.DOWNLOAD && !songs.isNullOrEmpty()) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                                                                context = context,
+                                                                playlistName = "AirBeats",
+                                                                mediaList = songs!!.map { it.toMediaMetadata() },
+                                                            )
+                                                        },
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.save_to_storage),
+                                                            contentDescription = stringResource(R.string.save_to_local),
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -816,6 +833,27 @@ fun AutoPlaylistScreen(
                             ),
                             contentDescription = null
                         )
+                    }
+
+                    if (playlistType == PlaylistType.DOWNLOAD && count > 0) {
+                        IconButton(
+                            onClick = {
+                                val selected = wrappedSongs?.filter { it.isSelected }?.map { it.item }
+                                if (!selected.isNullOrEmpty()) {
+                                    com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                                        context = context,
+                                        playlistName = "AirBeats",
+                                        mediaList = selected.map { it.toMediaMetadata() },
+                                    )
+                                    selection = false
+                                }
+                            },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.save_to_storage),
+                                contentDescription = stringResource(R.string.save_to_local),
+                            )
+                        }
                     }
 
                     IconButton(

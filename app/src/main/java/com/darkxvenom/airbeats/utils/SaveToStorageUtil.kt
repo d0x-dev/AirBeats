@@ -15,6 +15,8 @@ import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.models.MediaMetadata
+import com.darkxvenom.airbeats.playback.MusicService
+import com.darkxvenom.airbeats.playback.PlayerConnection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +42,77 @@ object SaveToStorageUtil {
     private val httpClient = OkHttpClient.Builder()
         .proxy(YouTube.proxy)
         .build()
+
+    private fun detectExtension(bytes: ByteArray): String {
+        if (bytes.size >= 8) {
+            // Check for ftyp (mp4/m4a)
+            if (bytes[4] == 'f'.code.toByte() && bytes[5] == 't'.code.toByte() && bytes[6] == 'y'.code.toByte() && bytes[7] == 'p'.code.toByte()) {
+                return "m4a"
+            }
+            // Check for OggS (opus/ogg)
+            if (bytes[0] == 'O'.code.toByte() && bytes[1] == 'g'.code.toByte() && bytes[2] == 'g'.code.toByte() && bytes[3] == 'S'.code.toByte()) {
+                return "opus"
+            }
+            // Check for Matroska / WebM
+            if (bytes[0] == 0x1A.toByte() && bytes[1] == 0x45.toByte() && bytes[2] == 0xDF.toByte() && bytes[3] == 0xA3.toByte()) {
+                return "opus"
+            }
+            // Check for ID3 / MP3
+            if (bytes[0] == 'I'.code.toByte() && bytes[1] == 'D'.code.toByte() && bytes[2] == '3'.code.toByte()) {
+                return "mp3"
+            }
+            if ((bytes[0].toInt() and 0xFF) == 0xFF && ((bytes[1].toInt() and 0xE0) == 0xE0)) {
+                return "mp3"
+            }
+        }
+        return "m4a"
+    }
+
+    private fun getCachedAudioBytes(context: Context, mediaId: String): Pair<ByteArray, String>? {
+        try {
+            val downloadCache = PlayerConnection.instance?.service?.downloadCache
+                ?: MusicService.instance?.downloadCache
+            val playerCache = PlayerConnection.instance?.service?.playerCache
+                ?: MusicService.instance?.playerCache
+
+            // 1. Try downloadCache first (fully downloaded songs)
+            if (downloadCache != null) {
+                val spans = downloadCache.getCachedSpans(mediaId).sortedBy { it.position }
+                if (spans.isNotEmpty()) {
+                    val out = ByteArrayOutputStream()
+                    for (span in spans) {
+                        span.file?.inputStream()?.use { it.copyTo(out) }
+                    }
+                    val bytes = out.toByteArray()
+                    if (bytes.isNotEmpty()) {
+                        val ext = detectExtension(bytes)
+                        Timber.tag(TAG).d("Found ${bytes.size} cached bytes in downloadCache for $mediaId ($ext)")
+                        return bytes to ext
+                    }
+                }
+            }
+
+            // 2. Try playerCache (stream cache)
+            if (playerCache != null) {
+                val spans = playerCache.getCachedSpans(mediaId).sortedBy { it.position }
+                if (spans.isNotEmpty()) {
+                    val out = ByteArrayOutputStream()
+                    for (span in spans) {
+                        span.file?.inputStream()?.use { it.copyTo(out) }
+                    }
+                    val bytes = out.toByteArray()
+                    if (bytes.isNotEmpty()) {
+                        val ext = detectExtension(bytes)
+                        Timber.tag(TAG).d("Found ${bytes.size} cached bytes in playerCache for $mediaId ($ext)")
+                        return bytes to ext
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Error reading cached audio bytes for $mediaId")
+        }
+        return null
+    }
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -245,26 +318,77 @@ object SaveToStorageUtil {
             Timber.tag(TAG).d("Starting save for: ${mediaMetadata.title} into $relativeFolder")
             showProgressNotification(appContext, notificationId, mediaMetadata.title, 0, subText)
 
-            // 1. Resolve stream URL and format using robust playerResponseForPlayback with fallbacks
-            val connectivityManager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val playbackData = YTPlayerUtils.playerResponseForPlayback(
-                videoId = mediaMetadata.id,
-                playlistId = null,
-                audioQuality = AudioQuality.HIGH,
-                connectivityManager = connectivityManager
-            ).getOrThrow()
+            var audioBytes: ByteArray? = null
+            var extension: String = "m4a"
 
-            val format = playbackData.format
-            val streamUrl = playbackData.streamUrl
+            // 1. Check if song is already cached locally (for 100% offline export)
+            val cachedData = getCachedAudioBytes(appContext, mediaMetadata.id)
+            if (cachedData != null) {
+                Timber.tag(TAG).d("Extracting song from local cache (offline mode) for: ${mediaMetadata.title}")
+                audioBytes = cachedData.first
+                extension = cachedData.second
+                showProgressNotification(appContext, notificationId, mediaMetadata.title, 50, subText)
+            } else {
+                // 2. Resolve stream URL and download if online
+                val connectivityManager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val playbackData = YTPlayerUtils.playerResponseForPlayback(
+                    videoId = mediaMetadata.id,
+                    playlistId = null,
+                    audioQuality = AudioQuality.HIGH,
+                    connectivityManager = connectivityManager
+                ).getOrThrow()
 
-            Timber.tag(TAG).d("Stream URL resolved, format: ${format.mimeType}, bitrate: ${format.bitrate}")
+                val format = playbackData.format
+                val streamUrl = playbackData.streamUrl
 
-            // 2. Determine file extension from mime type
-            val extension = when {
-                format.mimeType.contains("opus") || format.mimeType.contains("webm") -> "opus"
-                format.mimeType.contains("mp4") || format.mimeType.contains("m4a") -> "m4a"
-                else -> "m4a"
+                Timber.tag(TAG).d("Stream URL resolved, format: ${format.mimeType}, bitrate: ${format.bitrate}")
+
+                extension = when {
+                    format.mimeType.contains("opus") || format.mimeType.contains("webm") -> "opus"
+                    format.mimeType.contains("mp4") || format.mimeType.contains("m4a") -> "m4a"
+                    else -> "m4a"
+                }
+
+                val request = Request.Builder().url(streamUrl).build()
+                val response = httpClient.newCall(request).execute()
+                response.use { resp ->
+                    if (!resp.isSuccessful) {
+                        throw Exception("Download failed: HTTP ${resp.code}")
+                    }
+                    val body = resp.body ?: throw Exception("Response body is null")
+                    val contentLength = body.contentLength()
+                    val inputStream = body.byteStream()
+                    val outputBuffer = ByteArrayOutputStream(
+                        if (contentLength > 0 && contentLength < Int.MAX_VALUE) contentLength.toInt() else 1024 * 1024
+                    )
+
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    var totalBytesRead = 0L
+                    var lastUpdateMs = 0L
+
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputBuffer.write(buffer, 0, bytesRead)
+                        totalBytesRead += bytesRead
+
+                        val now = System.currentTimeMillis()
+                        if (contentLength > 0 && (now - lastUpdateMs >= 200 || totalBytesRead == contentLength)) {
+                            lastUpdateMs = now
+                            val percent = ((totalBytesRead * 100) / contentLength).toInt().coerceIn(0, 100)
+                            showProgressNotification(
+                                context = appContext,
+                                notificationId = notificationId,
+                                title = mediaMetadata.title,
+                                progress = percent,
+                                subText = subText,
+                            )
+                        }
+                    }
+                    audioBytes = outputBuffer.toByteArray()
+                }
             }
+
+            val finalAudioBytes = audioBytes ?: throw Exception("No audio data available")
 
             // 3. Sanitise file name
             val sanitisedTitle = mediaMetadata.title
@@ -274,46 +398,7 @@ object SaveToStorageUtil {
                 .replace(Regex("[\\\\/:*?\"<>|]"), "_")
                 .take(100)
             val fileName = "${sanitisedTitle} - ${artistName}.$extension"
-
-            // 4. Download the stream with live progress updates
-            val request = Request.Builder().url(streamUrl).build()
-            val response = httpClient.newCall(request).execute()
-            response.use { resp ->
-                if (!resp.isSuccessful) {
-                    throw Exception("Download failed: HTTP ${resp.code}")
-                }
-                val body = resp.body ?: throw Exception("Response body is null")
-                val contentLength = body.contentLength()
-                val inputStream = body.byteStream()
-                val outputBuffer = ByteArrayOutputStream(
-                    if (contentLength > 0 && contentLength < Int.MAX_VALUE) contentLength.toInt() else 1024 * 1024
-                )
-
-                val buffer = ByteArray(8192)
-                var bytesRead: Int
-                var totalBytesRead = 0L
-                var lastUpdateMs = 0L
-
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    outputBuffer.write(buffer, 0, bytesRead)
-                    totalBytesRead += bytesRead
-
-                    val now = System.currentTimeMillis()
-                    if (contentLength > 0 && (now - lastUpdateMs >= 200 || totalBytesRead == contentLength)) {
-                        lastUpdateMs = now
-                        val percent = ((totalBytesRead * 100) / contentLength).toInt().coerceIn(0, 100)
-                        showProgressNotification(
-                            context = appContext,
-                            notificationId = notificationId,
-                            title = mediaMetadata.title,
-                            progress = percent,
-                            subText = subText,
-                        )
-                    }
-                }
-
-                val audioBytes = outputBuffer.toByteArray()
-                Timber.tag(TAG).d("Downloaded ${audioBytes.size} bytes for $fileName")
+            Timber.tag(TAG).d("Writing ${finalAudioBytes.size} bytes for $fileName")
 
                 // 5. Write to Music folder
                 val mimeType = when (extension) {
