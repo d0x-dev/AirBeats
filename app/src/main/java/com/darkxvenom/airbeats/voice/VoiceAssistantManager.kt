@@ -207,7 +207,7 @@ class VoiceAssistantManager(
                                                     onCommandRecognized(VoiceCommand.Pause, "pause")
                                                 } else {
                                                     _lastRecognizedText.value = "Next song"
-                                                    onCommandRecognized(VoiceCommand.Next, "next song")
+                                                    onCommandRecognized(VoiceCommand.NextTrack, "next song")
                                                 }
                                             } else {
                                                 _lastRecognizedText.value = "Play music"
