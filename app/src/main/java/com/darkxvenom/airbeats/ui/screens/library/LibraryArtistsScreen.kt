@@ -115,13 +115,6 @@ fun LibraryArtistsScreen(
         }
     }
 
-    LaunchedEffect(filter) {
-        if (ytmSync && filter == ArtistFilter.LIKED) {
-            withContext(Dispatchers.IO) {
-                viewModel.sync()
-            }
-        }
-    }
 
     val artists by viewModel.allArtists.collectAsState()
     val coroutineScope = rememberCoroutineScope()

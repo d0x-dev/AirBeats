@@ -119,13 +119,6 @@ fun LibraryAlbumsScreen(
         }
     }
 
-    LaunchedEffect(filter) {
-        if (ytmSync && filter == AlbumFilter.LIKED) {
-            withContext(Dispatchers.IO) {
-                viewModel.sync()
-            }
-        }
-    }
 
     val albums by viewModel.allAlbums.collectAsState()
 

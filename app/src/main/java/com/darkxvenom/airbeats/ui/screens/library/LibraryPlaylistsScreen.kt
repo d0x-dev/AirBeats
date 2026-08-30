@@ -207,13 +207,6 @@ fun LibraryPlaylistsScreen(
 
     val (ytmSync) = rememberPreference(YtmSyncKey, true)
 
-    LaunchedEffect(isLoggedIn, ytmSync) {
-        if (ytmSync) {
-            withContext(Dispatchers.IO) {
-                viewModel.sync()
-            }
-        }
-    }
 
     LaunchedEffect(scrollToTop?.value) {
         if (scrollToTop?.value == true) {
