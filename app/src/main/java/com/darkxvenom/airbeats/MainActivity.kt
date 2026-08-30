@@ -90,6 +90,8 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -429,10 +431,13 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
+            var showUpdateDialog by remember { mutableStateOf(false) }
+            
             LaunchedEffect(Unit) {
-                if (System.currentTimeMillis() - Updater.lastCheckTime > 1.days.inWholeMilliseconds) {
-                    Updater.getLatestVersionName().onSuccess {
-                        latestVersionName = it
+                Updater.getLatestVersionName().onSuccess {
+                    latestVersionName = it
+                    if (latestVersionName != BuildConfig.VERSION_NAME) {
+                        showUpdateDialog = true
                     }
                 }
             }
@@ -1609,6 +1614,32 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                     }
+                                }
+
+                                if (showUpdateDialog) {
+                                    AlertDialog(
+                                        onDismissRequest = { showUpdateDialog = false },
+                                        title = { Text(text = "Update Available") },
+                                        text = { Text(text = "A new version of AirBeats ($latestVersionName) is available. Would you like to download it?") },
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/d0x-dev/AirBeats/releases/latest"))
+                                                    context.startActivity(intent)
+                                                    showUpdateDialog = false
+                                                }
+                                            ) {
+                                                Text("Download")
+                                            }
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = { showUpdateDialog = false }
+                                            ) {
+                                                Text("Cancel")
+                                            }
+                                        }
+                                    )
                                 }
                             }
 
