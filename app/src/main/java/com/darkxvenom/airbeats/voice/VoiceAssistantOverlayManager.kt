@@ -200,12 +200,18 @@ class VoiceAssistantOverlayManager(private val context: Context) {
             }
             actionIconView = iconView
             iconFrame.addView(iconView)
+            iconFrame.setOnClickListener {
+                VoiceAssistantService.instance?.triggerListening()
+            }
             headerRow.addView(iconFrame)
 
             // Text column (Status + Spoken/Action Text)
             val textCol = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnClickListener {
+                    VoiceAssistantService.instance?.triggerListening()
+                }
             }
 
             // Status label
@@ -251,11 +257,13 @@ class VoiceAssistantOverlayManager(private val context: Context) {
                 else
                     WindowManager.LayoutParams.TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.BOTTOM
+                gravity = Gravity.BOTTOM or Gravity.FILL_HORIZONTAL
+                x = 0
+                y = 0
                 windowAnimations = android.R.style.Animation_Toast
             }
 

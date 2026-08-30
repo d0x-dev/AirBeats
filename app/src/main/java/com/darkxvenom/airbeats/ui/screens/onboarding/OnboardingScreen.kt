@@ -404,6 +404,7 @@ fun OnboardingScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .fillMaxHeight(if (authMode == AuthMode.SIGNUP) 0.74f else 0.67f)
+                .imePadding()
                 .clip(RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp))
                 .hazeChild(
                     state = hazeState,
@@ -430,9 +431,9 @@ fun OnboardingScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Top
                 ) {
                     when (state) {
                         SyncState.IDLE -> {

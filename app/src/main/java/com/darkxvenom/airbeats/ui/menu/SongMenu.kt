@@ -121,20 +121,10 @@ fun SongMenu(
     ) { isGranted: Boolean ->
         if (isGranted) {
             Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
-            coroutineScope.launch(Dispatchers.IO) {
-                com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                    .saveToMusicFolder(context, song.toMediaMetadata())
-                    .onSuccess {
-                        launch(Dispatchers.Main) {
-                            Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
-                        }
-                    }
-                    .onFailure { e ->
-                        launch(Dispatchers.Main) {
-                            Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
-                        }
-                    }
-            }
+            com.darkxvenom.airbeats.utils.SaveToStorageUtil.saveToMusicFolderAsync(
+                context = context,
+                mediaMetadata = song.toMediaMetadata(),
+            )
             onDismiss()
         } else {
             Toast.makeText(context, permReqMsg, Toast.LENGTH_LONG).show()
@@ -628,20 +618,10 @@ fun SongMenu(
 
                     if (hasPermission) {
                         Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
-                        coroutineScope.launch(Dispatchers.IO) {
-                            com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                                .saveToMusicFolder(context, song.toMediaMetadata())
-                                .onSuccess {
-                                    launch(Dispatchers.Main) {
-                                        Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                                .onFailure { e ->
-                                    launch(Dispatchers.Main) {
-                                        Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                        }
+                        com.darkxvenom.airbeats.utils.SaveToStorageUtil.saveToMusicFolderAsync(
+                            context = context,
+                            mediaMetadata = song.toMediaMetadata(),
+                        )
                         onDismiss()
                     } else {
                         permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)

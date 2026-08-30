@@ -16,6 +16,7 @@ import com.darkxvenom.airbeats.constants.MusicProviderKey
 import com.darkxvenom.airbeats.constants.SongSortType
 import com.darkxvenom.airbeats.constants.VoiceAssistantTtsFeedbackKey
 import com.darkxvenom.airbeats.db.entities.Song
+import com.darkxvenom.airbeats.db.entities.SongEntity
 import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.SongItem
@@ -48,6 +49,8 @@ class VoiceAssistantActionExecutor(
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
 
+    var onTtsSpeakingChanged: ((Boolean) -> Unit)? = null
+
     init {
         try {
             tts = TextToSpeech(context.applicationContext, this)
@@ -59,13 +62,38 @@ class VoiceAssistantActionExecutor(
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             tts?.language = Locale.getDefault()
+            tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    onTtsSpeakingChanged?.invoke(true)
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    mainHandler.postDelayed({
+                        onTtsSpeakingChanged?.invoke(false)
+                    }, 1200L)
+                }
+
+                override fun onError(utteranceId: String?) {
+                    onTtsSpeakingChanged?.invoke(false)
+                }
+            })
             isTtsReady = true
         } else {
             Timber.w("TextToSpeech initialization failed with status $status")
         }
     }
 
+    private var lastToastMsg: String? = null
+    private var lastToastTime: Long = 0L
+
     fun showToast(message: String, iconResId: Int = R.drawable.music_note) {
+        val now = System.currentTimeMillis()
+        if (message == lastToastMsg && now - lastToastTime < 2500L) {
+            return
+        }
+        lastToastMsg = message
+        lastToastTime = now
+
         overlayManager?.showActionResult(message, iconResId)
         mainHandler.post {
             try {
@@ -78,7 +106,9 @@ class VoiceAssistantActionExecutor(
         scope.launch {
             val ttsEnabled = context.dataStore.get(VoiceAssistantTtsFeedbackKey, true)
             if (ttsEnabled && isTtsReady && tts != null) {
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "airbeats_voice_feedback")
+                val utteranceId = "airbeats_feedback_${System.currentTimeMillis()}"
+                onTtsSpeakingChanged?.invoke(true)
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
             }
         }
     }
@@ -122,19 +152,15 @@ class VoiceAssistantActionExecutor(
 
         when (command) {
             is VoiceCommand.PlayGenericMusic -> {
-                showToast("Loading music...", R.drawable.music_note)
                 handlePlayGenericMusic()
             }
             is VoiceCommand.PlayCachedSongs -> {
-                showToast("Loading library songs...", R.drawable.library_music)
                 handlePlayCachedSongs()
             }
             is VoiceCommand.PlayLikedSongs -> {
-                showToast("Loading liked songs...", R.drawable.favorite)
                 handlePlayLikedSongs()
             }
             is VoiceCommand.PlaySong -> {
-                showToast("Searching: \"${command.query}\"", R.drawable.search)
                 handlePlaySong(command.query)
             }
             is VoiceCommand.Pause -> {
@@ -186,9 +212,31 @@ class VoiceAssistantActionExecutor(
             }
             is VoiceCommand.ToggleLike -> {
                 scope.launch(Dispatchers.Main) {
-                    showToast("Added to favorites", R.drawable.favorite)
                     val service = ensureMusicService()
-                    service?.toggleLike()
+                    val metadata = service?.currentMediaMetadata?.value ?: PlayerConnection.instance?.mediaMetadata?.value
+                    if (metadata != null && metadata.id.isNotBlank()) {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                val database = App.instance.database
+                                val dbSong = database.song(metadata.id).firstOrNull()
+                                if (dbSong != null) {
+                                    database.update(dbSong.song.toggleLike())
+                                    if (dbSong.song.inLibrary == null) {
+                                        database.update(dbSong.song.toggleLibrary())
+                                    }
+                                } else {
+                                    database.insert(metadata, SongEntity::toggleLike)
+                                }
+                            } catch (e: Exception) {
+                                Timber.e(e, "Error adding song to liked library")
+                            }
+                        }
+                        showToast("Added to favorites", R.drawable.favorite)
+                        speak("Added ${metadata.title} to favorites")
+                    } else {
+                        showToast("No song currently playing", R.drawable.favorite_border)
+                        speak("No song is currently playing")
+                    }
                 }
             }
             is VoiceCommand.StartRadio -> {
@@ -238,19 +286,12 @@ class VoiceAssistantActionExecutor(
     private suspend fun getAllLocalCachedSongs(): List<Song> = withContext(Dispatchers.IO) {
         try {
             val database = App.instance.database
-            // 1. Try allSongs() which contains every cached & played song stored in the app
-            val all = database.allSongs().firstOrNull()
-            if (!all.isNullOrEmpty()) return@withContext all
+            val librarySongs: List<Song> = try { database.getAllLibrarySongsSync() } catch (_: Exception) { emptyList() }
+            val library: List<Song> = try { database.songs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val liked: List<Song> = try { database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
+            val all: List<Song> = try { database.allSongs().firstOrNull() ?: emptyList() } catch (_: Exception) { emptyList() }
 
-            // 2. Try songs in library
-            val library = database.songs(SongSortType.CREATE_DATE, true).firstOrNull()
-            if (!library.isNullOrEmpty()) return@withContext library
-
-            // 3. Try liked songs
-            val liked = database.likedSongs(SongSortType.CREATE_DATE, true).firstOrNull()
-            if (!liked.isNullOrEmpty()) return@withContext liked
-
-            emptyList()
+            (librarySongs + library + liked + all).distinctBy { it.id }.filter { it.id.isNotBlank() }
         } catch (e: Exception) {
             Timber.e(e, "Error querying local cached songs")
             emptyList()
@@ -282,26 +323,31 @@ class VoiceAssistantActionExecutor(
                 }
 
                 if (userTasteSeeds.isNotEmpty()) {
-                    // Pick a seed song from user favorites to generate personalized endless radio tailored to their taste
-                    val seedSong = userTasteSeeds.take(20).shuffled().first()
+                    // Pick a random seed song from user favorites to generate personalized endless radio tailored to their taste
+                    val rng = java.util.Random(System.nanoTime())
+                    val seedSong = userTasteSeeds.shuffled(rng).first()
                     val queue = YouTubeQueue.radio(seedSong.toMediaMetadata())
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
-                        showToast("Playing recommended songs based on your taste")
+                        showToast("Playing songs")
                     }
-                    speak("Playing recommended songs based on your taste")
+                    speak("Playing songs")
                     return@launch
                 }
 
@@ -316,26 +362,31 @@ class VoiceAssistantActionExecutor(
                     ?.filterExplicit(hideExplicit)
 
                 if (!songs.isNullOrEmpty()) {
-                    val shuffled = songs.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffled = songs.shuffled(rng)
                     val first = shuffled.first()
                     val queue = YouTubeQueue.radio(first.toMediaMetadata())
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
-                        showToast("Playing recommended songs")
+                        showToast("Playing songs")
                     }
-                    speak("Playing recommended songs")
+                    speak("Playing songs")
                 } else {
                     handlePlayCachedSongs()
                 }
@@ -352,23 +403,34 @@ class VoiceAssistantActionExecutor(
                 val songs = getAllLocalCachedSongs()
 
                 if (songs.isNotEmpty()) {
-                    val shuffledSongs = songs.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffledSongs = songs.shuffled(rng)
                     val mediaItems = shuffledSongs.map { it.toMediaItem() }
+                    val randomStartIndex = if (mediaItems.size > 1) rng.nextInt(mediaItems.size) else 0
+
                     val queue = ListQueue(
                         title = "Library Songs",
-                        items = mediaItems
+                        items = mediaItems,
+                        startIndex = randomStartIndex,
+                        position = 0L
                     )
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.seekTo(randomStartIndex, 0L)
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.seekTo(randomStartIndex, 0L)
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
@@ -401,23 +463,34 @@ class VoiceAssistantActionExecutor(
                 }
 
                 if (!liked.isNullOrEmpty()) {
-                    val shuffledLiked = liked.shuffled()
+                    val rng = java.util.Random(System.nanoTime())
+                    val shuffledLiked = liked.shuffled(rng)
                     val mediaItems = shuffledLiked.map { it.toMediaItem() }
+                    val randomStartIndex = if (mediaItems.size > 1) rng.nextInt(mediaItems.size) else 0
+
                     val queue = ListQueue(
                         title = "Liked Songs",
-                        items = mediaItems
+                        items = mediaItems,
+                        startIndex = randomStartIndex,
+                        position = 0L
                     )
 
                     withContext(Dispatchers.Main) {
                         val service = ensureMusicService()
                         if (service != null) {
-                            service.player.shuffleModeEnabled = true
                             service.playQueue(queue, playWhenReady = true)
+                            service.player.shuffleModeEnabled = true
+                            service.player.seekTo(randomStartIndex, 0L)
+                            service.player.prepare()
+                            service.player.playWhenReady = true
                             service.player.play()
                         } else {
                             PlayerConnection.instance?.let {
-                                it.service.player.shuffleModeEnabled = true
                                 it.playQueue(queue)
+                                it.service.player.shuffleModeEnabled = true
+                                it.service.player.seekTo(randomStartIndex, 0L)
+                                it.service.player.prepare()
+                                it.service.player.playWhenReady = true
                                 it.service.player.play()
                             }
                         }
@@ -612,16 +685,20 @@ class VoiceAssistantActionExecutor(
     }
 
     private fun ensureMusicService(): MusicService? {
-        val service = getMusicService() ?: PlayerConnection.instance?.service
+        val service = MusicService.instance ?: getMusicService() ?: PlayerConnection.instance?.service
         if (service == null) {
             try {
                 val intent = Intent(context, MusicService::class.java)
-                context.startService(intent)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start MusicService")
             }
         }
-        return service
+        return service ?: MusicService.instance ?: PlayerConnection.instance?.service
     }
 
     fun release() {

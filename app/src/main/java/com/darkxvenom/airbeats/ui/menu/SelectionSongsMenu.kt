@@ -270,6 +270,19 @@ fun SelectionSongMenu(
         )
 
         GridMenuItem(
+            icon = R.drawable.save_to_storage,
+            title = R.string.save_to_local,
+        ) {
+            onDismiss()
+            com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                context = context,
+                playlistName = "AirBeats",
+                mediaList = songSelection.map { it.toMediaMetadata() },
+            )
+            clearAction()
+        }
+
+        GridMenuItem(
             icon = if (allLiked) R.drawable.favorite else R.drawable.favorite_border,
             title = if (allLiked) R.string.dislike_all else R.string.like_all,
         ) {
@@ -523,5 +536,18 @@ fun SelectionMediaMetadataMenu(
                 showRemoveDownloadDialog = true
             },
         )
+
+        GridMenuItem(
+            icon = R.drawable.save_to_storage,
+            title = R.string.save_to_local,
+        ) {
+            onDismiss()
+            com.darkxvenom.airbeats.utils.SaveToStorageUtil.savePlaylistToMusicFolderAsync(
+                context = context,
+                playlistName = "AirBeats",
+                mediaList = songSelection,
+            )
+            clearAction()
+        }
     }
 }

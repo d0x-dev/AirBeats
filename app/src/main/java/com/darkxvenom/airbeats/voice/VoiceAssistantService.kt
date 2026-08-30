@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,6 +48,7 @@ class VoiceAssistantService : Service() {
         const val NOTIFICATION_ID = 2001
         const val CHANNEL_ID = "voice_assistant_channel"
         const val ACTION_STOP_VOICE_ASSISTANT = "com.darkxvenom.airbeats.voice.STOP"
+        const val ACTION_TRIGGER_LISTEN = "com.darkxvenom.airbeats.voice.LISTEN"
 
         private val _isServiceRunning = MutableStateFlow(false)
         val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -114,9 +116,14 @@ class VoiceAssistantService : Service() {
             onCommandRecognized = { command, text ->
                 Timber.i("VoiceAssistantService received command: %s (from text: '%s')", command, text)
                 overlayManager?.updateSpokenText(text)
+                updateNotificationText("Executing: \"$text\"")
                 actionExecutor.execute(command)
             }
         )
+
+        actionExecutor.onTtsSpeakingChanged = { isSpeaking ->
+            voiceAssistantManager.setTtsSpeaking(isSpeaking)
+        }
 
         serviceScope.launch {
             val directCommands = dataStore.get(VoiceAssistantDirectCommandsKey, false)
@@ -131,16 +138,26 @@ class VoiceAssistantService : Service() {
         }
     }
 
+    fun triggerListening() {
+        overlayManager?.showListening()
+        voiceAssistantManager.triggerListeningSession()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP_VOICE_ASSISTANT) {
-            Timber.i("Stopping VoiceAssistantService via notification action")
-            serviceScope.launch {
-                dataStore.edit { preferences ->
-                    preferences[EnableVoiceAssistantKey] = false
+        when (intent?.action) {
+            ACTION_STOP_VOICE_ASSISTANT -> {
+                Timber.i("Stopping VoiceAssistantService via notification action")
+                serviceScope.launch {
+                    dataStore.edit { preferences ->
+                        preferences[EnableVoiceAssistantKey] = false
+                    }
                 }
+                stopSelf()
+                return START_NOT_STICKY
             }
-            stopSelf()
-            return START_NOT_STICKY
+            ACTION_TRIGGER_LISTEN -> {
+                triggerListening()
+            }
         }
         return START_STICKY
     }
@@ -164,12 +181,21 @@ class VoiceAssistantService : Service() {
         }
     }
 
-    private fun buildForegroundNotification(): Notification {
+    private fun buildForegroundNotification(statusText: String? = null): Notification {
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
             Intent(this, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val listenIntent = PendingIntent.getService(
+            this,
+            2,
+            Intent(this, VoiceAssistantService::class.java).apply {
+                action = ACTION_TRIGGER_LISTEN
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -183,20 +209,42 @@ class VoiceAssistantService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val text = statusText ?: getString(R.string.voice_notification_text)
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.airbeats_monochrome)
             .setContentTitle(getString(R.string.voice_notification_title))
-            .setContentText(getString(R.string.voice_notification_text))
+            .setContentText(text)
             .setContentIntent(contentIntent)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .addAction(
+                R.drawable.mic,
+                "Speak",
+                listenIntent
+            )
             .addAction(
                 R.drawable.airbeats_monochrome,
                 getString(R.string.voice_notification_stop),
                 stopIntent
             )
             .build()
+    }
+
+    fun updateNotificationText(statusText: String) {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, buildForegroundNotification(statusText))
+
+            // Revert back to default status after 4 seconds
+            serviceScope.launch {
+                delay(4000)
+                notificationManager.notify(NOTIFICATION_ID, buildForegroundNotification(null))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error updating notification text")
+        }
     }
 
     private fun createNotificationChannel() {

@@ -1349,4 +1349,12 @@ interface DatabaseDao {
         """
     )
     fun recentAlbums(limit: Int, offset: Int = 0): Flow<List<Album>>
+
+    @Transaction
+    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR dateDownload IS NOT NULL")
+    fun getAllLibrarySongs(): Flow<List<Song>>
+
+    @Transaction
+    @Query("SELECT * FROM song WHERE inLibrary IS NOT NULL OR dateDownload IS NOT NULL")
+    suspend fun getAllLibrarySongsSync(): List<Song>
 }

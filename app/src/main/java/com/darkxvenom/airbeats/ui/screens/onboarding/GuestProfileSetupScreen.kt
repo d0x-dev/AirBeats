@@ -59,17 +59,19 @@ fun GuestProfileSetupScreen(navController: NavController) {
             .fillMaxSize()
             .background(bgColor)
             .statusBarsPadding()
-            .navigationBarsPadding(),
-        contentAlignment = Alignment.Center
+            .navigationBarsPadding()
+            .imePadding()
     ) {
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
+            Spacer(modifier = Modifier.weight(1f, fill = false))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,7 +154,7 @@ fun GuestProfileSetupScreen(navController: NavController) {
                         },
                         placeholder = {
                             Text(
-                                text = "e.g. Venom",
+                                text = "Enter your name...",
                                 color = subTextColor.copy(alpha = 0.6f)
                             )
                         },
@@ -244,6 +246,7 @@ fun GuestProfileSetupScreen(navController: NavController) {
                     }
                 }
             }
+            Spacer(modifier = Modifier.weight(1f, fill = false))
         }
     }
 }

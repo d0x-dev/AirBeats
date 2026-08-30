@@ -449,20 +449,10 @@ fun PlayerMenu(
                         ) { isGranted ->
                             if (isGranted) {
                                 Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
-                                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO).launch {
-                                    com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                                        .saveToMusicFolder(context, mediaMetadata)
-                                        .onSuccess {
-                                            launch(Dispatchers.Main) {
-                                                Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                        .onFailure { e ->
-                                            launch(Dispatchers.Main) {
-                                                Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                }
+                                com.darkxvenom.airbeats.utils.SaveToStorageUtil.saveToMusicFolderAsync(
+                                    context = context,
+                                    mediaMetadata = mediaMetadata,
+                                )
                                 onDismiss()
                             } else {
                                 Toast.makeText(context, permReqMsg, Toast.LENGTH_LONG).show()
@@ -485,20 +475,10 @@ fun PlayerMenu(
 
                                 if (hasPermission) {
                                     Toast.makeText(context, savingToastMsg, Toast.LENGTH_SHORT).show()
-                                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO).launch {
-                                        com.darkxvenom.airbeats.utils.SaveToStorageUtil
-                                            .saveToMusicFolder(context, mediaMetadata)
-                                            .onSuccess {
-                                                launch(Dispatchers.Main) {
-                                                    Toast.makeText(context, savedToastMsg, Toast.LENGTH_LONG).show()
-                                                }
-                                            }
-                                            .onFailure { e ->
-                                                launch(Dispatchers.Main) {
-                                                    Toast.makeText(context, "$failedToastMsg: ${e.message}", Toast.LENGTH_LONG).show()
-                                                }
-                                            }
-                                    }
+                                    com.darkxvenom.airbeats.utils.SaveToStorageUtil.saveToMusicFolderAsync(
+                                        context = context,
+                                        mediaMetadata = mediaMetadata,
+                                    )
                                     onDismiss()
                                 } else {
                                     permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
