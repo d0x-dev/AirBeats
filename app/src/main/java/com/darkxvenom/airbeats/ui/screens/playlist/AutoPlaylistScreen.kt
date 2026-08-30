@@ -58,6 +58,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.darkxvenom.airbeats.ui.theme.PlayerColorExtractor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.darkxvenom.airbeats.models.toMediaMetadata
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
