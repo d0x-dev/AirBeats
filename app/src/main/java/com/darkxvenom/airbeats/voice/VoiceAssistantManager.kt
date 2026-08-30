@@ -40,6 +40,10 @@ class VoiceAssistantManager(
     private var isTranscribing = false
     private var lastTriggerTimestamp = 0L
 
+    @Volatile
+    private var isTtsSpeaking = false
+    private var ttsFinishedTimestamp = 0L
+
     // Pure Native AudioRecord Streaming Engine
     private var audioRecord: AudioRecord? = null
     private var isAudioRecordRunning = false
@@ -58,6 +62,13 @@ class VoiceAssistantManager(
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
+    }
+
+    fun setTtsSpeaking(speaking: Boolean) {
+        isTtsSpeaking = speaking
+        if (!speaking) {
+            ttsFinishedTimestamp = System.currentTimeMillis()
+        }
     }
 
     fun start(requireWakeWord: Boolean = true) {
@@ -129,8 +140,12 @@ class VoiceAssistantManager(
                 var speechFrames = 0
 
                 while (isRunning && isAudioRecordRunning) {
-                    if (isTranscribing) {
-                        // Pause AudioRecord while speech recognizer is processing
+                    val now = System.currentTimeMillis()
+                    val isSelfSpeaking = isTtsSpeaking || (now - ttsFinishedTimestamp < 1500L)
+
+                    if (isTranscribing || isSelfSpeaking) {
+                        // Pause / Ignore AudioRecord while speech recognizer is processing or TTS feedback is playing!
+                        speechFrames = 0
                         Thread.sleep(100)
                         continue
                     }
@@ -161,8 +176,7 @@ class VoiceAssistantManager(
                             speechFrames++
                             if (speechFrames >= 3) {
                                 speechFrames = 0
-                                val now = System.currentTimeMillis()
-                                if (now - lastTriggerTimestamp > 3000L && !isTranscribing) {
+                                if (now - lastTriggerTimestamp > 3000L && !isTranscribing && !isSelfSpeaking) {
                                     lastTriggerTimestamp = now
                                     mainHandler.post {
                                         startOnDemandTranscription()
@@ -215,6 +229,8 @@ class VoiceAssistantManager(
 
     private fun startOnDemandTranscription() {
         if (!isRunning) return
+        val now = System.currentTimeMillis()
+        if (isTtsSpeaking || (now - ttsFinishedTimestamp < 1500L)) return
         ensureRecognizer()
 
         val recognizer = speechRecognizer ?: return

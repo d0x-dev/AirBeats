@@ -49,6 +49,8 @@ class VoiceAssistantActionExecutor(
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
 
+    var onTtsSpeakingChanged: ((Boolean) -> Unit)? = null
+
     init {
         try {
             tts = TextToSpeech(context.applicationContext, this)
@@ -60,6 +62,21 @@ class VoiceAssistantActionExecutor(
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
             tts?.language = Locale.getDefault()
+            tts?.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {
+                    onTtsSpeakingChanged?.invoke(true)
+                }
+
+                override fun onDone(utteranceId: String?) {
+                    mainHandler.postDelayed({
+                        onTtsSpeakingChanged?.invoke(false)
+                    }, 1200L)
+                }
+
+                override fun onError(utteranceId: String?) {
+                    onTtsSpeakingChanged?.invoke(false)
+                }
+            })
             isTtsReady = true
         } else {
             Timber.w("TextToSpeech initialization failed with status $status")
@@ -89,7 +106,9 @@ class VoiceAssistantActionExecutor(
         scope.launch {
             val ttsEnabled = context.dataStore.get(VoiceAssistantTtsFeedbackKey, true)
             if (ttsEnabled && isTtsReady && tts != null) {
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "airbeats_voice_feedback")
+                val utteranceId = "airbeats_feedback_${System.currentTimeMillis()}"
+                onTtsSpeakingChanged?.invoke(true)
+                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
             }
         }
     }
@@ -194,7 +213,7 @@ class VoiceAssistantActionExecutor(
             is VoiceCommand.ToggleLike -> {
                 scope.launch(Dispatchers.Main) {
                     val service = ensureMusicService()
-                    val metadata = service?.currentMediaMetadata?.value ?: PlayerConnection.instance?.currentMediaMetadata?.value
+                    val metadata = service?.currentMediaMetadata?.value ?: PlayerConnection.instance?.mediaMetadata?.value
                     if (metadata != null && metadata.id.isNotBlank()) {
                         withContext(Dispatchers.IO) {
                             try {

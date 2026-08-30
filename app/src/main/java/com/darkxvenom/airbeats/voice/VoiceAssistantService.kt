@@ -121,6 +121,10 @@ class VoiceAssistantService : Service() {
             }
         )
 
+        actionExecutor.onTtsSpeakingChanged = { isSpeaking ->
+            voiceAssistantManager.setTtsSpeaking(isSpeaking)
+        }
+
         serviceScope.launch {
             val directCommands = dataStore.get(VoiceAssistantDirectCommandsKey, false)
             val requireWakeWord = !directCommands
