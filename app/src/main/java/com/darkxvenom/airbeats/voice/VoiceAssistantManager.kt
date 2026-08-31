@@ -72,8 +72,8 @@ class VoiceAssistantManager(
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        private const val DEBOUNCE_COOLDOWN_MS = 2500L
-        private const val TTS_SILENCE_GRACE_MS = 1200L
+        private const val DEBOUNCE_COOLDOWN_MS = 600L
+        private const val TTS_SILENCE_GRACE_MS = 800L
     }
 
     fun setTtsSpeaking(speaking: Boolean) {
@@ -92,7 +92,7 @@ class VoiceAssistantManager(
         _isListening.value = true
 
         startSilentAudioRecord()
-        Timber.i("VoiceAssistantManager: Silent background monitor started")
+        Timber.i("VoiceAssistantManager: Silent background monitor started (requireWakeWord=%b)", requireWakeWord)
     }
 
     fun stop() {
@@ -138,7 +138,13 @@ class VoiceAssistantManager(
         mainHandler.post {
             try {
                 if (speechRecognizer == null) {
-                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+                    speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
+                    ) {
+                        SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext)
+                    } else {
+                        SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
+                    }.apply {
                         setRecognitionListener(this@VoiceAssistantManager)
                     }
                 }
@@ -148,15 +154,15 @@ class VoiceAssistantManager(
                     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                     putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
-                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
+                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                     putExtra("android.speech.extra.DICTATION_MODE", true)
-                    putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 6000L)
-                    putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
-                    putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 7000L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2500L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
                 }
 
                 speechRecognizer?.startListening(intent)
-                Timber.d("SpeechRecognizer session active (manualTap=%b)", isManualTap)
+                Timber.i("SpeechRecognizer active (manualTap=%b)", isManualTap)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start SpeechRecognizer session")
                 finishSpeechSession()
@@ -392,9 +398,9 @@ class VoiceAssistantManager(
                                 ambientNoiseFloor = ambientNoiseFloor * 0.96 + db * 0.04
                             }
 
-                            val margin = if (isMusicPlaying) 12.0 else 6.0
-                            val minDb = if (isMusicPlaying) 48.0 else 28.0
-                            val speechThreshold = (ambientNoiseFloor + margin).coerceIn(minDb, 74.0)
+                            val margin = if (isMusicPlaying) 8.0 else 3.5
+                            val minDb = if (isMusicPlaying) 42.0 else 18.0
+                            val speechThreshold = (ambientNoiseFloor + margin).coerceIn(minDb, 68.0)
 
                             if (db >= speechThreshold) {
                                 voiceOnsetFrames++
