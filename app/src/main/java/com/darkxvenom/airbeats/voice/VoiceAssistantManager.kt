@@ -25,8 +25,8 @@ import kotlin.math.sqrt
 /**
  * Google Gemini-style Always-Active Voice Assistant Engine.
  * 1. Continuous Always-On Mic: AudioRecord stays active 24/7 in background without ever shutting off.
- * 2. Hotword Wake-Word Detector: Stays in silent standby until "AirBeats", "Hey AirBeats", or "OK Google" is heard.
- * 3. Zero System Beeps: Suppresses system chime streams during transcription.
+ * 2. Hotword Wake-Word Detector: Stays in silent standby until "AirBeats", "Hey AirBeats", or commands are spoken.
+ * 3. Zero System Beeps & Zero Phantom HUD Popups: HUD only appears on explicit tap or verified speech commands.
  */
 class VoiceAssistantManager(
     private val context: Context,
@@ -38,7 +38,7 @@ class VoiceAssistantManager(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     private var isRunning = false
-    private var requireWakeWord = true
+    private var requireWakeWord = false
     private var lastTriggerTimestamp = 0L
 
     @Volatile
@@ -53,6 +53,7 @@ class VoiceAssistantManager(
     // On-Demand SpeechRecognizer for full command parsing
     private var speechRecognizer: SpeechRecognizer? = null
     private var isRecognizing = false
+    private var isManualSession = false
     private var originalSystemVolume = -1
     private var originalNotificationVolume = -1
     private var isSystemMuted = false
@@ -83,14 +84,14 @@ class VoiceAssistantManager(
         }
     }
 
-    fun start(requireWakeWord: Boolean = true) {
+    fun start(requireWakeWord: Boolean = false) {
         this.requireWakeWord = requireWakeWord
         if (isRunning) return
         isRunning = true
         _isListening.value = true
 
         startAlwaysActiveAudioRecord()
-        Timber.i("VoiceAssistantManager: Always-Active Background Microphone running (Hotword: 'AirBeats')")
+        Timber.i("VoiceAssistantManager: Always-Active Background Microphone running")
     }
 
     fun stop() {
@@ -165,11 +166,14 @@ class VoiceAssistantManager(
     private fun wakeAndStartRecognition(isManualTap: Boolean = false) {
         if (isRecognizing) return
         isRecognizing = true
+        isManualSession = isManualTap
         _isListening.value = true
 
-        // Notify HUD overlay
-        _lastRecognizedText.value = "Listening..."
-        onWakeWordHeard?.invoke("AirBeats")
+        // ONLY pop up HUD immediately if user explicitly pressed 'Speak'
+        if (isManualTap) {
+            _lastRecognizedText.value = "Listening..."
+            onWakeWordHeard?.invoke("AirBeats")
+        }
 
         // Temporarily pause AudioRecord to hand off mic to SpeechRecognizer
         isAudioRecordRunning = false
@@ -207,7 +211,7 @@ class VoiceAssistantManager(
                 }
 
                 speechRecognizer?.startListening(intent)
-                Timber.i("SpeechRecognizer active for command transcription")
+                Timber.i("SpeechRecognizer active (manualTap=$isManualTap)")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start SpeechRecognizer")
                 finishRecognition()
@@ -217,6 +221,7 @@ class VoiceAssistantManager(
 
     private fun finishRecognition() {
         isRecognizing = false
+        isManualSession = false
         _isListening.value = false
         restoreSystemSound()
 
@@ -237,6 +242,7 @@ class VoiceAssistantManager(
 
     private fun cancelRecognition() {
         isRecognizing = false
+        isManualSession = false
         _isListening.value = false
         mainHandler.post {
             restoreSystemSound()
@@ -286,7 +292,7 @@ class VoiceAssistantManager(
 
             var commandExecuted = false
             for (candidate in matches) {
-                val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = false)
+                val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = requireWakeWord)
                 if (command !is VoiceCommand.Unknown) {
                     onCommandRecognized(command, candidate.trim())
                     commandExecuted = true
@@ -294,7 +300,7 @@ class VoiceAssistantManager(
                 }
             }
 
-            // Fallback: If user spoke a direct song title (e.g. "Starboy" or "play Believer")
+            // Fallback: If direct commands are accepted or user spoke a song title
             if (!commandExecuted && topText.isNotBlank()) {
                 val directCommand = VoiceCommandParser.parse(topText, requireWakeWord = false)
                 if (directCommand !is VoiceCommand.Unknown) {
@@ -313,6 +319,7 @@ class VoiceAssistantManager(
         val partialText = matches?.firstOrNull()?.trim()
         if (!partialText.isNullOrBlank()) {
             _lastRecognizedText.value = partialText
+            // Only update HUD when actual verified words are being spoken
             onWakeWordHeard?.invoke(partialText)
         }
     }
@@ -350,7 +357,7 @@ class VoiceAssistantManager(
 
                     audioRecord = record
                     record.startRecording()
-                    Timber.i("Microphone is LIVE 24/7 (Listening for 'Hey AirBeats' / 'AirBeats')")
+                    Timber.i("Microphone is LIVE 24/7 (Listening in background)")
 
                     val buffer = ShortArray(1024)
                     var ambientNoiseFloor = 0.0
@@ -376,15 +383,11 @@ class VoiceAssistantManager(
                         if (read > 0) {
                             var sum = 0.0
                             var maxVal = 0
-                            var zeroCrossings = 0
                             for (i in 0 until read) {
                                 val v = buffer[i].toInt()
                                 sum += v * v
                                 val absV = abs(v)
                                 if (absV > maxVal) maxVal = absV
-                                if (i > 0 && ((buffer[i] >= 0 && buffer[i - 1] < 0) || (buffer[i] < 0 && buffer[i - 1] >= 0))) {
-                                    zeroCrossings++
-                                }
                             }
 
                             val rms = sqrt(sum / read)
@@ -397,12 +400,13 @@ class VoiceAssistantManager(
                                 ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
                             }
 
-                            val speechThreshold = (ambientNoiseFloor + 13.0).coerceIn(38.0, 70.0)
+                            // Higher threshold to prevent room background noises from false-triggering
+                            val speechThreshold = (ambientNoiseFloor + 15.0).coerceIn(44.0, 72.0)
 
                             if (db >= speechThreshold) {
                                 speechFrames++
                                 silenceFrames = 0
-                                if (speechFrames >= 2 && !isCollectingUtterance) {
+                                if (speechFrames >= 3 && !isCollectingUtterance) {
                                     isCollectingUtterance = true
                                     utteranceFrameCount = 0
                                 }
@@ -414,17 +418,17 @@ class VoiceAssistantManager(
                                     silenceFrames++
                                     utteranceFrameCount++
 
-                                    // Hotword phrase completed (approx 350ms of silence after speaking)
+                                    // Spoken phrase completed (approx 400ms of silence after speaking)
                                     if (silenceFrames >= 6) {
                                         isCollectingUtterance = false
                                         speechFrames = 0
                                         silenceFrames = 0
 
                                         val triggerNow = System.currentTimeMillis()
-                                        // Utterance matches standard wake-word duration (350ms to 2.5s)
-                                        if (utteranceFrameCount in 6..180 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
+                                        // Utterance matches genuine spoken command duration (400ms to 2.5s)
+                                        if (utteranceFrameCount in 8..160 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
                                             lastTriggerTimestamp = triggerNow
-                                            Timber.i("Hotword detected in background -> Waking up AirBeats Assistant!")
+                                            Timber.i("Voice phrase detected in background -> Processing speech silently")
 
                                             mainHandler.post {
                                                 wakeAndStartRecognition(isManualTap = false)
