@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -30,6 +31,10 @@ import coil.request.SuccessResult
 import com.darkxvenom.airbeats.constants.DynamicIslandAccentColorKey
 import com.darkxvenom.airbeats.constants.DynamicIslandBgColorKey
 import com.darkxvenom.airbeats.constants.DynamicIslandHeightKey
+import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeHeightKey
+import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetXKey
+import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetYKey
+import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeWidthKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetXKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetYKey
 import com.darkxvenom.airbeats.constants.DynamicIslandTextColorKey
@@ -76,10 +81,35 @@ class DynamicIslandService : Service(), Player.Listener {
     private var musicService: MusicService? = null
     private var isAdded = false
     private var isAppInForeground = false
-    private var offsetX = 0
-    private var offsetY = 8
-    private var islandWidth = 160
-    private var islandHeight = 36
+
+    private var portraitOffsetX = 0
+    private var portraitOffsetY = 8
+    private var portraitWidth = 160
+    private var portraitHeight = 36
+
+    private var landscapeOffsetX = 0
+    private var landscapeOffsetY = 8
+    private var landscapeWidth = 160
+    private var landscapeHeight = 36
+
+    private var islandBgColor = Color.BLACK
+    private var islandAccentColor = Color.rgb(229, 19, 69)
+    private var islandTextColor = Color.WHITE
+
+    private val isLandscape: Boolean
+        get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    private val currentOffsetX: Int
+        get() = if (isLandscape) landscapeOffsetX else portraitOffsetX
+
+    private val currentOffsetY: Int
+        get() = if (isLandscape) landscapeOffsetY else portraitOffsetY
+
+    private val currentIslandWidth: Int
+        get() = if (isLandscape) landscapeWidth else portraitWidth
+
+    private val currentIslandHeight: Int
+        get() = if (isLandscape) landscapeHeight else portraitHeight
 
     private val foregroundListener: (Boolean, Boolean) -> Unit = { isForeground, isAdjusting ->
         isAppInForeground = isForeground
@@ -136,25 +166,44 @@ class DynamicIslandService : Service(), Player.Listener {
 
         scope.launch {
             dataStore.data.collect { prefs ->
-                val newX = prefs[DynamicIslandOffsetXKey] ?: 0
-                val newY = prefs[DynamicIslandOffsetYKey] ?: 8
-                val newW = prefs[DynamicIslandWidthKey] ?: 160
-                val newH = prefs[DynamicIslandHeightKey] ?: 36
-                val bgColor = prefs[DynamicIslandBgColorKey] ?: Color.BLACK
-                val accentColor = prefs[DynamicIslandAccentColorKey] ?: Color.rgb(229, 19, 69)
-                val textColor = prefs[DynamicIslandTextColorKey] ?: Color.WHITE
+                portraitOffsetX = prefs[DynamicIslandOffsetXKey] ?: 0
+                portraitOffsetY = prefs[DynamicIslandOffsetYKey] ?: 8
+                portraitWidth = prefs[DynamicIslandWidthKey] ?: 160
+                portraitHeight = prefs[DynamicIslandHeightKey] ?: 36
 
-                islandView.applyDimensionsAndColors(newW, newH, bgColor, accentColor, textColor, newY)
+                landscapeOffsetX = prefs[DynamicIslandLandscapeOffsetXKey] ?: 0
+                landscapeOffsetY = prefs[DynamicIslandLandscapeOffsetYKey] ?: 8
+                landscapeWidth = prefs[DynamicIslandLandscapeWidthKey] ?: 160
+                landscapeHeight = prefs[DynamicIslandLandscapeHeightKey] ?: 36
 
-                if (newX != offsetX || newY != offsetY || newW != islandWidth || newH != islandHeight) {
-                    offsetX = newX
-                    offsetY = newY
-                    islandWidth = newW
-                    islandHeight = newH
-                    updateLayout()
-                }
+                islandBgColor = prefs[DynamicIslandBgColorKey] ?: Color.BLACK
+                islandAccentColor = prefs[DynamicIslandAccentColorKey] ?: Color.rgb(229, 19, 69)
+                islandTextColor = prefs[DynamicIslandTextColorKey] ?: Color.WHITE
+
+                islandView.applyDimensionsAndColors(
+                    currentIslandWidth,
+                    currentIslandHeight,
+                    islandBgColor,
+                    islandAccentColor,
+                    islandTextColor,
+                    currentOffsetY
+                )
+                updateLayout()
             }
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        islandView.applyDimensionsAndColors(
+            currentIslandWidth,
+            currentIslandHeight,
+            islandBgColor,
+            islandAccentColor,
+            islandTextColor,
+            currentOffsetY
+        )
+        updateLayout()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -283,13 +332,13 @@ class DynamicIslandService : Service(), Player.Listener {
         val width = if (isExp) {
             WindowManager.LayoutParams.MATCH_PARENT
         } else {
-            islandWidth.dp
+            currentIslandWidth.coerceAtLeast(32).dp
         }
 
         val height = if (isExp) {
             WindowManager.LayoutParams.MATCH_PARENT
         } else {
-            islandHeight.dp
+            currentIslandHeight.coerceAtLeast(24).dp
         }
 
         return WindowManager.LayoutParams(
@@ -308,8 +357,8 @@ class DynamicIslandService : Service(), Player.Listener {
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
             // When expanded, ALWAYS reset X to 0 so the expanded full form stays 100% inside screen bounds!
-            x = if (isExp) 0 else offsetX.dp
-            y = if (isExp) 0 else offsetY.dp
+            x = if (isExp) 0 else currentOffsetX.dp
+            y = if (isExp) 0 else currentOffsetY.dp
         }
     }
 
@@ -347,6 +396,11 @@ private class DynamicIslandView(
         private set
 
     private var currentOffsetY = 8
+    private var rotationAngle = 0f
+
+    private var downX = 0f
+    private var downY = 0f
+    private var isTap = false
 
     private val density = resources.displayMetrics.density
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK }
@@ -404,12 +458,14 @@ private class DynamicIslandView(
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.argb(44, 255, 255, 255)
         }
-    private val waveformRunnable =
+
+    private val animationRunnable =
         object : Runnable {
             override fun run() {
                 if (isPlaying) {
+                    rotationAngle = (rotationAngle + 0.9f) % 360f
                     invalidate()
-                    postDelayed(this, 90L)
+                    postDelayed(this, 16L) // ~60 FPS smooth rotation
                 }
             }
         }
@@ -442,9 +498,9 @@ private class DynamicIslandView(
         this.durationMs = durationMs
         this.isShuffleEnabled = isShuffleEnabled
         this.repeatMode = repeatMode
-        removeCallbacks(waveformRunnable)
+        removeCallbacks(animationRunnable)
         if (isPlaying) {
-            post(waveformRunnable)
+            post(animationRunnable)
         }
         invalidate()
     }
@@ -481,25 +537,21 @@ private class DynamicIslandView(
         val localHeight = islandBounds.height()
 
         if (localWidth <= 52f.dp) {
-            // Mini Dot Mode (Compact circle with artwork and live indicator)
-            val padding = 4f.dp
+            // Mini Dot Mode (Clean rotating circular artwork without top-right indicator dot)
+            val padding = 3f.dp
             val art = RectF(padding, padding, localWidth - padding, localHeight - padding)
-            drawArtwork(canvas, art, corner = (localHeight - padding * 2) / 2f)
-            if (isPlaying) {
-                canvas.drawCircle(localWidth - 6f.dp, 6f.dp, 3.5f.dp, accentPaint)
-                canvas.drawCircle(localWidth - 6f.dp, 6f.dp, 1.5f.dp, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
-            }
+            drawArtwork(canvas, art, corner = (localHeight - padding * 2) / 2f, rotate = true)
         } else if (localWidth < 110f.dp) {
-            // Compact Mini-Pill Mode
+            // Compact Mini-Pill Mode (Rotating circular artwork on left, waveform on right)
             val artSize = localHeight - 8f.dp
             val art = RectF(4f.dp, 4f.dp, 4f.dp + artSize, 4f.dp + artSize)
-            drawArtwork(canvas, art, corner = artSize / 2f)
+            drawArtwork(canvas, art, corner = artSize / 2f, rotate = true)
             drawSpotifyWaveform(canvas, localWidth - 22f.dp, localHeight / 2f, compact = true)
         } else {
-            // Standard Full Pill Mode
+            // Standard Full Pill Mode (Rotating circular artwork on left, live dot in center, waveform on right)
             val artSize = localHeight - 8f.dp
-            val art = RectF(6f.dp, 4f.dp, 6f.dp + artSize, 4f.dp + artSize)
-            drawArtwork(canvas, art, corner = 12f.dp)
+            val art = RectF(5f.dp, 4f.dp, 5f.dp + artSize, 4f.dp + artSize)
+            drawArtwork(canvas, art, corner = artSize / 2f, rotate = true)
             drawLiveDot(canvas, localWidth / 2f, localHeight / 2f)
             drawSpotifyWaveform(canvas, localWidth - 34f.dp, localHeight / 2f, compact = true)
         }
@@ -510,7 +562,7 @@ private class DynamicIslandView(
         val title = metadata?.title.orEmpty().ifBlank { "AirBeats" }
         val artists = metadata?.artists?.joinToString { it.name }.orEmpty()
         val art = RectF(24f.dp, 28f.dp, 78f.dp, 82f.dp)
-        drawArtwork(canvas, art, corner = 12f.dp)
+        drawArtwork(canvas, art, corner = 14f.dp, rotate = false)
         canvas.drawText(title.ellipsize(24), 92f.dp, 46f.dp, textPaint)
         canvas.drawText(artists.ellipsize(30), 92f.dp, 65f.dp, subTextPaint)
         drawSpotifyWaveform(canvas, localWidth - 44f.dp, 42f.dp, compact = false)
@@ -537,31 +589,56 @@ private class DynamicIslandView(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (event.action != MotionEvent.ACTION_UP) return true
-        if (!expanded) {
-            expandWithDrop()
-            return true
-        }
-        if (!islandBounds.contains(event.x, event.y)) {
-            collapseWithDrop()
-            return true
-        }
-        val x = event.x - islandBounds.left
-        val y = event.y - islandBounds.top
-        if (y < 34f.dp || y > islandBounds.height() - 12f.dp) {
-            collapseWithDrop()
-            return true
-        }
-        if (y in 126f.dp..172f.dp) {
-            val localWidth = islandBounds.width()
-            val shuffleX = 54f.dp
-            val repeatX = localWidth - 54f.dp
-            when {
-                kotlin.math.abs(x - shuffleX) < 24f.dp -> onShuffle()
-                kotlin.math.abs(x - repeatX) < 24f.dp -> onRepeat()
-                x in (localWidth * 0.25f)..(localWidth * 0.4f) -> onPrevious()
-                x in (localWidth * 0.43f)..(localWidth * 0.57f) -> onPlayPause()
-                x in (localWidth * 0.6f)..(localWidth * 0.75f) -> onNext()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = event.x
+                downY = event.y
+                isTap = true
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = kotlin.math.abs(event.x - downX)
+                val dy = kotlin.math.abs(event.y - downY)
+                if (dx > 24f.dp || dy > 24f.dp) {
+                    isTap = false
+                }
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                if (!isTap && expanded) return true
+
+                if (!expanded) {
+                    // Tap on collapsed island (any size/height) reliably opens expanded player
+                    expandWithDrop()
+                    return true
+                }
+                if (!islandBounds.contains(event.x, event.y)) {
+                    collapseWithDrop()
+                    return true
+                }
+                val x = event.x - islandBounds.left
+                val y = event.y - islandBounds.top
+                if (y < 34f.dp || y > islandBounds.height() - 12f.dp) {
+                    collapseWithDrop()
+                    return true
+                }
+                if (y in 126f.dp..172f.dp) {
+                    val localWidth = islandBounds.width()
+                    val shuffleX = 54f.dp
+                    val repeatX = localWidth - 54f.dp
+                    when {
+                        kotlin.math.abs(x - shuffleX) < 28f.dp -> onShuffle()
+                        kotlin.math.abs(x - repeatX) < 28f.dp -> onRepeat()
+                        x in (localWidth * 0.22f)..(localWidth * 0.42f) -> onPrevious()
+                        x in (localWidth * 0.42f)..(localWidth * 0.58f) -> onPlayPause()
+                        x in (localWidth * 0.58f)..(localWidth * 0.78f) -> onNext()
+                    }
+                }
+                return true
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                isTap = false
+                return true
             }
         }
         return true
@@ -669,8 +746,12 @@ private class DynamicIslandView(
         canvas.drawCircle(islandBounds.centerX(), islandBounds.top + islandBounds.height() * 0.52f, radius, dropPaint)
     }
 
-    private fun drawArtwork(canvas: Canvas, rect: RectF, corner: Float) {
+    private fun drawArtwork(canvas: Canvas, rect: RectF, corner: Float, rotate: Boolean = true) {
         val bitmap = artwork
+        val checkpoint = canvas.save()
+        if (rotate && isPlaying) {
+            canvas.rotate(rotationAngle, rect.centerX(), rect.centerY())
+        }
         if (bitmap == null) {
             canvas.drawRoundRect(rect, corner, corner, accentPaint)
             if (rect.width() > 24f.dp) {
@@ -681,11 +762,10 @@ private class DynamicIslandView(
                 Path().apply {
                     addRoundRect(rect, corner, corner, Path.Direction.CW)
                 }
-            val clipped = canvas.save()
             canvas.clipPath(path)
             canvas.drawBitmap(bitmap, null, rect, null)
-            canvas.restoreToCount(clipped)
         }
+        canvas.restoreToCount(checkpoint)
     }
 
     private fun drawLiveDot(canvas: Canvas, cx: Float, cy: Float) {
@@ -722,7 +802,7 @@ private class DynamicIslandView(
     }
 
     override fun onDetachedFromWindow() {
-        removeCallbacks(waveformRunnable)
+        removeCallbacks(animationRunnable)
         super.onDetachedFromWindow()
     }
 

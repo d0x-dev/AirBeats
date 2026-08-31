@@ -439,11 +439,30 @@ fun AppearanceSettings(
 
     if (showIslandAdjustmentDialog) {
         val context = LocalContext.current
+        var selectedOrientationTab by remember { mutableStateOf(0) } // 0: Portrait, 1: Landscape
+
         val (islandOffsetX, onIslandOffsetXChange) = rememberPreference(DynamicIslandOffsetXKey, defaultValue = 0)
         val (islandOffsetY, onIslandOffsetYChange) = rememberPreference(DynamicIslandOffsetYKey, defaultValue = 8)
         val (islandWidth, onIslandWidthChange) = rememberPreference(DynamicIslandWidthKey, defaultValue = 160)
         val (islandHeight, onIslandHeightChange) = rememberPreference(DynamicIslandHeightKey, defaultValue = 36)
+
+        val (islandLandscapeOffsetX, onIslandLandscapeOffsetXChange) = rememberPreference(DynamicIslandLandscapeOffsetXKey, defaultValue = 0)
+        val (islandLandscapeOffsetY, onIslandLandscapeOffsetYChange) = rememberPreference(DynamicIslandLandscapeOffsetYKey, defaultValue = 8)
+        val (islandLandscapeWidth, onIslandLandscapeWidthChange) = rememberPreference(DynamicIslandLandscapeWidthKey, defaultValue = 160)
+        val (islandLandscapeHeight, onIslandLandscapeHeightChange) = rememberPreference(DynamicIslandLandscapeHeightKey, defaultValue = 36)
         
+        val activeX = if (selectedOrientationTab == 0) islandOffsetX else islandLandscapeOffsetX
+        val onActiveXChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandOffsetXChange else onIslandLandscapeOffsetXChange
+
+        val activeY = if (selectedOrientationTab == 0) islandOffsetY else islandLandscapeOffsetY
+        val onActiveYChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandOffsetYChange else onIslandLandscapeOffsetYChange
+
+        val activeW = if (selectedOrientationTab == 0) islandWidth else islandLandscapeWidth
+        val onActiveWChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandWidthChange else onIslandLandscapeWidthChange
+
+        val activeH = if (selectedOrientationTab == 0) islandHeight else islandLandscapeHeight
+        val onActiveHChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandHeightChange else onIslandLandscapeHeightChange
+
         DisposableEffect(Unit) {
             AppForegroundTracker.isAdjustingIsland = true
             onDispose {
@@ -454,10 +473,10 @@ fun AppearanceSettings(
         DefaultDialog(
             buttons = {
                 TextButton(onClick = { 
-                    onIslandOffsetXChange(0)
-                    onIslandOffsetYChange(8)
-                    onIslandWidthChange(160)
-                    onIslandHeightChange(36)
+                    onActiveXChange(0)
+                    onActiveYChange(8)
+                    onActiveWChange(160)
+                    onActiveHChange(36)
                 }) {
                     Text(stringResource(R.string.reset))
                 }
@@ -477,38 +496,75 @@ fun AppearanceSettings(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text("Adjust Dynamic Island", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                
-                Text(
-                    "Position and resize your Dynamic Island. Shrink the width to convert into a compact modern dot!",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
 
-                // Position Arrows
-                Text("Position (X / Y)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { onIslandOffsetYChange(islandOffsetY - 4) }) {
-                        Icon(painterResource(R.drawable.arrow_upward), "Up")
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        IconButton(onClick = { onIslandOffsetXChange(islandOffsetX - 4) }) {
-                            Icon(painterResource(R.drawable.arrow_back), "Left")
+                // Orientation Segmented Tabs
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf("Portrait", "Landscape").forEachIndexed { index, label ->
+                        val isSelected = selectedOrientationTab == index
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+                                )
+                                .clickable { selectedOrientationTab = index }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        IconButton(onClick = { onIslandOffsetXChange(islandOffsetX + 4) }) {
-                            Icon(painterResource(R.drawable.arrow_forward), "Right")
-                        }
-                    }
-                    IconButton(onClick = { onIslandOffsetYChange(islandOffsetY + 4) }) {
-                        Icon(painterResource(R.drawable.arrow_downward), "Down")
                     }
                 }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                // Horizontal Position (X) Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Horizontal Position (X)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Text(if (activeX == 0) "Center (0 dp)" else if (activeX > 0) "+$activeX dp" else "$activeX dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = activeX.toFloat(),
+                    valueRange = -200f..200f,
+                    onValueChange = { onActiveXChange(it.toInt()) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Vertical Position (Y) Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Vertical Position (Y)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Text("$activeY dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = activeY.toFloat(),
+                    valueRange = 0f..120f,
+                    onValueChange = { onActiveYChange(it.toInt()) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
 
                 // Width Slider
-                val widthLabel = if (islandWidth <= 46) "Mini Dot ($islandWidth dp)" else if (islandWidth < 120) "Compact ($islandWidth dp)" else "Pill ($islandWidth dp)"
+                val widthLabel = if (activeW <= 46) "Mini Dot ($activeW dp)" else if (activeW < 120) "Compact ($activeW dp)" else "Pill ($activeW dp)"
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -518,9 +574,9 @@ fun AppearanceSettings(
                     Text(widthLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
                 Slider(
-                    value = islandWidth.toFloat(),
+                    value = activeW.toFloat(),
                     valueRange = 32f..240f,
-                    onValueChange = { onIslandWidthChange(it.toInt()) },
+                    onValueChange = { onActiveWChange(it.toInt()) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -531,12 +587,12 @@ fun AppearanceSettings(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Height", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Text("${islandHeight} dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text("$activeH dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 }
                 Slider(
-                    value = islandHeight.toFloat(),
+                    value = activeH.toFloat(),
                     valueRange = 24f..48f,
-                    onValueChange = { onIslandHeightChange(it.toInt()) },
+                    onValueChange = { onActiveHChange(it.toInt()) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
