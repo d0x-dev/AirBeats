@@ -177,9 +177,11 @@ class VoiceAssistantManager(
         isManualSession = isManualTap
         _isListening.value = true
 
-        // Display HUD immediately with visual feedback
-        _lastRecognizedText.value = "Listening..."
-        onWakeWordHeard?.invoke("Listening...")
+        // ONLY pop up HUD immediately if user explicitly tapped 'Speak'
+        if (isManualTap) {
+            _lastRecognizedText.value = "Listening..."
+            onWakeWordHeard?.invoke("Listening...")
+        }
 
         // Stop AudioRecord immediately to hand off microphone to SpeechRecognizer
         isAudioRecordRunning = false
