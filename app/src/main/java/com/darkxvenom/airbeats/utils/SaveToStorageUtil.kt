@@ -11,6 +11,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.YouTube
@@ -349,7 +350,21 @@ object SaveToStorageUtil {
                     else -> "m4a"
                 }
 
-                val request = Request.Builder().url(streamUrl).build()
+                // Add range parameter to bypass YouTube's bandwidth throttling for maximum download speed
+                val unthrottledStreamUrl = if (!streamUrl.contains("range=")) {
+                    val length = format.contentLength ?: 15000000L
+                    "${streamUrl}&range=0-$length"
+                } else {
+                    streamUrl
+                }
+
+                val request = Request.Builder()
+                    .url(unthrottledStreamUrl)
+                    .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .header("Accept", "*/*")
+                    .header("Connection", "keep-alive")
+                    .build()
+
                 val response = httpClient.newCall(request).execute()
                 response.use { resp ->
                     if (!resp.isSuccessful) {
@@ -362,7 +377,7 @@ object SaveToStorageUtil {
                         if (contentLength > 0 && contentLength < Int.MAX_VALUE) contentLength.toInt() else 1024 * 1024
                     )
 
-                    val buffer = ByteArray(8192)
+                    val buffer = ByteArray(65536) // 64 KB buffer for high-speed streaming
                     var bytesRead: Int
                     var totalBytesRead = 0L
                     var lastUpdateMs = 0L
@@ -372,7 +387,7 @@ object SaveToStorageUtil {
                         totalBytesRead += bytesRead
 
                         val now = System.currentTimeMillis()
-                        if (contentLength > 0 && (now - lastUpdateMs >= 200 || totalBytesRead == contentLength)) {
+                        if (contentLength > 0 && (now - lastUpdateMs >= 150 || totalBytesRead == contentLength)) {
                             lastUpdateMs = now
                             val percent = ((totalBytesRead * 100) / contentLength).toInt().coerceIn(0, 100)
                             showProgressNotification(
@@ -386,6 +401,23 @@ object SaveToStorageUtil {
                     }
                     audioBytes = outputBuffer.toByteArray()
                 }
+
+                // Also trigger background caching in app for offline playback
+                try {
+                    val downloadRequest = androidx.media3.exoplayer.offline.DownloadRequest.Builder(
+                        mediaMetadata.id,
+                        mediaMetadata.id.toUri()
+                    )
+                        .setCustomCacheKey(mediaMetadata.id)
+                        .setData(mediaMetadata.title.toByteArray())
+                        .build()
+                    androidx.media3.exoplayer.offline.DownloadService.sendAddDownload(
+                        appContext,
+                        com.darkxvenom.airbeats.playback.ExoDownloadService::class.java,
+                        downloadRequest,
+                        false
+                    )
+                } catch (_: Exception) {}
             }
 
             val finalAudioBytes = audioBytes ?: throw Exception("No audio data available")
