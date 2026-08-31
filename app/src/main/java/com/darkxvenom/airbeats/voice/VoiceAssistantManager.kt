@@ -428,7 +428,7 @@ class VoiceAssistantManager(
                         }
 
                         val isMusicPlaying = MusicService.instance?.player?.isPlaying == true ||
-                                PlayerConnection.instance?.playbackState?.value?.isPlaying == true
+                                PlayerConnection.instance?.service?.player?.isPlaying == true
 
                         val read = record.read(buffer, 0, buffer.size)
                         if (read > 0) {
