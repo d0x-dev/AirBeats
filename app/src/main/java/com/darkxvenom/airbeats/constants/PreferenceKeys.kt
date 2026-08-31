@@ -14,15 +14,11 @@ val LiquidGlassKey = booleanPreferencesKey("enableLiquidGlass")
 val DynamicIslandKey = booleanPreferencesKey("enableDynamicIsland")
 val DynamicIslandOffsetXKey = intPreferencesKey("dynamicIslandOffsetX")
 val DynamicIslandOffsetYKey = intPreferencesKey("dynamicIslandOffsetY")
-val DynamicIslandStyleKey = stringPreferencesKey("dynamicIslandStyle")
+val DynamicIslandWidthKey = intPreferencesKey("dynamicIslandWidth")
+val DynamicIslandHeightKey = intPreferencesKey("dynamicIslandHeight")
 val DynamicIslandBgColorKey = intPreferencesKey("dynamicIslandBgColor")
 val DynamicIslandAccentColorKey = intPreferencesKey("dynamicIslandAccentColor")
 val DynamicIslandTextColorKey = intPreferencesKey("dynamicIslandTextColor")
-
-enum class DynamicIslandStyle {
-    DOT,
-    PILL
-}
 
 val UserNameKey = stringPreferencesKey("user_name")
 

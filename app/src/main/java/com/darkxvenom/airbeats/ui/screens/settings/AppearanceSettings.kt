@@ -168,10 +168,6 @@ fun AppearanceSettings(
         DynamicIslandKey,
         defaultValue = false
     )
-    val (dynamicIslandStyle, onDynamicIslandStyleChange) = rememberEnumPreference(
-        DynamicIslandStyleKey,
-        defaultValue = DynamicIslandStyle.DOT
-    )
     val (islandBgColor, onIslandBgColorChange) = rememberPreference(
         DynamicIslandBgColorKey,
         defaultValue = android.graphics.Color.BLACK
@@ -445,6 +441,8 @@ fun AppearanceSettings(
         val context = LocalContext.current
         val (islandOffsetX, onIslandOffsetXChange) = rememberPreference(DynamicIslandOffsetXKey, defaultValue = 0)
         val (islandOffsetY, onIslandOffsetYChange) = rememberPreference(DynamicIslandOffsetYKey, defaultValue = 8)
+        val (islandWidth, onIslandWidthChange) = rememberPreference(DynamicIslandWidthKey, defaultValue = 160)
+        val (islandHeight, onIslandHeightChange) = rememberPreference(DynamicIslandHeightKey, defaultValue = 36)
         
         DisposableEffect(Unit) {
             AppForegroundTracker.isAdjustingIsland = true
@@ -458,6 +456,8 @@ fun AppearanceSettings(
                 TextButton(onClick = { 
                     onIslandOffsetXChange(0)
                     onIslandOffsetYChange(8)
+                    onIslandWidthChange(160)
+                    onIslandHeightChange(36)
                 }) {
                     Text(stringResource(R.string.reset))
                 }
@@ -469,20 +469,25 @@ fun AppearanceSettings(
             onDismiss = { showIslandAdjustmentDialog = false }
         ) {
             Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(stringResource(R.string.adjust_position), style = MaterialTheme.typography.titleLarge)
+                Text("Adjust Dynamic Island", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 
                 Text(
-                    "Use the arrows to adjust the actual Dynamic Island position on your screen.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    "Position and resize your Dynamic Island. Shrink the width to convert into a compact modern dot!",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 8.dp)
                 )
 
+                // Position Arrows
+                Text("Position (X / Y)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(onClick = { onIslandOffsetYChange(islandOffsetY - 4) }) {
                         Icon(painterResource(R.drawable.arrow_upward), "Up")
@@ -499,6 +504,41 @@ fun AppearanceSettings(
                         Icon(painterResource(R.drawable.arrow_downward), "Down")
                     }
                 }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+
+                // Width Slider
+                val widthLabel = if (islandWidth <= 46) "Mini Dot ($islandWidth dp)" else if (islandWidth < 120) "Compact ($islandWidth dp)" else "Pill ($islandWidth dp)"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Width", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Text(widthLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = islandWidth.toFloat(),
+                    valueRange = 32f..240f,
+                    onValueChange = { onIslandWidthChange(it.toInt()) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Height Slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Height", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+                    Text("${islandHeight} dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+                Slider(
+                    value = islandHeight.toFloat(),
+                    valueRange = 24f..48f,
+                    onValueChange = { onIslandHeightChange(it.toInt()) },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
@@ -714,22 +754,10 @@ fun AppearanceSettings(
                         *(if (enableDynamicIsland) arrayOf(
                             { PreferenceEntry(
                                 title = { Text(stringResource(R.string.adjust_dynamic_island)) },
-                                description = "Change the position of the dynamic island on screen",
+                                description = "Adjust position and resize pill / dot",
                                 icon = { Icon(painterResource(R.drawable.add), null) },
                                 onClick = {
                                     showIslandAdjustmentDialog = true
-                                }
-                            ) },
-                            { EnumListPreference(
-                                title = { Text("Dynamic Island Style") },
-                                icon = { Icon(painterResource(R.drawable.tune), null) },
-                                selectedValue = dynamicIslandStyle,
-                                onValueSelected = onDynamicIslandStyleChange,
-                                valueText = { style ->
-                                    when (style) {
-                                        DynamicIslandStyle.DOT -> "Modern Dot (Compact Circle)"
-                                        DynamicIslandStyle.PILL -> "Classic Pill"
-                                    }
                                 }
                             ) },
                             { PreferenceEntry(

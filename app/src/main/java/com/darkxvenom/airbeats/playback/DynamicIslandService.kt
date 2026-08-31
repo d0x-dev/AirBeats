@@ -29,11 +29,11 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.darkxvenom.airbeats.constants.DynamicIslandAccentColorKey
 import com.darkxvenom.airbeats.constants.DynamicIslandBgColorKey
+import com.darkxvenom.airbeats.constants.DynamicIslandHeightKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetXKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetYKey
-import com.darkxvenom.airbeats.constants.DynamicIslandStyle
-import com.darkxvenom.airbeats.constants.DynamicIslandStyleKey
 import com.darkxvenom.airbeats.constants.DynamicIslandTextColorKey
+import com.darkxvenom.airbeats.constants.DynamicIslandWidthKey
 import com.darkxvenom.airbeats.extensions.currentMetadata
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.utils.dataStore
@@ -78,6 +78,8 @@ class DynamicIslandService : Service(), Player.Listener {
     private var isAppInForeground = false
     private var offsetX = 0
     private var offsetY = 8
+    private var islandWidth = 160
+    private var islandHeight = 36
 
     private val foregroundListener: (Boolean, Boolean) -> Unit = { isForeground, isAdjusting ->
         isAppInForeground = isForeground
@@ -136,17 +138,19 @@ class DynamicIslandService : Service(), Player.Listener {
             dataStore.data.collect { prefs ->
                 val newX = prefs[DynamicIslandOffsetXKey] ?: 0
                 val newY = prefs[DynamicIslandOffsetYKey] ?: 8
-                val styleStr = prefs[DynamicIslandStyleKey] ?: DynamicIslandStyle.DOT.name
-                val style = try { DynamicIslandStyle.valueOf(styleStr) } catch (_: Exception) { DynamicIslandStyle.DOT }
+                val newW = prefs[DynamicIslandWidthKey] ?: 160
+                val newH = prefs[DynamicIslandHeightKey] ?: 36
                 val bgColor = prefs[DynamicIslandBgColorKey] ?: Color.BLACK
                 val accentColor = prefs[DynamicIslandAccentColorKey] ?: Color.rgb(229, 19, 69)
                 val textColor = prefs[DynamicIslandTextColorKey] ?: Color.WHITE
 
-                islandView.applyStyleAndColors(style, bgColor, accentColor, textColor, newY)
+                islandView.applyDimensionsAndColors(newW, newH, bgColor, accentColor, textColor, newY)
 
-                if (newX != offsetX || newY != offsetY) {
+                if (newX != offsetX || newY != offsetY || newW != islandWidth || newH != islandHeight) {
                     offsetX = newX
                     offsetY = newY
+                    islandWidth = newW
+                    islandHeight = newH
                     updateLayout()
                 }
             }
@@ -172,7 +176,7 @@ class DynamicIslandService : Service(), Player.Listener {
             islandView.update(
                 metadata = MediaMetadata(
                     id = "preview",
-                    title = "Adjusting position...",
+                    title = "Adjusting position & size...",
                     artists = emptyList(),
                     duration = 100,
                     thumbnailUrl = null,
@@ -275,22 +279,17 @@ class DynamicIslandService : Service(), Player.Listener {
 
     private fun layoutParams(): WindowManager.LayoutParams {
         val isExp = islandView.expanded
-        val isDot = islandView.style == DynamicIslandStyle.DOT
 
         val width = if (isExp) {
             WindowManager.LayoutParams.MATCH_PARENT
-        } else if (isDot) {
-            46.dp
         } else {
-            196.dp
+            islandWidth.dp
         }
 
         val height = if (isExp) {
             WindowManager.LayoutParams.MATCH_PARENT
-        } else if (isDot) {
-            46.dp
         } else {
-            38.dp
+            islandHeight.dp
         }
 
         return WindowManager.LayoutParams(
@@ -341,7 +340,10 @@ private class DynamicIslandView(
     var expanded = false
         private set
 
-    var style: DynamicIslandStyle = DynamicIslandStyle.DOT
+    var customWidth: Int = 160
+        private set
+
+    var customHeight: Int = 36
         private set
 
     private var currentOffsetY = 8
@@ -412,14 +414,16 @@ private class DynamicIslandView(
             }
         }
 
-    fun applyStyleAndColors(
-        newStyle: DynamicIslandStyle,
+    fun applyDimensionsAndColors(
+        width: Int,
+        height: Int,
         bgColor: Int,
         accentColor: Int,
         textColor: Int,
         offsetY: Int
     ) {
-        this.style = newStyle
+        this.customWidth = width
+        this.customHeight = height
         this.currentOffsetY = offsetY
         bgPaint.color = bgColor
         accentPaint.color = accentColor
@@ -453,10 +457,10 @@ private class DynamicIslandView(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         updateIslandBounds()
-        val corner = if (style == DynamicIslandStyle.DOT && !expanded) {
+        val corner = if (!expanded && morphProgress == 0f) {
             islandBounds.height() / 2f
         } else {
-            lerp(28f.dp, 24f.dp, morphProgress)
+            lerp(islandBounds.height() / 2f, 24f.dp, morphProgress)
         }
         canvas.drawRoundRect(islandBounds, corner, corner, bgPaint)
         drawDropEffect(canvas)
@@ -476,20 +480,28 @@ private class DynamicIslandView(
         val localWidth = islandBounds.width()
         val localHeight = islandBounds.height()
 
-        if (style == DynamicIslandStyle.DOT) {
-            // Modern Dot Form: Sleek circular capsule with artwork and subtle live indicator
-            val art = RectF(5f.dp, 5f.dp, localWidth - 5f.dp, localHeight - 5f.dp)
-            drawArtwork(canvas, art, corner = (localHeight - 10f.dp) / 2f)
+        if (localWidth <= 52f.dp) {
+            // Mini Dot Mode (Compact circle with artwork and live indicator)
+            val padding = 4f.dp
+            val art = RectF(padding, padding, localWidth - padding, localHeight - padding)
+            drawArtwork(canvas, art, corner = (localHeight - padding * 2) / 2f)
             if (isPlaying) {
-                canvas.drawCircle(localWidth - 7f.dp, 7f.dp, 4.5f.dp, accentPaint)
-                canvas.drawCircle(localWidth - 7f.dp, 7f.dp, 2f.dp, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+                canvas.drawCircle(localWidth - 6f.dp, 6f.dp, 3.5f.dp, accentPaint)
+                canvas.drawCircle(localWidth - 6f.dp, 6f.dp, 1.5f.dp, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
             }
+        } else if (localWidth < 110f.dp) {
+            // Compact Mini-Pill Mode
+            val artSize = localHeight - 8f.dp
+            val art = RectF(4f.dp, 4f.dp, 4f.dp + artSize, 4f.dp + artSize)
+            drawArtwork(canvas, art, corner = artSize / 2f)
+            drawSpotifyWaveform(canvas, localWidth - 22f.dp, localHeight / 2f, compact = true)
         } else {
-            // Classic Pill Form
-            val art = RectF(18f.dp, 4f.dp, 48f.dp, 34f.dp)
-            drawArtwork(canvas, art, corner = 15f.dp)
+            // Standard Full Pill Mode
+            val artSize = localHeight - 8f.dp
+            val art = RectF(6f.dp, 4f.dp, 6f.dp + artSize, 4f.dp + artSize)
+            drawArtwork(canvas, art, corner = 12f.dp)
             drawLiveDot(canvas, localWidth / 2f, localHeight / 2f)
-            drawSpotifyWaveform(canvas, localWidth - 38f.dp, localHeight / 2f, compact = true)
+            drawSpotifyWaveform(canvas, localWidth - 34f.dp, localHeight / 2f, compact = true)
         }
     }
 
@@ -556,10 +568,9 @@ private class DynamicIslandView(
     }
 
     private fun updateIslandBounds() {
-        val isDot = style == DynamicIslandStyle.DOT
         if (expanded || morphAnimating) {
-            val collapsedW = if (isDot) 46f.dp else 196f.dp
-            val collapsedH = if (isDot) 46f.dp else 38f.dp
+            val collapsedW = customWidth.toFloat().dp
+            val collapsedH = customHeight.toFloat().dp
             val topOffset = currentOffsetY.coerceAtLeast(8).toFloat().dp
 
             collapsedBounds.set(
@@ -569,7 +580,7 @@ private class DynamicIslandView(
                 topOffset + collapsedH,
             )
 
-            // Clamped expanded bounds so it stays within visible screen bounds
+            // Clamped expanded bounds so it stays centered and never clips out of screen
             val expTop = currentOffsetY.coerceIn(8, 60).toFloat().dp
             expandedBounds.set(16f.dp, expTop, width - 16f.dp, expTop + 188f.dp)
             val p = morphProgress
@@ -662,7 +673,9 @@ private class DynamicIslandView(
         val bitmap = artwork
         if (bitmap == null) {
             canvas.drawRoundRect(rect, corner, corner, accentPaint)
-            canvas.drawText("A", rect.left + rect.width() / 3f, rect.bottom - rect.height() / 3f, textPaint)
+            if (rect.width() > 24f.dp) {
+                canvas.drawText("A", rect.left + rect.width() / 3f, rect.bottom - rect.height() / 3f, textPaint)
+            }
         } else {
             val path =
                 Path().apply {
@@ -687,11 +700,11 @@ private class DynamicIslandView(
         spotifyPaint.strokeWidth = if (compact) 2.4f.dp else 3.4f.dp
         val baseHeights =
             if (compact) {
-                floatArrayOf(11f, 17f, 23f, 15f, 21f)
+                floatArrayOf(10f, 16f, 22f, 14f, 20f)
             } else {
                 floatArrayOf(18f, 28f, 38f, 24f, 34f)
             }
-        val gap = if (compact) 4.8f.dp else 7f.dp
+        val gap = if (compact) 4.2f.dp else 7f.dp
         val start = cx - gap * 2
         val phase = SystemClock.uptimeMillis() / 145f
         baseHeights.forEachIndexed { index, baseHeight ->
