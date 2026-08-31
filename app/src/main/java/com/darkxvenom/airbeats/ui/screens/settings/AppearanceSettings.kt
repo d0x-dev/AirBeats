@@ -168,6 +168,20 @@ fun AppearanceSettings(
         DynamicIslandKey,
         defaultValue = false
     )
+    val (dynamicIslandStyle, onDynamicIslandStyleChange) = rememberEnumPreference(
+        DynamicIslandStyleKey,
+        defaultValue = DynamicIslandStyle.DOT
+    )
+    val (islandBgColor, onIslandBgColorChange) = rememberPreference(
+        DynamicIslandBgColorKey,
+        defaultValue = android.graphics.Color.BLACK
+    )
+    val (islandAccentColor, onIslandAccentColorChange) = rememberPreference(
+        DynamicIslandAccentColorKey,
+        defaultValue = android.graphics.Color.rgb(229, 19, 69)
+    )
+    var showIslandColorDialog by remember { mutableStateOf(false) }
+
     val (appFontKey, onAppFontKeyChange) = rememberPreference(
         AppFontKey,
         defaultValue = AppFont.LINOTTE.key
@@ -705,6 +719,26 @@ fun AppearanceSettings(
                                 onClick = {
                                     showIslandAdjustmentDialog = true
                                 }
+                            ) },
+                            { EnumListPreference(
+                                title = { Text("Dynamic Island Style") },
+                                icon = { Icon(painterResource(R.drawable.tune), null) },
+                                selectedValue = dynamicIslandStyle,
+                                onValueSelected = onDynamicIslandStyleChange,
+                                valueText = { style ->
+                                    when (style) {
+                                        DynamicIslandStyle.DOT -> "Modern Dot (Compact Circle)"
+                                        DynamicIslandStyle.PILL -> "Classic Pill"
+                                    }
+                                }
+                            ) },
+                            { PreferenceEntry(
+                                title = { Text("Dynamic Island Colors") },
+                                description = "Customize background and accent colors",
+                                icon = { Icon(painterResource(R.drawable.palette), null) },
+                                onClick = {
+                                    showIslandColorDialog = true
+                                }
                             ) }
                         ) else emptyArray()),
                         {SwitchPreference(
@@ -743,6 +777,89 @@ fun AppearanceSettings(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                if (showIslandColorDialog) {
+                    val bgPresets = listOf(
+                        "Pure Black" to android.graphics.Color.BLACK,
+                        "Deep Night" to android.graphics.Color.parseColor("#121218"),
+                        "Dark Glass" to android.graphics.Color.parseColor("#1C1C28"),
+                        "Navy Blue" to android.graphics.Color.parseColor("#0A192F"),
+                        "AMOLED Dark" to android.graphics.Color.parseColor("#212121"),
+                    )
+                    val accentPresets = listOf(
+                        "Apple Red" to android.graphics.Color.parseColor("#E51345"),
+                        "Spotify Green" to android.graphics.Color.parseColor("#1ED760"),
+                        "Cyan Blue" to android.graphics.Color.parseColor("#00E5FF"),
+                        "Neon Purple" to android.graphics.Color.parseColor("#BB86FC"),
+                        "Electric Amber" to android.graphics.Color.parseColor("#FF6D00"),
+                        "Bubble Pink" to android.graphics.Color.parseColor("#FF4081"),
+                    )
+
+                    AlertDialog(
+                        onDismissRequest = { showIslandColorDialog = false },
+                        title = { Text("Dynamic Island Colors", fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Text("Background Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    bgPresets.forEach { (name, colorInt) ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(CircleShape)
+                                                .background(androidx.compose.ui.graphics.Color(colorInt))
+                                                .border(
+                                                    width = if (islandBgColor == colorInt) 2.5.dp else 1.dp,
+                                                    color = if (islandBgColor == colorInt) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray,
+                                                    shape = CircleShape
+                                                )
+                                                .clickable {
+                                                    onIslandBgColorChange(colorInt)
+                                                }
+                                        )
+                                    }
+                                }
+
+                                Spacer(Modifier.height(4.dp))
+                                Text("Accent Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    accentPresets.forEach { (name, colorInt) ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(CircleShape)
+                                                .background(androidx.compose.ui.graphics.Color(colorInt))
+                                                .border(
+                                                    width = if (islandAccentColor == colorInt) 2.5.dp else 1.dp,
+                                                    color = if (islandAccentColor == colorInt) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray,
+                                                    shape = CircleShape
+                                                )
+                                                .clickable {
+                                                    onIslandAccentColorChange(colorInt)
+                                                }
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { showIslandColorDialog = false }) {
+                                Text("Done")
+                            }
+                        }
+                    )
+                }
 
                 if (showFontDialog) {
                     AlertDialog(
