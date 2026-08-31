@@ -105,7 +105,7 @@ object VoiceCommandParser {
                 .replace(Regex("^(?:the\\s+)?music\\s+", RegexOption.IGNORE_CASE), "")
                 .trim()
             if (query.isNotBlank() && query != "music" && query != "song" && query != "songs" && query != "something" && query != "anything") {
-                return VoiceCommand.PlaySong(query)
+                return VoiceCommand.PlaySong(normalizeSongQuery(query))
             }
         }
 
@@ -196,6 +196,33 @@ object VoiceCommandParser {
         }
 
         return VoiceCommand.Unknown(rawOriginal)
+    }
+
+    fun normalizeSongQuery(rawQuery: String): String {
+        var q = rawQuery.trim()
+
+        // 1. Phonetic STT corrections for number "8" misheard as "at", "ate", "ait"
+        q = q.replace(Regex("^(?:at|ate|ait)\\s+parche", RegexOption.IGNORE_CASE), "8 parche")
+        q = q.replace(Regex("^(?:at|ate|ait)\\s+parchae", RegexOption.IGNORE_CASE), "8 parche")
+        q = q.replace(Regex("^(?:eight)\\s+parche", RegexOption.IGNORE_CASE), "8 parche")
+        q = q.replace(Regex("^(?:eight)\\s+parchae", RegexOption.IGNORE_CASE), "8 parche")
+
+        // "at" followed by Punjabi/Hindi song keywords -> "8"
+        q = q.replace(Regex("^(?:at|ate|ait)\\s+(?=parche|parchae|bandey|bande|kille|dina|saal|ghante|asla)", RegexOption.IGNORE_CASE), "8 ")
+
+        // 2. English number words at start of song title converted to digits
+        q = q.replace(Regex("^one\\s+", RegexOption.IGNORE_CASE), "1 ")
+        q = q.replace(Regex("^two\\s+", RegexOption.IGNORE_CASE), "2 ")
+        q = q.replace(Regex("^three\\s+", RegexOption.IGNORE_CASE), "3 ")
+        q = q.replace(Regex("^four\\s+", RegexOption.IGNORE_CASE), "4 ")
+        q = q.replace(Regex("^five\\s+", RegexOption.IGNORE_CASE), "5 ")
+        q = q.replace(Regex("^six\\s+", RegexOption.IGNORE_CASE), "6 ")
+        q = q.replace(Regex("^seven\\s+", RegexOption.IGNORE_CASE), "7 ")
+        q = q.replace(Regex("^eight\\s+", RegexOption.IGNORE_CASE), "8 ")
+        q = q.replace(Regex("^nine\\s+", RegexOption.IGNORE_CASE), "9 ")
+        q = q.replace(Regex("^ten\\s+", RegexOption.IGNORE_CASE), "10 ")
+
+        return q
     }
 
     private fun isControlKeyword(text: String): Boolean {
