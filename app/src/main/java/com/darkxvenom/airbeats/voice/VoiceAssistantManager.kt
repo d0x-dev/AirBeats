@@ -1,12 +1,8 @@
 package com.darkxvenom.airbeats.voice
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.media.AudioFormat
 import android.media.AudioManager
-import android.media.AudioRecord
-import android.media.MediaRecorder
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -18,14 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import timber.log.Timber
-import kotlin.math.abs
-import kotlin.math.log10
-import kotlin.math.sqrt
 
 /**
- * High-Accuracy Hybrid Voice Assistant Manager.
- * 1. Background: 100% Pure Silent AudioRecord VAD gatekeeper (Zero beeps, Zero audio ducking).
- * 2. On-Demand: Single-shot, silent SpeechRecognizer for precise transcription of song titles and commands.
+ * On-Demand Voice Assistant Manager.
+ * Operates in 100% complete silence (zero background beeps, zero automatic HUD popups).
+ * Activates speech recognition ONLY when the user clicks 'Speak' in the notification or HUD.
  */
 class VoiceAssistantManager(
     private val context: Context,
@@ -37,21 +30,15 @@ class VoiceAssistantManager(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     private var isRunning = false
-    private var requireWakeWord = true
-    private var lastTriggerTimestamp = 0L
+    private var requireWakeWord = false
 
     @Volatile
     private var isTtsSpeaking = false
     private var ttsFinishedTimestamp = 0L
 
-    // Pure Native AudioRecord Streaming Engine
-    private var audioRecord: AudioRecord? = null
-    private var isAudioRecordRunning = false
-    private var audioRecordThread: Thread? = null
-
     // Single-shot On-Demand SpeechRecognizer
-    private var singleShotRecognizer: SpeechRecognizer? = null
-    private var isSingleShotActive = false
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var isRecognizing = false
     private var originalSystemVolume = -1
     private var originalNotificationVolume = -1
     private var isSystemMuted = false
@@ -66,36 +53,30 @@ class VoiceAssistantManager(
     val audioRms: StateFlow<Float> = _audioRms.asStateFlow()
 
     companion object {
-        private const val SAMPLE_RATE = 16000
-        private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
-        private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        private const val DEBOUNCE_COOLDOWN_MS = 3500L
-        private const val TTS_SILENCE_GRACE_MS = 1500L
+        private const val TTS_SILENCE_GRACE_MS = 1200L
     }
 
     fun setTtsSpeaking(speaking: Boolean) {
         isTtsSpeaking = speaking
         if (speaking) {
-            cancelSingleShotRecognizer()
+            cancelRecognition()
         } else {
             ttsFinishedTimestamp = System.currentTimeMillis()
         }
     }
 
-    fun start(requireWakeWord: Boolean = true) {
+    fun start(requireWakeWord: Boolean = false) {
         this.requireWakeWord = requireWakeWord
         if (isRunning) return
         isRunning = true
-        _isListening.value = true
-
-        startContinuousAudioRecord()
+        _isListening.value = false
+        Timber.i("VoiceAssistantManager started (ready for on-demand 'Speak' taps)")
     }
 
     fun stop() {
         isRunning = false
         _isListening.value = false
-        cancelSingleShotRecognizer()
-        stopContinuousAudioRecord()
+        cancelRecognition()
     }
 
     fun updateSettings(requireWakeWord: Boolean) {
@@ -103,8 +84,8 @@ class VoiceAssistantManager(
     }
 
     /**
-     * Triggered when user taps 'Speak' in notification or UI HUD.
-     * Starts a dedicated, single-shot silent speech recognition session to transcribe speech.
+     * Triggered ONLY when user explicitly taps 'Speak' in notification or HUD.
+     * Starts a clean, high-accuracy speech recognition session with proper audio routing.
      */
     fun triggerListeningSession() {
         mainHandler.post {
@@ -112,7 +93,7 @@ class VoiceAssistantManager(
             if (isTtsSpeaking || (now - ttsFinishedTimestamp < TTS_SILENCE_GRACE_MS)) {
                 return@post
             }
-            startSingleShotRecognition(requireWake = false)
+            startSpeechRecognition()
         }
     }
 
@@ -161,21 +142,22 @@ class VoiceAssistantManager(
         } catch (_: Exception) {}
     }
 
-    private fun startSingleShotRecognition(requireWake: Boolean = false) {
-        if (isSingleShotActive) return
-        isSingleShotActive = true
-
-        // 1. Temporarily pause AudioRecord so SpeechRecognizer has exclusive microphone access
-        stopContinuousAudioRecord()
-
+    private fun startSpeechRecognition() {
+        if (isRecognizing) {
+            try {
+                speechRecognizer?.cancel()
+            } catch (_: Exception) {}
+        }
+        isRecognizing = true
+        _isListening.value = true
         _lastRecognizedText.value = "Listening..."
         onWakeWordHeard?.invoke("AirBeats")
 
         try {
             muteSystemSound()
 
-            if (singleShotRecognizer == null) {
-                singleShotRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
+            if (speechRecognizer == null) {
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext).apply {
                     setRecognitionListener(this@VoiceAssistantManager)
                 }
             }
@@ -185,64 +167,56 @@ class VoiceAssistantManager(
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
                 putExtra("android.speech.extra.DICTATION_MODE", true)
-                putExtra("android.speech.extra.GET_AUDIO_FOCUS", false)
-                putExtra("android.speech.extra.AUDIO_FOCUS", false)
-                putExtra("android.speech.extra.SUPPRESS_SOUND", true)
-                putExtra("android.speech.extra.BEEP", false)
-                putExtra("android.speech.extra.SILENT_RECORDING", true)
-                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 8000L)
-                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
-                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
+                putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 6000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
+                putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
             }
 
-            singleShotRecognizer?.startListening(intent)
-            Timber.i("Single-shot SpeechRecognizer started in silence (transcribing speech on-demand)")
+            speechRecognizer?.startListening(intent)
+            Timber.i("SpeechRecognizer started listening for user command")
         } catch (e: Exception) {
-            Timber.e(e, "Failed to start single-shot SpeechRecognizer")
-            finishSingleShotRecognition()
+            Timber.e(e, "Failed to start SpeechRecognizer")
+            finishRecognition()
         }
     }
 
-    private fun finishSingleShotRecognition() {
-        isSingleShotActive = false
+    private fun finishRecognition() {
+        isRecognizing = false
+        _isListening.value = false
         restoreSystemSound()
 
         try {
-            singleShotRecognizer?.stopListening()
-            singleShotRecognizer?.cancel()
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel()
         } catch (_: Exception) {}
-
-        // Resume silent background AudioRecord monitoring
-        if (isRunning && !isAudioRecordRunning) {
-            mainHandler.postDelayed({
-                if (isRunning && !isSingleShotActive) {
-                    startContinuousAudioRecord()
-                }
-            }, 500L)
-        }
     }
 
-    private fun cancelSingleShotRecognizer() {
-        isSingleShotActive = false
+    private fun cancelRecognition() {
+        isRecognizing = false
+        _isListening.value = false
         mainHandler.post {
             restoreSystemSound()
             try {
-                singleShotRecognizer?.cancel()
-                singleShotRecognizer?.destroy()
+                speechRecognizer?.cancel()
+                speechRecognizer?.destroy()
             } catch (_: Exception) {}
-            singleShotRecognizer = null
+            speechRecognizer = null
         }
     }
 
-    // --- RecognitionListener Callbacks (For Single-Shot Session) ---
+    // --- RecognitionListener Callbacks ---
 
     override fun onReadyForSpeech(params: Bundle?) {
         _isListening.value = true
+        restoreSystemSound() // Restore sound once listening has initialized to avoid muting feedback
+        Timber.d("SpeechRecognizer ready for speech")
     }
 
     override fun onBeginningOfSpeech() {
         _isListening.value = true
+        Timber.d("SpeechRecognizer user started speaking")
     }
 
     override fun onRmsChanged(rmsdB: Float) {
@@ -253,12 +227,13 @@ class VoiceAssistantManager(
 
     override fun onEndOfSpeech() {
         _isListening.value = false
+        Timber.d("SpeechRecognizer user stopped speaking")
     }
 
     override fun onError(error: Int) {
-        Timber.d("Single-shot SpeechRecognizer onError: %d", error)
+        Timber.d("SpeechRecognizer onError: %d", error)
         _isListening.value = false
-        finishSingleShotRecognition()
+        finishRecognition()
     }
 
     override fun onResults(results: Bundle?) {
@@ -268,7 +243,7 @@ class VoiceAssistantManager(
         if (!matches.isNullOrEmpty()) {
             val topText = matches.first().trim()
             _lastRecognizedText.value = topText
-            Timber.i("Voice Assistant recognized: %s", matches.joinToString(" | "))
+            Timber.i("Voice Assistant successfully recognized: %s", matches.joinToString(" | "))
 
             for (candidate in matches) {
                 val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = false)
@@ -279,7 +254,7 @@ class VoiceAssistantManager(
             }
         }
 
-        finishSingleShotRecognition()
+        finishRecognition()
     }
 
     override fun onPartialResults(partialResults: Bundle?) {
@@ -293,152 +268,14 @@ class VoiceAssistantManager(
 
     override fun onEvent(eventType: Int, params: Bundle?) {}
 
-    // --- Continuous Background Silent AudioRecord Engine ---
-
-    @SuppressLint("MissingPermission")
-    private fun startContinuousAudioRecord() {
-        if (isAudioRecordRunning || isSingleShotActive) return
-        isAudioRecordRunning = true
-
-        audioRecordThread = Thread({
-            android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO)
-            val minBufSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
-            val bufferSize = (minBufSize * 2).coerceAtLeast(4096)
-
-            try {
-                val record = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                    SAMPLE_RATE,
-                    CHANNEL_CONFIG,
-                    AUDIO_FORMAT,
-                    bufferSize
-                )
-
-                if (record.state != AudioRecord.STATE_INITIALIZED) {
-                    Timber.e("AudioRecord failed to initialize")
-                    record.release()
-                    return@Thread
-                }
-
-                audioRecord = record
-                record.startRecording()
-                Timber.i("Continuous silent AudioRecord monitoring active (0 beeps)")
-
-                val buffer = ShortArray(1024)
-                var ambientNoiseFloor = 0.0
-                var speechFrames = 0
-                var silenceFrames = 0
-                var isCollectingSpeech = false
-                val utteranceEnergies = mutableListOf<Float>()
-
-                while (isRunning && isAudioRecordRunning && !isSingleShotActive) {
-                    val now = System.currentTimeMillis()
-                    val isSelfSpeaking = isTtsSpeaking || (now - ttsFinishedTimestamp < TTS_SILENCE_GRACE_MS)
-
-                    if (isSelfSpeaking) {
-                        speechFrames = 0
-                        silenceFrames = 0
-                        isCollectingSpeech = false
-                        utteranceEnergies.clear()
-                        Thread.sleep(80)
-                        continue
-                    }
-
-                    val read = record.read(buffer, 0, buffer.size)
-                    if (read > 0) {
-                        var sum = 0.0
-                        var maxVal = 0
-                        for (i in 0 until read) {
-                            val v = buffer[i].toInt()
-                            sum += v * v
-                            val absV = abs(v)
-                            if (absV > maxVal) maxVal = absV
-                        }
-                        val rms = sqrt(sum / read)
-                        val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
-                        _audioRms.value = db.toFloat()
-
-                        if (ambientNoiseFloor == 0.0) {
-                            ambientNoiseFloor = db
-                        } else {
-                            ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
-                        }
-
-                        val speechThreshold = (ambientNoiseFloor + 12.0).coerceIn(35.0, 68.0)
-
-                        if (db >= speechThreshold) {
-                            speechFrames++
-                            silenceFrames = 0
-                            if (speechFrames >= 2 && !isCollectingSpeech) {
-                                isCollectingSpeech = true
-                                utteranceEnergies.clear()
-                            }
-                            if (isCollectingSpeech) {
-                                utteranceEnergies.add(db.toFloat())
-                            }
-                        } else {
-                            if (isCollectingSpeech) {
-                                silenceFrames++
-                                utteranceEnergies.add(db.toFloat())
-
-                                // End of speech detected (approx 600ms of silence after speech)
-                                if (silenceFrames >= 10) {
-                                    isCollectingSpeech = false
-                                    speechFrames = 0
-                                    silenceFrames = 0
-
-                                    val totalDurationFrames = utteranceEnergies.size
-                                    val triggerNow = System.currentTimeMillis()
-
-                                    if (totalDurationFrames in 6..220 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
-                                        lastTriggerTimestamp = triggerNow
-
-                                        // Launch speech transcription
-                                        mainHandler.post {
-                                            startSingleShotRecognition(requireWake = requireWakeWord)
-                                        }
-                                    }
-                                    utteranceEnergies.clear()
-                                }
-                            } else {
-                                speechFrames = 0
-                            }
-                        }
-                    }
-                }
-
-                try {
-                    record.stop()
-                    record.release()
-                } catch (_: Exception) {}
-                audioRecord = null
-            } catch (e: Exception) {
-                Timber.e(e, "Error in AudioRecord continuous loop")
-            }
-        }, "AirBeats-Silent-AudioRecord-Thread").apply {
-            start()
-        }
-    }
-
-    private fun stopContinuousAudioRecord() {
-        isAudioRecordRunning = false
-        try {
-            audioRecord?.stop()
-            audioRecord?.release()
-        } catch (_: Exception) {}
-        audioRecord = null
-        audioRecordThread?.interrupt()
-        audioRecordThread = null
-    }
-
     fun destroy() {
         stop()
         mainHandler.post {
             restoreSystemSound()
             try {
-                singleShotRecognizer?.destroy()
+                speechRecognizer?.destroy()
             } catch (_: Exception) {}
-            singleShotRecognizer = null
+            speechRecognizer = null
         }
     }
 }
