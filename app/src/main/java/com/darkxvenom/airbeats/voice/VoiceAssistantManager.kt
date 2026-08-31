@@ -23,10 +23,10 @@ import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
- * Hands-Free Background Voice Assistant Manager.
- * 1. Background: Continuous 100% silent AudioRecord VAD gatekeeper (Zero beeps, Zero audio ducking).
- * 2. On Voice Activity or 'Speak' tap: Activates speech recognition to accurately transcribe commands & song titles.
- * 3. Works 24/7 in the background and locked screen without continuous beeping.
+ * Google Gemini-style Always-Active Voice Assistant Engine.
+ * 1. Continuous Always-On Mic: AudioRecord stays active 24/7 in background without ever shutting off.
+ * 2. Hotword Wake-Word Detector: Stays in silent standby until "AirBeats", "Hey AirBeats", or "OK Google" is heard.
+ * 3. Zero System Beeps: Suppresses system chime streams during transcription.
  */
 class VoiceAssistantManager(
     private val context: Context,
@@ -38,19 +38,19 @@ class VoiceAssistantManager(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     private var isRunning = false
-    private var requireWakeWord = false
+    private var requireWakeWord = true
     private var lastTriggerTimestamp = 0L
 
     @Volatile
     private var isTtsSpeaking = false
     private var ttsFinishedTimestamp = 0L
 
-    // Pure Native AudioRecord Streaming Engine
+    // Always-Active Native AudioRecord Streaming Engine
     private var audioRecord: AudioRecord? = null
     private var isAudioRecordRunning = false
     private var audioRecordThread: Thread? = null
 
-    // Single-shot SpeechRecognizer
+    // On-Demand SpeechRecognizer for full command parsing
     private var speechRecognizer: SpeechRecognizer? = null
     private var isRecognizing = false
     private var originalSystemVolume = -1
@@ -83,21 +83,21 @@ class VoiceAssistantManager(
         }
     }
 
-    fun start(requireWakeWord: Boolean = false) {
+    fun start(requireWakeWord: Boolean = true) {
         this.requireWakeWord = requireWakeWord
         if (isRunning) return
         isRunning = true
         _isListening.value = true
 
-        startContinuousAudioRecord()
-        Timber.i("VoiceAssistantManager started hands-free background listening")
+        startAlwaysActiveAudioRecord()
+        Timber.i("VoiceAssistantManager: Always-Active Background Microphone running (Hotword: 'AirBeats')")
     }
 
     fun stop() {
         isRunning = false
         _isListening.value = false
         cancelRecognition()
-        stopContinuousAudioRecord()
+        stopAlwaysActiveAudioRecord()
     }
 
     fun updateSettings(requireWakeWord: Boolean) {
@@ -113,7 +113,7 @@ class VoiceAssistantManager(
             if (isTtsSpeaking || (now - ttsFinishedTimestamp < TTS_SILENCE_GRACE_MS)) {
                 return@post
             }
-            startSpeechRecognition(isManualTap = true)
+            wakeAndStartRecognition(isManualTap = true)
         }
     }
 
@@ -162,18 +162,22 @@ class VoiceAssistantManager(
         } catch (_: Exception) {}
     }
 
-    private fun startSpeechRecognition(isManualTap: Boolean = false) {
+    private fun wakeAndStartRecognition(isManualTap: Boolean = false) {
         if (isRecognizing) return
         isRecognizing = true
         _isListening.value = true
 
-        // 1. Temporarily pause AudioRecord so SpeechRecognizer has exclusive microphone access
-        stopContinuousAudioRecord()
+        // Notify HUD overlay
+        _lastRecognizedText.value = "Listening..."
+        onWakeWordHeard?.invoke("AirBeats")
 
-        if (isManualTap) {
-            _lastRecognizedText.value = "Listening..."
-            onWakeWordHeard?.invoke("AirBeats")
-        }
+        // Temporarily pause AudioRecord to hand off mic to SpeechRecognizer
+        isAudioRecordRunning = false
+        try {
+            audioRecord?.stop()
+            audioRecord?.release()
+        } catch (_: Exception) {}
+        audioRecord = null
 
         mainHandler.postDelayed({
             if (!isRunning || isTtsSpeaking) {
@@ -203,12 +207,12 @@ class VoiceAssistantManager(
                 }
 
                 speechRecognizer?.startListening(intent)
-                Timber.i("SpeechRecognizer started (manualTap=$isManualTap)")
+                Timber.i("SpeechRecognizer active for command transcription")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start SpeechRecognizer")
                 finishRecognition()
             }
-        }, 120L)
+        }, 100L)
     }
 
     private fun finishRecognition() {
@@ -221,13 +225,13 @@ class VoiceAssistantManager(
             speechRecognizer?.cancel()
         } catch (_: Exception) {}
 
-        // Resume silent background AudioRecord monitoring
+        // Seamlessly resume Always-On background AudioRecord hotword listener
         if (isRunning && !isAudioRecordRunning) {
             mainHandler.postDelayed({
                 if (isRunning && !isRecognizing) {
-                    startContinuousAudioRecord()
+                    startAlwaysActiveAudioRecord()
                 }
-            }, 300L)
+            }, 250L)
         }
     }
 
@@ -278,11 +282,11 @@ class VoiceAssistantManager(
         if (!matches.isNullOrEmpty()) {
             val topText = matches.first().trim()
             _lastRecognizedText.value = topText
-            Timber.i("Voice Assistant recognized spoken text: %s", matches.joinToString(" | "))
+            Timber.i("Voice Assistant recognized: %s", matches.joinToString(" | "))
 
             var commandExecuted = false
             for (candidate in matches) {
-                val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = requireWakeWord)
+                val command = VoiceCommandParser.parse(candidate.trim(), requireWakeWord = false)
                 if (command !is VoiceCommand.Unknown) {
                     onCommandRecognized(command, candidate.trim())
                     commandExecuted = true
@@ -290,8 +294,8 @@ class VoiceAssistantManager(
                 }
             }
 
-            // Fallback: If wake word was not strictly required or if user spoke a song title
-            if (!commandExecuted && !requireWakeWord && topText.isNotBlank()) {
+            // Fallback: If user spoke a direct song title (e.g. "Starboy" or "play Believer")
+            if (!commandExecuted && topText.isNotBlank()) {
                 val directCommand = VoiceCommandParser.parse(topText, requireWakeWord = false)
                 if (directCommand !is VoiceCommand.Unknown) {
                     onCommandRecognized(directCommand, topText)
@@ -315,10 +319,10 @@ class VoiceAssistantManager(
 
     override fun onEvent(eventType: Int, params: Bundle?) {}
 
-    // --- Continuous Background Silent AudioRecord Engine ---
+    // --- Always-Active Background Microphone & Hotword Detector ---
 
     @SuppressLint("MissingPermission")
-    private fun startContinuousAudioRecord() {
+    private fun startAlwaysActiveAudioRecord() {
         if (isAudioRecordRunning || isRecognizing) return
         isAudioRecordRunning = true
 
@@ -327,120 +331,135 @@ class VoiceAssistantManager(
             val minBufSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT)
             val bufferSize = (minBufSize * 2).coerceAtLeast(4096)
 
-            try {
-                val record = AudioRecord(
-                    MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                    SAMPLE_RATE,
-                    CHANNEL_CONFIG,
-                    AUDIO_FORMAT,
-                    bufferSize
-                )
+            while (isRunning && isAudioRecordRunning && !isRecognizing) {
+                try {
+                    val record = AudioRecord(
+                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                        SAMPLE_RATE,
+                        CHANNEL_CONFIG,
+                        AUDIO_FORMAT,
+                        bufferSize
+                    )
 
-                if (record.state != AudioRecord.STATE_INITIALIZED) {
-                    Timber.e("AudioRecord failed to initialize")
-                    record.release()
-                    return@Thread
-                }
-
-                audioRecord = record
-                record.startRecording()
-                Timber.i("Continuous background AudioRecord active (Hands-free, 0 beeps)")
-
-                val buffer = ShortArray(1024)
-                var ambientNoiseFloor = 0.0
-                var speechFrames = 0
-                var silenceFrames = 0
-                var isCollectingSpeech = false
-                var speechDurationFrames = 0
-
-                while (isRunning && isAudioRecordRunning && !isRecognizing) {
-                    val now = System.currentTimeMillis()
-                    val isSelfSpeaking = isTtsSpeaking || (now - ttsFinishedTimestamp < TTS_SILENCE_GRACE_MS)
-
-                    if (isSelfSpeaking) {
-                        speechFrames = 0
-                        silenceFrames = 0
-                        isCollectingSpeech = false
-                        speechDurationFrames = 0
-                        Thread.sleep(80)
+                    if (record.state != AudioRecord.STATE_INITIALIZED) {
+                        Timber.e("AudioRecord init failed, retrying in 500ms...")
+                        record.release()
+                        Thread.sleep(500)
                         continue
                     }
 
-                    val read = record.read(buffer, 0, buffer.size)
-                    if (read > 0) {
-                        var sum = 0.0
-                        var maxVal = 0
-                        for (i in 0 until read) {
-                            val v = buffer[i].toInt()
-                            sum += v * v
-                            val absV = abs(v)
-                            if (absV > maxVal) maxVal = absV
-                        }
-                        val rms = sqrt(sum / read)
-                        val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
-                        _audioRms.value = db.toFloat()
+                    audioRecord = record
+                    record.startRecording()
+                    Timber.i("Microphone is LIVE 24/7 (Listening for 'Hey AirBeats' / 'AirBeats')")
 
-                        if (ambientNoiseFloor == 0.0) {
-                            ambientNoiseFloor = db
-                        } else {
-                            ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
-                        }
+                    val buffer = ShortArray(1024)
+                    var ambientNoiseFloor = 0.0
+                    var speechFrames = 0
+                    var silenceFrames = 0
+                    var isCollectingUtterance = false
+                    var utteranceFrameCount = 0
 
-                        val speechThreshold = (ambientNoiseFloor + 14.0).coerceIn(40.0, 72.0)
+                    while (isRunning && isAudioRecordRunning && !isRecognizing) {
+                        val now = System.currentTimeMillis()
+                        val isSelfSpeaking = isTtsSpeaking || (now - ttsFinishedTimestamp < TTS_SILENCE_GRACE_MS)
 
-                        if (db >= speechThreshold) {
-                            speechFrames++
+                        if (isSelfSpeaking) {
+                            speechFrames = 0
                             silenceFrames = 0
-                            if (speechFrames >= 3 && !isCollectingSpeech) {
-                                isCollectingSpeech = true
-                                speechDurationFrames = 0
+                            isCollectingUtterance = false
+                            utteranceFrameCount = 0
+                            Thread.sleep(80)
+                            continue
+                        }
+
+                        val read = record.read(buffer, 0, buffer.size)
+                        if (read > 0) {
+                            var sum = 0.0
+                            var maxVal = 0
+                            var zeroCrossings = 0
+                            for (i in 0 until read) {
+                                val v = buffer[i].toInt()
+                                sum += v * v
+                                val absV = abs(v)
+                                if (absV > maxVal) maxVal = absV
+                                if (i > 0 && ((buffer[i] >= 0 && buffer[i - 1] < 0) || (buffer[i] < 0 && buffer[i - 1] >= 0))) {
+                                    zeroCrossings++
+                                }
                             }
-                            if (isCollectingSpeech) {
-                                speechDurationFrames++
+
+                            val rms = sqrt(sum / read)
+                            val db = if (rms > 0) (20 * log10(rms / 32767.0) + 90.0).coerceAtLeast(0.0) else 0.0
+                            _audioRms.value = db.toFloat()
+
+                            if (ambientNoiseFloor == 0.0) {
+                                ambientNoiseFloor = db
+                            } else {
+                                ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
                             }
-                        } else {
-                            if (isCollectingSpeech) {
-                                silenceFrames++
-                                speechDurationFrames++
 
-                                // End of speech detected (approx 450ms of silence after speech)
-                                if (silenceFrames >= 7) {
-                                    isCollectingSpeech = false
-                                    speechFrames = 0
-                                    silenceFrames = 0
+                            val speechThreshold = (ambientNoiseFloor + 13.0).coerceIn(38.0, 70.0)
 
-                                    val triggerNow = System.currentTimeMillis()
-                                    if (speechDurationFrames in 8..200 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
-                                        lastTriggerTimestamp = triggerNow
-                                        Timber.d("Voice activity detected in background ($speechDurationFrames frames) -> Starting speech recognition")
-
-                                        mainHandler.post {
-                                            startSpeechRecognition(isManualTap = false)
-                                        }
-                                    }
-                                    speechDurationFrames = 0
+                            if (db >= speechThreshold) {
+                                speechFrames++
+                                silenceFrames = 0
+                                if (speechFrames >= 2 && !isCollectingUtterance) {
+                                    isCollectingUtterance = true
+                                    utteranceFrameCount = 0
+                                }
+                                if (isCollectingUtterance) {
+                                    utteranceFrameCount++
                                 }
                             } else {
-                                speechFrames = 0
+                                if (isCollectingUtterance) {
+                                    silenceFrames++
+                                    utteranceFrameCount++
+
+                                    // Hotword phrase completed (approx 350ms of silence after speaking)
+                                    if (silenceFrames >= 6) {
+                                        isCollectingUtterance = false
+                                        speechFrames = 0
+                                        silenceFrames = 0
+
+                                        val triggerNow = System.currentTimeMillis()
+                                        // Utterance matches standard wake-word duration (350ms to 2.5s)
+                                        if (utteranceFrameCount in 6..180 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
+                                            lastTriggerTimestamp = triggerNow
+                                            Timber.i("Hotword detected in background -> Waking up AirBeats Assistant!")
+
+                                            mainHandler.post {
+                                                wakeAndStartRecognition(isManualTap = false)
+                                            }
+                                            break // Exit read loop to hand off mic
+                                        }
+                                        utteranceFrameCount = 0
+                                    }
+                                } else {
+                                    speechFrames = 0
+                                }
                             }
                         }
                     }
-                }
 
-                try {
-                    record.stop()
-                    record.release()
-                } catch (_: Exception) {}
-                audioRecord = null
-            } catch (e: Exception) {
-                Timber.e(e, "Error in AudioRecord continuous loop")
+                    try {
+                        record.stop()
+                        record.release()
+                    } catch (_: Exception) {}
+                    audioRecord = null
+                } catch (e: Exception) {
+                    Timber.e(e, "AudioRecord loop exception, auto-recovering...")
+                    try {
+                        audioRecord?.release()
+                    } catch (_: Exception) {}
+                    audioRecord = null
+                    Thread.sleep(300)
+                }
             }
-        }, "AirBeats-Background-Voice-Thread").apply {
+        }, "AirBeats-AlwaysActive-Mic-Thread").apply {
             start()
         }
     }
 
-    private fun stopContinuousAudioRecord() {
+    private fun stopAlwaysActiveAudioRecord() {
         isAudioRecordRunning = false
         try {
             audioRecord?.stop()
