@@ -324,6 +324,21 @@ class VoiceAssistantManager(
                 }
             }
 
+            // Check if user spoke ONLY the wake word (e.g. "Hi AirBeats", "Hey AirBeats")
+            if (!commandExecuted && VoiceCommandParser.containsWakeWord(topText)) {
+                val directCmd = VoiceCommandParser.parse(topText, requireWakeWord = false)
+                if (directCmd is VoiceCommand.Unknown) {
+                    Timber.i("Wake word detected ('%s') -> Opening follow-up command listener...", topText)
+                    onWakeWordHeard?.invoke("Listening...")
+                    mainHandler.postDelayed({
+                        if (isRunning) {
+                            wakeAndStartRecognition(isManualTap = true)
+                        }
+                    }, 150L)
+                    return
+                }
+            }
+
             // Fallback: If direct commands are accepted or user spoke a song title
             if (!commandExecuted && topText.isNotBlank()) {
                 val directCommand = VoiceCommandParser.parse(topText, requireWakeWord = false)
