@@ -7,6 +7,9 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AutomaticGainControl
+import android.media.audiofx.NoiseSuppressor
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -14,6 +17,8 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.darkxvenom.airbeats.playback.MusicService
+import com.darkxvenom.airbeats.playback.PlayerConnection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,10 +28,10 @@ import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
- * Google Gemini-style Always-Active Voice Assistant Engine.
- * 1. Continuous Always-On Mic: AudioRecord stays active 24/7 in background without ever shutting off.
- * 2. Hotword Wake-Word Detector: Stays in silent standby until "AirBeats", "Hey AirBeats", or commands are spoken.
- * 3. Zero System Beeps & Zero Phantom HUD Popups: HUD only appears on explicit tap or verified speech commands.
+ * Google Gemini-style Always-Active Voice Assistant Engine with Hardware Acoustic Echo Cancellation.
+ * 1. Continuous Always-On Mic with AEC & Noise Suppression to eliminate speaker music bleed.
+ * 2. Adaptive threshold during music playback so playing songs never trigger false listening.
+ * 3. Zero System Beeps & Zero Phantom HUD Popups: HUD only appears on explicit tap or verified speech.
  */
 class VoiceAssistantManager(
     private val context: Context,
@@ -45,8 +50,11 @@ class VoiceAssistantManager(
     private var isTtsSpeaking = false
     private var ttsFinishedTimestamp = 0L
 
-    // Always-Active Native AudioRecord Streaming Engine
+    // Always-Active Native AudioRecord Streaming Engine with AudioFx
     private var audioRecord: AudioRecord? = null
+    private var acousticEchoCanceler: AcousticEchoCanceler? = null
+    private var noiseSuppressor: NoiseSuppressor? = null
+    private var automaticGainControl: AutomaticGainControl? = null
     private var isAudioRecordRunning = false
     private var audioRecordThread: Thread? = null
 
@@ -71,7 +79,7 @@ class VoiceAssistantManager(
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        private const val DEBOUNCE_COOLDOWN_MS = 2500L
+        private const val DEBOUNCE_COOLDOWN_MS = 3000L
         private const val TTS_SILENCE_GRACE_MS = 1500L
     }
 
@@ -91,7 +99,7 @@ class VoiceAssistantManager(
         _isListening.value = true
 
         startAlwaysActiveAudioRecord()
-        Timber.i("VoiceAssistantManager: Always-Active Background Microphone running")
+        Timber.i("VoiceAssistantManager: Always-Active Background Microphone running with AEC")
     }
 
     fun stop() {
@@ -177,6 +185,7 @@ class VoiceAssistantManager(
 
         // Temporarily pause AudioRecord to hand off mic to SpeechRecognizer
         isAudioRecordRunning = false
+        releaseAudioEffects()
         try {
             audioRecord?.stop()
             audioRecord?.release()
@@ -254,6 +263,21 @@ class VoiceAssistantManager(
         }
     }
 
+    private fun releaseAudioEffects() {
+        try {
+            acousticEchoCanceler?.release()
+            acousticEchoCanceler = null
+        } catch (_: Exception) {}
+        try {
+            noiseSuppressor?.release()
+            noiseSuppressor = null
+        } catch (_: Exception) {}
+        try {
+            automaticGainControl?.release()
+            automaticGainControl = null
+        } catch (_: Exception) {}
+    }
+
     // --- RecognitionListener Callbacks ---
 
     override fun onReadyForSpeech(params: Bundle?) {
@@ -319,14 +343,16 @@ class VoiceAssistantManager(
         val partialText = matches?.firstOrNull()?.trim()
         if (!partialText.isNullOrBlank()) {
             _lastRecognizedText.value = partialText
-            // Only update HUD when actual verified words are being spoken
-            onWakeWordHeard?.invoke(partialText)
+            // Only update HUD if it is an explicit user session or real words are streaming
+            if (isManualSession || partialText.length >= 4) {
+                onWakeWordHeard?.invoke(partialText)
+            }
         }
     }
 
     override fun onEvent(eventType: Int, params: Bundle?) {}
 
-    // --- Always-Active Background Microphone & Hotword Detector ---
+    // --- Always-Active Background Microphone & Hotword Detector with Echo Cancellation ---
 
     @SuppressLint("MissingPermission")
     private fun startAlwaysActiveAudioRecord() {
@@ -355,9 +381,31 @@ class VoiceAssistantManager(
                         continue
                     }
 
+                    // Attach Hardware Acoustic Echo Canceler and Noise Suppressor
+                    try {
+                        if (AcousticEchoCanceler.isAvailable()) {
+                            acousticEchoCanceler = AcousticEchoCanceler.create(record.audioSessionId)?.apply {
+                                enabled = true
+                            }
+                            Timber.d("Hardware AcousticEchoCanceler attached successfully")
+                        }
+                        if (NoiseSuppressor.isAvailable()) {
+                            noiseSuppressor = NoiseSuppressor.create(record.audioSessionId)?.apply {
+                                enabled = true
+                            }
+                        }
+                        if (AutomaticGainControl.isAvailable()) {
+                            automaticGainControl = AutomaticGainControl.create(record.audioSessionId)?.apply {
+                                enabled = true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.w(e, "Could not attach hardware audio effects")
+                    }
+
                     audioRecord = record
                     record.startRecording()
-                    Timber.i("Microphone is LIVE 24/7 (Listening in background)")
+                    Timber.i("Microphone is LIVE 24/7 (AEC Active, Listening in background)")
 
                     val buffer = ShortArray(1024)
                     var ambientNoiseFloor = 0.0
@@ -378,6 +426,9 @@ class VoiceAssistantManager(
                             Thread.sleep(80)
                             continue
                         }
+
+                        val isMusicPlaying = MusicService.instance?.player?.isPlaying == true ||
+                                PlayerConnection.instance?.playbackState?.value?.isPlaying == true
 
                         val read = record.read(buffer, 0, buffer.size)
                         if (read > 0) {
@@ -400,8 +451,10 @@ class VoiceAssistantManager(
                                 ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
                             }
 
-                            // Higher threshold to prevent room background noises from false-triggering
-                            val speechThreshold = (ambientNoiseFloor + 15.0).coerceIn(44.0, 72.0)
+                            // Dynamic speech threshold: Significantly higher during active song playback to reject speaker bleed
+                            val thresholdMargin = if (isMusicPlaying) 26.0 else 16.0
+                            val minThreshold = if (isMusicPlaying) 60.0 else 46.0
+                            val speechThreshold = (ambientNoiseFloor + thresholdMargin).coerceIn(minThreshold, 82.0)
 
                             if (db >= speechThreshold) {
                                 speechFrames++
@@ -444,6 +497,7 @@ class VoiceAssistantManager(
                         }
                     }
 
+                    releaseAudioEffects()
                     try {
                         record.stop()
                         record.release()
@@ -451,6 +505,7 @@ class VoiceAssistantManager(
                     audioRecord = null
                 } catch (e: Exception) {
                     Timber.e(e, "AudioRecord loop exception, auto-recovering...")
+                    releaseAudioEffects()
                     try {
                         audioRecord?.release()
                     } catch (_: Exception) {}
@@ -465,6 +520,7 @@ class VoiceAssistantManager(
 
     private fun stopAlwaysActiveAudioRecord() {
         isAudioRecordRunning = false
+        releaseAudioEffects()
         try {
             audioRecord?.stop()
             audioRecord?.release()
