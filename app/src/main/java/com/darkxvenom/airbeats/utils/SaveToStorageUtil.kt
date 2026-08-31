@@ -401,23 +401,6 @@ object SaveToStorageUtil {
                     }
                     audioBytes = outputBuffer.toByteArray()
                 }
-
-                // Also trigger background caching in app for offline playback
-                try {
-                    val downloadRequest = androidx.media3.exoplayer.offline.DownloadRequest.Builder(
-                        mediaMetadata.id,
-                        mediaMetadata.id.toUri()
-                    )
-                        .setCustomCacheKey(mediaMetadata.id)
-                        .setData(mediaMetadata.title.toByteArray())
-                        .build()
-                    androidx.media3.exoplayer.offline.DownloadService.sendAddDownload(
-                        appContext,
-                        com.darkxvenom.airbeats.playback.ExoDownloadService::class.java,
-                        downloadRequest,
-                        false
-                    )
-                } catch (_: Exception) {}
             }
 
             val finalAudioBytes = audioBytes ?: throw Exception("No audio data available")
