@@ -405,6 +405,8 @@ class VoiceAssistantManager(
                                     Timber.i("Voice onset detected (db=%.1f) -> Starting recognition session...", db)
 
                                     mainHandler.post {
+                                        _lastRecognizedText.value = "Listening..."
+                                        onWakeWordHeard?.invoke("Listening...")
                                         startSpeechSession(isManualTap = false)
                                     }
                                     break
