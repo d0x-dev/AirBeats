@@ -135,13 +135,22 @@ class VoiceAssistantManager(
         } catch (_: Exception) {}
         audioRecord = null
 
-        mainHandler.post {
+        // Safe 60ms delay to let OEM audio HAL driver release hardware mic cleanly
+        mainHandler.postDelayed({
+            if (!isRunning || isTtsSpeaking) {
+                finishSpeechSession()
+                return@postDelayed
+            }
             try {
                 if (speechRecognizer == null) {
                     speechRecognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                         SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
                     ) {
-                        SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext)
+                        try {
+                            SpeechRecognizer.createOnDeviceSpeechRecognizer(context.applicationContext)
+                        } catch (_: Throwable) {
+                            SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
+                        }
                     } else {
                         SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
                     }.apply {
@@ -167,7 +176,7 @@ class VoiceAssistantManager(
                 Timber.e(e, "Failed to start SpeechRecognizer session")
                 finishSpeechSession()
             }
-        }
+        }, 60L)
     }
 
     private fun finishSpeechSession() {
