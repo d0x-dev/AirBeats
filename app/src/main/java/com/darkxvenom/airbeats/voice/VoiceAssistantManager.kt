@@ -28,10 +28,10 @@ import kotlin.math.log10
 import kotlin.math.sqrt
 
 /**
- * AirBeats Real-Time Always-Active Voice Assistant Engine.
- * 1. Low-power 24/7 background AudioRecord with Hardware AEC & Noise Suppression.
- * 2. Instant Voice-Onset Handoff: Switches to SpeechRecognizer within 100ms of speech so words are never cut off.
- * 3. Zero System Beeps: Suppresses start dings and keeps HUD responsive on both manual taps and background voice.
+ * High-Sensitivity AirBeats Voice Assistant Engine.
+ * 1. Full-Gain 24/7 background listener using AudioSource.MIC with hardware AEC & AGC.
+ * 2. Ultra-responsive voice onset trigger (picks up quiet commands from across the room).
+ * 3. Supports 'Hi AirBeats' wake-up with real-time text streaming + direct background commands.
  */
 class VoiceAssistantManager(
     private val context: Context,
@@ -50,7 +50,7 @@ class VoiceAssistantManager(
     private var isTtsSpeaking = false
     private var ttsFinishedTimestamp = 0L
 
-    // Always-Active Native AudioRecord Engine with AudioFx
+    // High-Sensitivity Always-Active AudioRecord Engine
     private var audioRecord: AudioRecord? = null
     private var acousticEchoCanceler: AcousticEchoCanceler? = null
     private var noiseSuppressor: NoiseSuppressor? = null
@@ -79,8 +79,8 @@ class VoiceAssistantManager(
         private const val SAMPLE_RATE = 16000
         private const val CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO
         private const val AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT
-        private const val DEBOUNCE_COOLDOWN_MS = 2000L
-        private const val TTS_SILENCE_GRACE_MS = 1200L
+        private const val DEBOUNCE_COOLDOWN_MS = 1800L
+        private const val TTS_SILENCE_GRACE_MS = 1000L
     }
 
     fun setTtsSpeaking(speaking: Boolean) {
@@ -99,7 +99,7 @@ class VoiceAssistantManager(
         _isListening.value = true
 
         startAlwaysActiveAudioRecord()
-        Timber.i("VoiceAssistantManager: 24/7 background listener started")
+        Timber.i("VoiceAssistantManager: High-Sensitivity 24/7 background listener started")
     }
 
     fun stop() {
@@ -214,9 +214,9 @@ class VoiceAssistantManager(
                     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
                     putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
                     putExtra("android.speech.extra.DICTATION_MODE", true)
-                    putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 5000L)
-                    putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
-                    putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1200L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_MINIMUM_LENGTH_MILLIS", 6000L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS", 2000L)
+                    putExtra("android.speech.extras.SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS", 1500L)
                 }
 
                 speechRecognizer?.startListening(intent)
@@ -245,7 +245,7 @@ class VoiceAssistantManager(
                 if (isRunning && !isRecognizing) {
                     startAlwaysActiveAudioRecord()
                 }
-            }, 300L)
+            }, 250L)
         }
     }
 
@@ -364,7 +364,7 @@ class VoiceAssistantManager(
 
     override fun onEvent(eventType: Int, params: Bundle?) {}
 
-    // --- Always-Active Background Microphone with Instant Voice-Onset Detection ---
+    // --- High-Sensitivity Always-Active Background Microphone ---
 
     @SuppressLint("MissingPermission")
     private fun startAlwaysActiveAudioRecord() {
@@ -378,8 +378,9 @@ class VoiceAssistantManager(
 
             while (isRunning && isAudioRecordRunning && !isRecognizing) {
                 try {
+                    // Use AudioSource.MIC for full-gain unrestricted background sensitivity
                     val record = AudioRecord(
-                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                        MediaRecorder.AudioSource.MIC,
                         SAMPLE_RATE,
                         CHANNEL_CONFIG,
                         AUDIO_FORMAT,
@@ -397,20 +398,20 @@ class VoiceAssistantManager(
                         continue
                     }
 
-                    // Attach Hardware Acoustic Echo Canceler and Noise Suppressor
+                    // Attach Hardware Acoustic Echo Canceler and Automatic Gain Control
                     try {
                         if (AcousticEchoCanceler.isAvailable()) {
                             acousticEchoCanceler = AcousticEchoCanceler.create(record.audioSessionId)?.apply {
                                 enabled = true
                             }
                         }
-                        if (NoiseSuppressor.isAvailable()) {
-                            noiseSuppressor = NoiseSuppressor.create(record.audioSessionId)?.apply {
+                        if (AutomaticGainControl.isAvailable()) {
+                            automaticGainControl = AutomaticGainControl.create(record.audioSessionId)?.apply {
                                 enabled = true
                             }
                         }
-                        if (AutomaticGainControl.isAvailable()) {
-                            automaticGainControl = AutomaticGainControl.create(record.audioSessionId)?.apply {
+                        if (NoiseSuppressor.isAvailable()) {
+                            noiseSuppressor = NoiseSuppressor.create(record.audioSessionId)?.apply {
                                 enabled = true
                             }
                         }
@@ -420,7 +421,7 @@ class VoiceAssistantManager(
 
                     audioRecord = record
                     record.startRecording()
-                    Timber.i("Microphone is LIVE 24/7 (Listening for speech onset in background)")
+                    Timber.i("Microphone is LIVE 24/7 (High-Sensitivity background listener)")
 
                     val buffer = ShortArray(1024)
                     var ambientNoiseFloor = 0.0
@@ -458,27 +459,28 @@ class VoiceAssistantManager(
                             if (ambientNoiseFloor == 0.0) {
                                 ambientNoiseFloor = db
                             } else {
-                                ambientNoiseFloor = ambientNoiseFloor * 0.98 + db * 0.02
+                                ambientNoiseFloor = ambientNoiseFloor * 0.95 + db * 0.05
                             }
 
-                            // Dynamic speech threshold: Higher during song playback to ignore speaker bleed
-                            val thresholdMargin = if (isMusicPlaying) 22.0 else 12.0
-                            val minThreshold = if (isMusicPlaying) 58.0 else 44.0
-                            val speechThreshold = (ambientNoiseFloor + thresholdMargin).coerceIn(minThreshold, 80.0)
+                            // High Sensitivity Dynamic Threshold:
+                            // Even normal speaking voice from across the room triggers instant handoff
+                            val margin = if (isMusicPlaying) 10.0 else 4.0
+                            val minDb = if (isMusicPlaying) 42.0 else 24.0
+                            val speechThreshold = (ambientNoiseFloor + margin).coerceIn(minDb, 72.0)
 
                             if (db >= speechThreshold) {
                                 voiceOnsetFrames++
                                 val triggerNow = System.currentTimeMillis()
 
-                                // Instant Handoff on Voice-Onset (within ~120ms of user starting to speak)
-                                if (voiceOnsetFrames >= 2 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
+                                // Instantly activate SpeechRecognizer upon hearing voice
+                                if (voiceOnsetFrames >= 1 && (triggerNow - lastTriggerTimestamp > DEBOUNCE_COOLDOWN_MS) && !isSelfSpeaking) {
                                     lastTriggerTimestamp = triggerNow
-                                    Timber.i("Voice onset detected! Instantly activating SpeechRecognizer...")
+                                    Timber.i("Voice onset detected! Instantly activating SpeechRecognizer (db=%.1f)...", db)
 
                                     mainHandler.post {
                                         wakeAndStartRecognition(isManualTap = false)
                                     }
-                                    break // Exit read loop to immediately hand off mic
+                                    break // Hand off mic immediately
                                 }
                             } else {
                                 voiceOnsetFrames = 0
@@ -520,7 +522,7 @@ class VoiceAssistantManager(
                 audioRecord?.release()
             } catch (_: Exception) {}
             audioRecord = null
-        }, "AirBeats-AlwaysActive-Mic-Thread").apply {
+        }, "AirBeats-HighSensitivity-Mic-Thread").apply {
             start()
         }
     }
