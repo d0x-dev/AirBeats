@@ -503,16 +503,34 @@ class VoiceAssistantManager(
                         record.release()
                     } catch (_: Exception) {}
                     audioRecord = null
-                } catch (e: Exception) {
+                } catch (e: InterruptedException) {
+                    Timber.d("AudioRecord thread interrupted gracefully")
+                    releaseAudioEffects()
+                    try {
+                        audioRecord?.release()
+                    } catch (_: Exception) {}
+                    audioRecord = null
+                    break
+                } catch (e: Throwable) {
                     Timber.e(e, "AudioRecord loop exception, auto-recovering...")
                     releaseAudioEffects()
                     try {
                         audioRecord?.release()
                     } catch (_: Exception) {}
                     audioRecord = null
-                    Thread.sleep(300)
+                    if (!isRunning || !isAudioRecordRunning) break
+                    try {
+                        Thread.sleep(300)
+                    } catch (_: InterruptedException) {
+                        break
+                    }
                 }
             }
+            releaseAudioEffects()
+            try {
+                audioRecord?.release()
+            } catch (_: Exception) {}
+            audioRecord = null
         }, "AirBeats-AlwaysActive-Mic-Thread").apply {
             start()
         }
@@ -526,7 +544,9 @@ class VoiceAssistantManager(
             audioRecord?.release()
         } catch (_: Exception) {}
         audioRecord = null
-        audioRecordThread?.interrupt()
+        try {
+            audioRecordThread?.interrupt()
+        } catch (_: Exception) {}
         audioRecordThread = null
     }
 
