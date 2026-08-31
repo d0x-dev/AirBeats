@@ -769,24 +769,30 @@ private class DynamicIslandView(
     }
 
     private fun drawLiveDot(canvas: Canvas, cx: Float, cy: Float) {
-        canvas.drawCircle(cx, cy, 10f.dp, accentPaint)
+        val dotRadius = (islandBounds.height() * 0.2f).coerceIn(3f.dp, 8f.dp)
+        canvas.drawCircle(cx, cy, dotRadius, accentPaint)
         val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
-        canvas.drawCircle(cx, cy, 3.5f.dp, whitePaint)
+        canvas.drawCircle(cx, cy, dotRadius * 0.35f, whitePaint)
     }
 
     private fun drawSpotifyWaveform(canvas: Canvas, cx: Float, cy: Float, compact: Boolean) {
         val oldStroke = spotifyPaint.strokeWidth
+        val availableH = if (compact) (islandBounds.height() - 8f.dp).coerceAtLeast(6f.dp) else 36f.dp
+        val scale = if (compact) (availableH / 24f.dp).coerceIn(0.35f, 1.0f) else 1.0f
+
         spotifyPaint.strokeCap = Paint.Cap.ROUND
-        spotifyPaint.strokeWidth = if (compact) 2.4f.dp else 3.4f.dp
+        spotifyPaint.strokeWidth = if (compact) (2.0f * scale).coerceAtLeast(1.4f).dp else 3.4f.dp
         val baseHeights =
             if (compact) {
-                floatArrayOf(10f, 16f, 22f, 14f, 20f)
+                floatArrayOf(7f, 13f, 19f, 11f, 17f)
             } else {
                 floatArrayOf(18f, 28f, 38f, 24f, 34f)
             }
-        val gap = if (compact) 4.2f.dp else 7f.dp
+        val gap = if (compact) (3.6f * scale).coerceAtLeast(2.4f).dp else 7f.dp
         val start = cx - gap * 2
         val phase = SystemClock.uptimeMillis() / 145f
+        val maxBarH = availableH
+
         baseHeights.forEachIndexed { index, baseHeight ->
             val pulse =
                 if (isPlaying) {
@@ -794,9 +800,10 @@ private class DynamicIslandView(
                 } else {
                     0.62f
                 }
-            val height = baseHeight * pulse
+            val rawH = baseHeight * scale * pulse
+            val height = if (compact) (rawH.dp).coerceAtMost(maxBarH) else (baseHeight * pulse).dp
             val x = start + gap * index
-            canvas.drawLine(x, cy - height.dp / 2f, x, cy + height.dp / 2f, spotifyPaint)
+            canvas.drawLine(x, cy - height / 2f, x, cy + height / 2f, spotifyPaint)
         }
         spotifyPaint.strokeWidth = oldStroke
     }
