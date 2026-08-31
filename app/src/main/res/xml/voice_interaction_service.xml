@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<voice-interaction-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:sessionService="com.darkxvenom.airbeats.voice.AirBeatsVoiceInteractionSessionService"
-    android:settingsActivity="com.darkxvenom.airbeats.MainActivity"
-    android:supportsAssist="true"
-    android:supportsLocalInteraction="true" />
