@@ -438,7 +438,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(Unit) {
                 Updater.getLatestUpdateInfo().onSuccess { info ->
                     latestVersionName = info.versionName
-                    if (info.versionName.isNotBlank() && info.versionName != BuildConfig.VERSION_NAME) {
+                    if (info.versionName.isNotBlank() && com.darkxvenom.airbeats.utils.VersionUtils.isVersionGreater(info.versionName, BuildConfig.VERSION_NAME)) {
                         updateInfoState = info
                     }
                 }
