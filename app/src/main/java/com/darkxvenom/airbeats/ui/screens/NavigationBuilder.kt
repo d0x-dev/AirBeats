@@ -391,6 +391,9 @@ fun NavGraphBuilder.navigationBuilder(
     composable("settings/appearance") {
         AppearanceSettings(navController, scrollBehavior)
     }
+    composable("settings/dynamic_island") {
+        com.darkxvenom.airbeats.ui.screens.settings.DynamicIslandSettings(navController, scrollBehavior)
+    }
     composable("settings/always_on_display") {
         AODSettings(navController, scrollBehavior)
     }

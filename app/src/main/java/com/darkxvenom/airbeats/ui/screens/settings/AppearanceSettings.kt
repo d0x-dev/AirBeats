@@ -168,6 +168,7 @@ fun AppearanceSettings(
         DynamicIslandKey,
         defaultValue = false
     )
+
     val (appFontKey, onAppFontKeyChange) = rememberPreference(
         AppFontKey,
         defaultValue = AppFont.LINOTTE.key
@@ -199,9 +200,6 @@ fun AppearanceSettings(
         defaultValue = LibraryFilter.LIBRARY
     )
 
-    var showIslandAdjustmentDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
     var showSliderOptionDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -427,67 +425,6 @@ fun AppearanceSettings(
         }
     }
 
-    if (showIslandAdjustmentDialog) {
-        val context = LocalContext.current
-        val (islandOffsetX, onIslandOffsetXChange) = rememberPreference(DynamicIslandOffsetXKey, defaultValue = 0)
-        val (islandOffsetY, onIslandOffsetYChange) = rememberPreference(DynamicIslandOffsetYKey, defaultValue = 8)
-        
-        DisposableEffect(Unit) {
-            AppForegroundTracker.isAdjustingIsland = true
-            onDispose {
-                AppForegroundTracker.isAdjustingIsland = false
-            }
-        }
-        
-        DefaultDialog(
-            buttons = {
-                TextButton(onClick = { 
-                    onIslandOffsetXChange(0)
-                    onIslandOffsetYChange(8)
-                }) {
-                    Text(stringResource(R.string.reset))
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = { showIslandAdjustmentDialog = false }) {
-                    Text(stringResource(R.string.done))
-                }
-            },
-            onDismiss = { showIslandAdjustmentDialog = false }
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(stringResource(R.string.adjust_position), style = MaterialTheme.typography.titleLarge)
-                
-                Text(
-                    "Use the arrows to adjust the actual Dynamic Island position on your screen.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { onIslandOffsetYChange(islandOffsetY - 4) }) {
-                        Icon(painterResource(R.drawable.arrow_upward), "Up")
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        IconButton(onClick = { onIslandOffsetXChange(islandOffsetX - 4) }) {
-                            Icon(painterResource(R.drawable.arrow_back), "Left")
-                        }
-                        IconButton(onClick = { onIslandOffsetXChange(islandOffsetX + 4) }) {
-                            Icon(painterResource(R.drawable.arrow_forward), "Right")
-                        }
-                    }
-                    IconButton(onClick = { onIslandOffsetYChange(islandOffsetY + 4) }) {
-                        Icon(painterResource(R.drawable.arrow_downward), "Down")
-                    }
-                }
-            }
-        }
-    }
 
     // Get player connection for album artwork
     val playerConnection = LocalPlayerConnection.current
@@ -668,45 +605,15 @@ fun AppearanceSettings(
                             isEnabled = !enableLiquidGlass && !isPlayful
                         )},
                         {
-                            val context = LocalContext.current
-                            SwitchPreference(
-                                title = { Text(stringResource(R.string.enable_dynamic_island)) },
-                                description = stringResource(R.string.enable_dynamic_island_desc),
+                            PreferenceEntry(
+                                title = { Text("Dynamic Island") },
+                                description = "Position, fluid size, landscape settings, liquid glass & colors",
                                 icon = { Icon(painterResource(R.drawable.music_note), null) },
-                                checked = enableDynamicIsland,
-                                onCheckedChange = { newValue ->
-                                    if (newValue && !Settings.canDrawOverlays(context)) {
-                                        val intent = Intent(
-                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                        context.startActivity(intent)
-                                    } else {
-                                        onEnableDynamicIslandChange(newValue)
-                                        val serviceIntent = Intent(context, com.darkxvenom.airbeats.playback.DynamicIslandService::class.java)
-                                        try {
-                                            if (newValue) {
-                                                context.startService(serviceIntent)
-                                            } else {
-                                                context.stopService(serviceIntent)
-                                            }
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                    }
+                                onClick = {
+                                    navController.navigate("settings/dynamic_island")
                                 }
                             )
                         },
-                        *(if (enableDynamicIsland) arrayOf(
-                            { PreferenceEntry(
-                                title = { Text(stringResource(R.string.adjust_dynamic_island)) },
-                                description = "Change the position of the dynamic island on screen",
-                                icon = { Icon(painterResource(R.drawable.add), null) },
-                                onClick = {
-                                    showIslandAdjustmentDialog = true
-                                }
-                            ) }
-                        ) else emptyArray()),
                         {SwitchPreference(
                             title = { Text(stringResource(R.string.enable_liquid_glass)) },
                             description = stringResource(R.string.enable_liquid_glass_desc),

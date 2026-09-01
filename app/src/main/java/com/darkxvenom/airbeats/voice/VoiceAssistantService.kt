@@ -126,13 +126,13 @@ class VoiceAssistantService : Service() {
         }
 
         serviceScope.launch {
-            val directCommands = dataStore.get(VoiceAssistantDirectCommandsKey, false)
+            val directCommands = dataStore.get(VoiceAssistantDirectCommandsKey, true)
             val requireWakeWord = !directCommands
             voiceAssistantManager.start(requireWakeWord = requireWakeWord)
 
             // Observe direct command setting changes
             dataStore.data.collectLatest {
-                val direct = it[VoiceAssistantDirectCommandsKey] ?: false
+                val direct = it[VoiceAssistantDirectCommandsKey] ?: true
                 voiceAssistantManager.updateSettings(requireWakeWord = !direct)
             }
         }

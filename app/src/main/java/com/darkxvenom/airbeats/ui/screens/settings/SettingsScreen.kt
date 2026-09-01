@@ -75,6 +75,9 @@ import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
 import com.darkxvenom.airbeats.ui.component.AvatarPreferenceManager
 import com.darkxvenom.airbeats.ui.component.AvatarSelection
 import com.darkxvenom.airbeats.ui.component.ChangelogScreen
+import com.darkxvenom.airbeats.ui.component.UpdateAvailableDialog
+import com.darkxvenom.airbeats.utils.UpdateInfo
+import com.darkxvenom.airbeats.utils.Updater
 import com.darkxvenom.airbeats.utils.rememberPreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -510,18 +513,33 @@ fun UpdateCard(latestVersion: String = "") {
     val context = LocalContext.current
     var showUpdateCard by remember { mutableStateOf(false) }
     var currentLatestVersion by remember { mutableStateOf(latestVersion) }
+    var updateInfoState by remember { mutableStateOf<UpdateInfo?>(null) }
     var showDownloadDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val newVersion = checkForUpdates()
-        if (newVersion != null && isNewerVersion(newVersion, BuildConfig.VERSION_NAME)) {
-            showUpdateCard = true
-            currentLatestVersion = newVersion
+        Updater.getLatestUpdateInfo().onSuccess { info ->
+            if (info.versionName.isNotBlank() && isNewerVersion(info.versionName, BuildConfig.VERSION_NAME)) {
+                showUpdateCard = true
+                currentLatestVersion = info.versionName
+                updateInfoState = info
+            }
+        }.onFailure {
+            val newVersion = checkForUpdates()
+            if (newVersion != null && isNewerVersion(newVersion, BuildConfig.VERSION_NAME)) {
+                showUpdateCard = true
+                currentLatestVersion = newVersion
+                updateInfoState = UpdateInfo(versionName = newVersion)
+            }
         }
     }
 
     if (showDownloadDialog) {
-        UpdateDownloadDialog(
+        updateInfoState?.let { info ->
+            UpdateAvailableDialog(
+                updateInfo = info,
+                onDismiss = { showDownloadDialog = false }
+            )
+        } ?: UpdateDownloadDialog(
             latestVersion = currentLatestVersion,
             onDismiss = { showDownloadDialog = false }
         )
@@ -1001,16 +1019,6 @@ fun SettingsScreen(
                                     )
                                 },
                                 onClick = { navController.navigate("settings/player") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.mic),
-                                title = {
-                                    Text(
-                                        "Voice Assistant",
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/voice_assistant") }
                             ),
                             SettingsCategoryItem(
                                 icon = painterResource(R.drawable.group),

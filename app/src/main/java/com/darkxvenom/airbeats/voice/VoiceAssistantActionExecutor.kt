@@ -577,7 +577,8 @@ class VoiceAssistantActionExecutor(
         }
     }
 
-    private fun handlePlaySong(query: String) {
+    private fun handlePlaySong(rawQuery: String) {
+        val query = VoiceCommandParser.normalizeSongQuery(rawQuery)
         scope.launch {
             try {
                 val isOnline = isNetworkAvailable()

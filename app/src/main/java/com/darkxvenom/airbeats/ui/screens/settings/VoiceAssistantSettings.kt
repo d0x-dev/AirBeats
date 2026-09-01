@@ -438,59 +438,64 @@ private fun VoiceTestCard() {
     }
 
     val testManager = remember {
-        VoiceAssistantManager(context) { command, text ->
-            when (command) {
-                is VoiceCommand.PlayGenericMusic -> {
-                    actionStatus = "Loading recommended music..."
+        VoiceAssistantManager(
+            context = context,
+            onWakeWordHeard = { /* live text automatically streamed */ },
+            onCommandRecognized = { command, text ->
+                when (command) {
+                    is VoiceCommand.PlayGenericMusic -> {
+                        actionStatus = "Loading recommended music..."
+                    }
+                    is VoiceCommand.PlayCachedSongs -> {
+                        actionStatus = "Loading and playing cached library songs..."
+                    }
+                    is VoiceCommand.PlayLikedSongs -> {
+                        actionStatus = "Loading and playing liked songs..."
+                    }
+                    is VoiceCommand.PlaySong -> {
+                        actionStatus = "Searching and playing: \"${command.query}\"..."
+                    }
+                    is VoiceCommand.Pause -> {
+                        actionStatus = "Music paused"
+                    }
+                    is VoiceCommand.Resume -> {
+                        actionStatus = "Music resumed"
+                    }
+                    is VoiceCommand.NextTrack -> {
+                        actionStatus = "Skipping to next song"
+                    }
+                    is VoiceCommand.PreviousTrack -> {
+                        actionStatus = "Playing previous song"
+                    }
+                    is VoiceCommand.ToggleLike -> {
+                        actionStatus = "Toggled favorite"
+                    }
+                    is VoiceCommand.StartRadio -> {
+                        actionStatus = "Starting radio station"
+                    }
+                    is VoiceCommand.VolumeUp -> {
+                        actionStatus = "Volume increased"
+                    }
+                    is VoiceCommand.VolumeDown -> {
+                        actionStatus = "Volume decreased"
+                    }
+                    is VoiceCommand.SetVolume -> {
+                        actionStatus = "Volume set to ${command.levelPercent}%"
+                    }
+                    is VoiceCommand.Mute -> {
+                        actionStatus = "Muted"
+                    }
+                    is VoiceCommand.Unmute -> {
+                        actionStatus = "Unmuted"
+                    }
+                    is VoiceCommand.Unknown -> {
+                        actionStatus = "Heard: \"$text\""
+                    }
                 }
-                is VoiceCommand.PlayCachedSongs -> {
-                    actionStatus = "Loading and playing cached library songs..."
-                }
-                is VoiceCommand.PlayLikedSongs -> {
-                    actionStatus = "Loading and playing liked songs..."
-                }
-                is VoiceCommand.PlaySong -> {
-                    actionStatus = "Searching and playing: \"${command.query}\"..."
-                }
-                is VoiceCommand.Pause -> {
-                    actionStatus = "Music paused"
-                }
-                is VoiceCommand.Resume -> {
-                    actionStatus = "Music resumed"
-                }
-                is VoiceCommand.NextTrack -> {
-                    actionStatus = "Skipping to next song"
-                }
-                is VoiceCommand.PreviousTrack -> {
-                    actionStatus = "Playing previous song"
-                }
-                is VoiceCommand.ToggleLike -> {
-                    actionStatus = "Toggled favorite"
-                }
-                is VoiceCommand.StartRadio -> {
-                    actionStatus = "Starting radio station"
-                }
-                is VoiceCommand.VolumeUp -> {
-                    actionStatus = "Volume increased"
-                }
-                is VoiceCommand.VolumeDown -> {
-                    actionStatus = "Volume decreased"
-                }
-                is VoiceCommand.SetVolume -> {
-                    actionStatus = "Volume set to ${command.levelPercent}%"
-                }
-                is VoiceCommand.Mute -> {
-                    actionStatus = "Muted"
-                }
-                is VoiceCommand.Unmute -> {
-                    actionStatus = "Unmuted"
-                }
-                is VoiceCommand.Unknown -> {
-                    actionStatus = "Heard: \"$text\" (say 'play [song]' or song name)"
-                }
+                actionExecutor.execute(command)
+                isTesting = false
             }
-            actionExecutor.execute(command)
-        }
+        )
     }
 
     val liveSpokenText by testManager.lastRecognizedText.collectAsState()
@@ -537,11 +542,12 @@ private fun VoiceTestCard() {
                         else MaterialTheme.colorScheme.primaryContainer
                     )
                     .clickable {
-                        isTesting = !isTesting
-                        if (isTesting) {
-                            actionStatus = "Listening... say \"Hi AirBeats play [song]\" or just song name"
-                            testManager.start(requireWakeWord = false)
+                        if (!isTesting) {
+                            isTesting = true
+                            actionStatus = "Listening... say \"Play Starboy\" or any command"
+                            testManager.triggerListeningSession()
                         } else {
+                            isTesting = false
                             testManager.stop()
                             actionStatus = ""
                         }
