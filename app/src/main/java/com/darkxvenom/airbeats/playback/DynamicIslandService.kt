@@ -369,6 +369,13 @@ class DynamicIslandService : Service(), Player.Listener {
             // When expanded, ALWAYS reset X to 0 so the expanded full form stays 100% inside screen bounds!
             x = if (isExp) 0 else currentOffsetX.dp
             y = if (isExp) 0 else currentOffsetY.dp
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (enableLiquidGlass) {
+                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
+                    setBlurBehindRadius(24.dp)
+                }
+            }
         }
     }
 
@@ -570,8 +577,8 @@ private class DynamicIslandView(
             val gradient = LinearGradient(
                 islandBounds.left, islandBounds.top,
                 islandBounds.left, islandBounds.bottom,
-                Color.argb(205, 32, 32, 46),
-                Color.argb(235, 10, 10, 16),
+                Color.argb(135, 28, 28, 42),
+                Color.argb(175, 12, 12, 18),
                 Shader.TileMode.CLAMP
             )
             bgPaint.shader = gradient
@@ -582,12 +589,12 @@ private class DynamicIslandView(
 
         // Draw Liquid Glass Specular Top Highlight
         if (isLiquidGlass) {
-            val specH = (islandBounds.height() * 0.35f).coerceAtMost(20f.dp)
-            val specRect = RectF(islandBounds.left + 2f.dp, islandBounds.top + 1f.dp, islandBounds.right - 2f.dp, islandBounds.top + specH)
+            val specH = (islandBounds.height() * 0.45f).coerceAtMost(24f.dp)
+            val specRect = RectF(islandBounds.left + 1.5f.dp, islandBounds.top + 1f.dp, islandBounds.right - 1.5f.dp, islandBounds.top + specH)
             val specGradient = LinearGradient(
                 specRect.left, specRect.top,
                 specRect.left, specRect.bottom,
-                Color.argb(85, 255, 255, 255),
+                Color.argb(110, 255, 255, 255),
                 Color.argb(0, 255, 255, 255),
                 Shader.TileMode.CLAMP
             )
