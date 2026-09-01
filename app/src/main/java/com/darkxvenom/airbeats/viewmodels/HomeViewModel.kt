@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
+import com.darkxvenom.airbeats.innertube.models.SongItem
 import com.darkxvenom.airbeats.innertube.models.WatchEndpoint
 import com.darkxvenom.airbeats.innertube.models.YTItem
 import com.darkxvenom.airbeats.innertube.pages.ExplorePage
@@ -26,6 +27,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -54,6 +56,18 @@ class HomeViewModel @Inject constructor(
     val accountName = MutableStateFlow("Guest")
     val accountImageUrl = MutableStateFlow<String?>(null)
 
+    private fun mapToSong(item: SongItem): Song {
+        return Song(
+            song = item.toMediaMetadata().toSongEntity(),
+            artists = item.artists.map { a ->
+                com.darkxvenom.airbeats.db.entities.ArtistEntity(id = a.id ?: "", name = a.name)
+            },
+            album = item.album?.let { a ->
+                com.darkxvenom.airbeats.db.entities.AlbumEntity(id = a.id, title = a.name, songCount = 0, duration = 0)
+            }
+        )
+    }
+
     private suspend fun load() {
         isLoading.value = true
 
@@ -62,7 +76,8 @@ class HomeViewModel @Inject constructor(
 
         if (isJioSaavn) {
             com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.getTrendingSongs().onSuccess { songs ->
-                homePage.value = HomePage(chips = null, 
+                homePage.value = HomePage(
+                    chips = null,
                     sections = listOf(
                         HomePage.Section(
                             title = "Trending Songs",
@@ -73,6 +88,9 @@ class HomeViewModel @Inject constructor(
                         )
                     )
                 )
+                if (quickPicks.value.isNullOrEmpty()) {
+                    quickPicks.value = songs.filterIsInstance<SongItem>().map(::mapToSong).take(20)
+                }
             }.onFailure {
                 reportException(it)
             }
@@ -80,24 +98,24 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            database.recentSongs(limit = 1).collectLatest { recentList ->
-                if (isJioSaavn) {
-                    quickPicks.value = emptyList()
-                    return@collectLatest
+            combine(
+                database.quickPicks(),
+                database.recentSongs(limit = 20)
+            ) { qpList, recentList ->
+                if (isJioSaavn) return@combine emptyList()
+                val qp = qpList.filter { !it.id.startsWith("JS:") }
+                if (qp.isNotEmpty()) {
+                    qp.shuffled().take(20)
+                } else {
+                    recentList.filter { !it.id.startsWith("JS:") }
                 }
-                val recentSong = recentList.firstOrNull()
-                if (recentSong != null) {
-                    val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
-                    if (endpoint != null) {
-                        val page = YouTube.related(endpoint).getOrNull()
-                        quickPicks.value = page?.songs?.map { com.darkxvenom.airbeats.db.entities.Song(song = it.toMediaMetadata().toSongEntity(), artists = it.artists.map { a -> com.darkxvenom.airbeats.db.entities.ArtistEntity(id = a.id ?: "", name = a.name) }, album = it.album?.let { a -> com.darkxvenom.airbeats.db.entities.AlbumEntity(id = a.id, title = a.name, songCount = 0, duration = 0) }) }?.shuffled()?.take(20) ?: emptyList()
-                    } else quickPicks.value = emptyList()
-                } else quickPicks.value = emptyList()
+            }.collectLatest {
+                quickPicks.value = it.takeIf { it.isNotEmpty() }
             }
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            kotlinx.coroutines.flow.combine(
+            combine(
                 database.recentSongs(limit = 50, offset = 0),
                 database.recentAlbums(limit = 50, offset = 0),
                 database.recentArtists(limit = 50, offset = 0)
@@ -108,7 +126,7 @@ class HomeViewModel @Inject constructor(
                 (klSongs + klAlbums + klArtists).shuffled()
             }.collectLatest { keepListening.value = it }
         }
-        
+
         viewModelScope.launch(Dispatchers.IO) {
             database.forgottenFavorites().collectLatest { favs ->
                 forgottenFavorites.value = favs.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled().take(20)
@@ -116,7 +134,7 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            kotlinx.coroutines.flow.combine(quickPicks, forgottenFavorites, keepListening) { qp, ff, kl ->
+            combine(quickPicks, forgottenFavorites, keepListening) { qp, ff, kl ->
                 (qp.orEmpty() + ff.orEmpty() + kl.orEmpty()).filter { it is Song || it is Album }
             }.collectLatest { allLocalItems.value = it }
         }
@@ -147,13 +165,17 @@ class HomeViewModel @Inject constructor(
                 }
             }
 
-            YouTube.home().onSuccess { homePage.value = it }.onFailure { reportException(it) }
+            YouTube.home().onSuccess { page ->
+                homePage.value = page
+            }.onFailure { reportException(it) }
+
             YouTube.explore().onSuccess { explorePage.value = it }.onFailure { reportException(it) }
         }
-        
+
         allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() + homePage.value?.sections?.flatMap { it.items }.orEmpty() + explorePage.value?.newReleaseAlbums.orEmpty()
         isLoading.value = false
     }
+
     fun refresh() {
         if (isRefreshing.value) return
         viewModelScope.launch(Dispatchers.IO) {

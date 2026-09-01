@@ -345,8 +345,10 @@ fun OnboardingScreen(
                             }
                         }
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    Timber.e(e, "Error caching background video")
+                    Timber.w("Could not cache onboarding background video: ${e.message}")
                 }
             }
         }
