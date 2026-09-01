@@ -1021,6 +1021,16 @@ fun SettingsScreen(
                                 onClick = { navController.navigate("settings/player") }
                             ),
                             SettingsCategoryItem(
+                                icon = painterResource(R.drawable.play),
+                                title = {
+                                    Text(
+                                        "Android Auto",
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                },
+                                onClick = { navController.navigate("settings/android_auto") }
+                            ),
+                            SettingsCategoryItem(
                                 icon = painterResource(R.drawable.group),
                                 title = {
                                     Text(

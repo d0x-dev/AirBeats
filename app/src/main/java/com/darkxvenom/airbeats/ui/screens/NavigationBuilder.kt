@@ -427,6 +427,12 @@ fun NavGraphBuilder.navigationBuilder(
     composable("settings/discord/login") {
         DiscordLoginScreen(navController)
     }
+    composable("settings/android_auto") {
+        com.darkxvenom.airbeats.ui.screens.settings.AndroidAutoSettings(
+            navController,
+            scrollBehavior
+        )
+    }
     composable("settings/about") {
         AboutScreen(navController, scrollBehavior)
     }
