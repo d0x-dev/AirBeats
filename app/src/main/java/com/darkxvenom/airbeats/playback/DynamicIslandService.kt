@@ -841,8 +841,12 @@ private class DynamicIslandView(
                 topOffset + collapsedH,
             )
 
+            val maxExpandedW = 390f.dp
+            val expW = (width - 32f.dp).coerceAtMost(maxExpandedW)
+            val expLeft = (width - expW) / 2f
+            val expRight = expLeft + expW
             val expTop = currentOffsetY.coerceIn(0, 120).toFloat().dp
-            expandedBounds.set(16f.dp, expTop, width - 16f.dp, expTop + 188f.dp)
+            expandedBounds.set(expLeft, expTop, expRight, expTop + 188f.dp)
             val p = morphProgress
             islandBounds.set(
                 lerp(collapsedBounds.left, expandedBounds.left, p),

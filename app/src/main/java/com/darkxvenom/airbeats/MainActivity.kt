@@ -245,6 +245,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import com.darkxvenom.airbeats.ui.utils.backToMain
 import com.darkxvenom.airbeats.ui.utils.resetHeightOffset
+import com.darkxvenom.airbeats.ui.component.UpdateAvailableDialog
+import com.darkxvenom.airbeats.utils.UpdateInfo
 import com.darkxvenom.airbeats.utils.SyncUtils
 import com.darkxvenom.airbeats.utils.Updater
 import com.darkxvenom.airbeats.utils.dataStore
@@ -431,13 +433,13 @@ class MainActivity : ComponentActivity() {
 
 
         setContent {
-            var showUpdateDialog by remember { mutableStateOf(false) }
+            var updateInfoState by remember { mutableStateOf<UpdateInfo?>(null) }
             
             LaunchedEffect(Unit) {
-                Updater.getLatestVersionName().onSuccess {
-                    latestVersionName = it
-                    if (latestVersionName != BuildConfig.VERSION_NAME) {
-                        showUpdateDialog = true
+                Updater.getLatestUpdateInfo().onSuccess { info ->
+                    latestVersionName = info.versionName
+                    if (info.versionName.isNotBlank() && info.versionName != BuildConfig.VERSION_NAME) {
+                        updateInfoState = info
                     }
                 }
             }
@@ -1616,29 +1618,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
-                                if (showUpdateDialog) {
-                                    AlertDialog(
-                                        onDismissRequest = { showUpdateDialog = false },
-                                        title = { Text(text = "Update Available") },
-                                        text = { Text(text = "A new version of AirBeats ($latestVersionName) is available. Would you like to download it?") },
-                                        confirmButton = {
-                                            TextButton(
-                                                onClick = {
-                                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/d0x-dev/AirBeats/releases/latest"))
-                                                    context.startActivity(intent)
-                                                    showUpdateDialog = false
-                                                }
-                                            ) {
-                                                Text("Download")
-                                            }
-                                        },
-                                        dismissButton = {
-                                            TextButton(
-                                                onClick = { showUpdateDialog = false }
-                                            ) {
-                                                Text("Cancel")
-                                            }
-                                        }
+                                updateInfoState?.let { info ->
+                                    UpdateAvailableDialog(
+                                        updateInfo = info,
+                                        onDismiss = { updateInfoState = null }
                                     )
                                 }
                             }
