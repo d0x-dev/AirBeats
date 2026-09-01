@@ -572,29 +572,30 @@ private class DynamicIslandView(
             lerp(islandBounds.height() / 2f, 24f.dp, morphProgress)
         }
 
-        // Draw background
+        // Draw background matching LiquidGlass.kt
         if (isLiquidGlass) {
-            val gradient = LinearGradient(
-                islandBounds.left, islandBounds.top,
-                islandBounds.left, islandBounds.bottom,
-                Color.argb(135, 28, 28, 42),
-                Color.argb(175, 12, 12, 18),
-                Shader.TileMode.CLAMP
-            )
-            bgPaint.shader = gradient
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Real Android 12+ LiquidGlass surface tint (Color.Black.copy(alpha = 0.1f))
+                bgPaint.shader = null
+                bgPaint.color = Color.argb(28, 0, 0, 0)
+            } else {
+                // Fallback for Android 11 and below (0xE6121212)
+                bgPaint.shader = null
+                bgPaint.color = Color.argb(230, 18, 18, 18)
+            }
         } else {
             bgPaint.shader = null
         }
         canvas.drawRoundRect(islandBounds, corner, corner, bgPaint)
 
-        // Draw Liquid Glass Specular Top Highlight
+        // Draw Liquid Glass Specular Lens Highlight (matching lens(24dp) and vibrancy)
         if (isLiquidGlass) {
             val specH = (islandBounds.height() * 0.45f).coerceAtMost(24f.dp)
-            val specRect = RectF(islandBounds.left + 1.5f.dp, islandBounds.top + 1f.dp, islandBounds.right - 1.5f.dp, islandBounds.top + specH)
+            val specRect = RectF(islandBounds.left + 1f.dp, islandBounds.top + 0.8f.dp, islandBounds.right - 1f.dp, islandBounds.top + specH)
             val specGradient = LinearGradient(
                 specRect.left, specRect.top,
                 specRect.left, specRect.bottom,
-                Color.argb(110, 255, 255, 255),
+                Color.argb(75, 255, 255, 255),
                 Color.argb(0, 255, 255, 255),
                 Shader.TileMode.CLAMP
             )
