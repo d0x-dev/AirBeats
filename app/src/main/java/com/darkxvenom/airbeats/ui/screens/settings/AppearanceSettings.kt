@@ -606,7 +606,7 @@ fun AppearanceSettings(
                         )},
                         {
                             PreferenceEntry(
-                                title = { Text(stringResource(R.string.dynamic_island)) },
+                                title = { Text("Dynamic Island") },
                                 description = "Position, fluid size, landscape settings, liquid glass & colors",
                                 icon = { Icon(painterResource(R.drawable.music_note), null) },
                                 onClick = {
@@ -637,7 +637,6 @@ fun AppearanceSettings(
                                         onPureBlackChange(newValue)
                                     }
                                 },
-                                subText = { Text(stringResource(R.string.pure_black_desc)) },
                                 isEnabled = useDarkTheme && !enableLiquidGlass
                             )
                         }},
