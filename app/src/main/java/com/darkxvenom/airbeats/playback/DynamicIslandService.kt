@@ -2,10 +2,8 @@ package com.darkxvenom.airbeats.playback
 
 import android.animation.ValueAnimator
 import android.app.Service
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -25,33 +23,19 @@ import android.view.View
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.OvershootInterpolator
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.Player
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import com.darkxvenom.airbeats.constants.DynamicIslandAccentColorKey
-import com.darkxvenom.airbeats.constants.DynamicIslandBgColorKey
-import com.darkxvenom.airbeats.constants.DynamicIslandHeightKey
-import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeHeightKey
-import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetXKey
-import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetYKey
-import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeWidthKey
-import com.darkxvenom.airbeats.constants.DynamicIslandLiquidGlassKey
-import com.darkxvenom.airbeats.constants.DynamicIslandOffsetXKey
-import com.darkxvenom.airbeats.constants.DynamicIslandOffsetYKey
-import com.darkxvenom.airbeats.constants.DynamicIslandTextColorKey
-import com.darkxvenom.airbeats.constants.DynamicIslandWidthKey
+import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.constants.*
 import com.darkxvenom.airbeats.extensions.currentMetadata
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.utils.dataStore
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlin.math.roundToInt
 
 object AppForegroundTracker {
@@ -81,7 +65,6 @@ class DynamicIslandService : Service(), Player.Listener {
     private val scope = CoroutineScope(Dispatchers.Main) + Job()
     private lateinit var windowManager: WindowManager
     private lateinit var islandView: DynamicIslandView
-    private var musicService: MusicService? = null
     private var isAdded = false
     private var isAppInForeground = false
 
@@ -124,21 +107,6 @@ class DynamicIslandService : Service(), Player.Listener {
         }
     }
 
-    private val connection =
-        object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-                musicService = (binder as? MusicService.MusicBinder)?.service
-                musicService?.player?.addListener(this@DynamicIslandService)
-                updateIsland()
-            }
-
-            override fun onServiceDisconnected(name: ComponentName?) {
-                musicService?.player?.removeListener(this@DynamicIslandService)
-                musicService = null
-                hideIsland()
-            }
-        }
-
     override fun onCreate() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -147,27 +115,49 @@ class DynamicIslandService : Service(), Player.Listener {
                 context = this,
                 onExpandedChanged = { updateLayout() },
                 onShuffle = {
-                    musicService?.player?.let { player ->
+                    MusicService.instance?.player?.let { player ->
                         player.shuffleModeEnabled = !player.shuffleModeEnabled
+                        updateIsland()
                     }
                 },
-                onPrevious = { musicService?.player?.seekToPrevious() },
+                onPrevious = {
+                    MusicService.instance?.player?.let { player ->
+                        player.seekToPrevious()
+                        updateIsland()
+                    }
+                },
                 onPlayPause = {
-                    musicService?.player?.let { player ->
-                        player.playWhenReady = !player.playWhenReady
+                    MusicService.instance?.player?.let { player ->
+                        if (player.isPlaying) {
+                            player.pause()
+                        } else {
+                            player.play()
+                        }
+                        updateIsland()
                     }
                 },
-                onNext = { musicService?.player?.seekToNext() },
+                onNext = {
+                    MusicService.instance?.player?.let { player ->
+                        player.seekToNext()
+                        updateIsland()
+                    }
+                },
                 onRepeat = {
-                    musicService?.player?.let { player ->
-                        player.repeatMode = if (player.repeatMode == Player.REPEAT_MODE_OFF) Player.REPEAT_MODE_ALL else if (player.repeatMode == Player.REPEAT_MODE_ALL) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
+                    MusicService.instance?.player?.let { player ->
+                        player.repeatMode = when (player.repeatMode) {
+                            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                            else -> Player.REPEAT_MODE_OFF
+                        }
+                        updateIsland()
                     }
                 },
                 onSeekTo = { posMs ->
-                    musicService?.player?.seekTo(posMs)
+                    MusicService.instance?.player?.seekTo(posMs)
                 }
             )
-        bindService(Intent(this, MusicService::class.java), connection, Context.BIND_AUTO_CREATE)
+
+        MusicService.instance?.player?.addListener(this)
         AppForegroundTracker.addListener(foregroundListener)
         isAppInForeground = AppForegroundTracker.isForeground
 
@@ -200,6 +190,23 @@ class DynamicIslandService : Service(), Player.Listener {
                 updateLayout()
             }
         }
+
+        // Periodic progress updater for timeline
+        scope.launch {
+            while (isActive) {
+                if (isAdded && !isAppInForeground) {
+                    val player = MusicService.instance?.player
+                    if (player != null && player.isPlaying) {
+                        islandView.updatePlaybackProgress(
+                            positionMs = player.currentPosition.coerceAtLeast(0L),
+                            durationMs = player.duration.takeIf { it > 0 } ?: 0L,
+                            isPlaying = player.isPlaying
+                        )
+                    }
+                }
+                delay(400L)
+            }
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -217,11 +224,27 @@ class DynamicIslandService : Service(), Player.Listener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        MusicService.instance?.player?.let { player ->
+            player.removeListener(this)
+            player.addListener(this)
+        }
         updateIsland()
         return START_STICKY
     }
 
     override fun onEvents(player: Player, events: Player.Events) {
+        updateIsland()
+    }
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        updateIsland()
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        updateIsland()
+    }
+
+    override fun onMediaItemTransition(mediaItem: androidx.media3.common.MediaItem?, reason: Int) {
         updateIsland()
     }
 
@@ -251,7 +274,12 @@ class DynamicIslandService : Service(), Player.Listener {
             return
         }
 
-        val player = musicService?.player ?: return
+        val player = MusicService.instance?.player
+        if (player == null) {
+            hideIsland()
+            return
+        }
+
         val metadata = player.currentMediaItem?.mediaMetadata
         val appMetadata = player.currentMetadata
         val hasSong =
@@ -280,7 +308,7 @@ class DynamicIslandService : Service(), Player.Listener {
                     duration = (player.duration / 1000).toInt(),
                     thumbnailUrl = null,
                 ),
-            isPlaying = player.playWhenReady,
+            isPlaying = player.playWhenReady && player.playbackState == Player.STATE_READY,
             positionMs = player.currentPosition.coerceAtLeast(0L),
             durationMs = player.duration.takeIf { it > 0 } ?: 0L,
             isShuffleEnabled = player.shuffleModeEnabled,
@@ -362,19 +390,16 @@ class DynamicIslandService : Service(), Player.Listener {
             },
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             android.graphics.PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            // When expanded, ALWAYS reset X to 0 so the expanded full form stays 100% inside screen bounds!
             x = if (isExp) 0 else currentOffsetX.dp
             y = if (isExp) 0 else currentOffsetY.dp
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                if (enableLiquidGlass) {
-                    flags = flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                    setBlurBehindRadius(24.dp)
-                }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
     }
@@ -382,8 +407,7 @@ class DynamicIslandService : Service(), Player.Listener {
     override fun onDestroy() {
         AppForegroundTracker.removeListener(foregroundListener)
         hideIsland()
-        musicService?.player?.removeListener(this)
-        runCatching { unbindService(connection) }
+        MusicService.instance?.player?.removeListener(this)
         scope.cancel()
         super.onDestroy()
     }
@@ -442,12 +466,6 @@ private class DynamicIslandView(
             color = Color.argb(185, 255, 255, 255)
             textSize = 12f * density
         }
-    private val controlPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            strokeCap = Paint.Cap.ROUND
-            strokeWidth = 3f * density
-        }
     private val progressPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.argb(75, 255, 255, 255)
@@ -469,7 +487,7 @@ private class DynamicIslandView(
         }
     private val playButtonBgPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(45, 255, 255, 255)
+            color = Color.argb(50, 255, 255, 255)
             style = Paint.Style.FILL
         }
     private val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(229, 19, 69) }
@@ -525,9 +543,9 @@ private class DynamicIslandView(
 
         if (liquidGlass) {
             bgPaint.shader = null
-            bgPaint.color = Color.argb(185, 18, 18, 26)
-            strokePaint.color = Color.argb(110, 255, 255, 255)
-            strokePaint.strokeWidth = 1.2f * density
+            bgPaint.color = Color.argb(200, 26, 26, 38)
+            strokePaint.color = Color.argb(125, 255, 255, 255)
+            strokePaint.strokeWidth = 1.1f * density
         } else {
             bgPaint.shader = null
             bgPaint.color = bgColor
@@ -540,14 +558,15 @@ private class DynamicIslandView(
         progressFillPaint.color = accentColor
         textPaint.color = textColor
         subTextPaint.color = Color.argb(185, Color.red(textColor), Color.green(textColor), Color.blue(textColor))
-        controlPaint.color = textColor
         invalidate()
     }
 
     fun update(metadata: MediaMetadata, isPlaying: Boolean, positionMs: Long, durationMs: Long, isShuffleEnabled: Boolean, repeatMode: Int) {
         this.metadata = metadata
         this.isPlaying = isPlaying
-        this.positionMs = positionMs
+        if (!isDraggingSeekbar) {
+            this.positionMs = positionMs
+        }
         this.durationMs = durationMs
         this.isShuffleEnabled = isShuffleEnabled
         this.repeatMode = repeatMode
@@ -555,6 +574,15 @@ private class DynamicIslandView(
         if (isPlaying) {
             post(animationRunnable)
         }
+        invalidate()
+    }
+
+    fun updatePlaybackProgress(positionMs: Long, durationMs: Long, isPlaying: Boolean) {
+        if (!isDraggingSeekbar) {
+            this.positionMs = positionMs
+        }
+        this.durationMs = durationMs
+        this.isPlaying = isPlaying
         invalidate()
     }
 
@@ -572,30 +600,29 @@ private class DynamicIslandView(
             lerp(islandBounds.height() / 2f, 24f.dp, morphProgress)
         }
 
-        // Draw background matching LiquidGlass.kt
+        // Draw background
         if (isLiquidGlass) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Real Android 12+ LiquidGlass surface tint (Color.Black.copy(alpha = 0.1f))
-                bgPaint.shader = null
-                bgPaint.color = Color.argb(28, 0, 0, 0)
-            } else {
-                // Fallback for Android 11 and below (0xE6121212)
-                bgPaint.shader = null
-                bgPaint.color = Color.argb(230, 18, 18, 18)
-            }
+            val gradient = LinearGradient(
+                islandBounds.left, islandBounds.top,
+                islandBounds.left, islandBounds.bottom,
+                Color.argb(200, 28, 28, 40),
+                Color.argb(235, 10, 10, 16),
+                Shader.TileMode.CLAMP
+            )
+            bgPaint.shader = gradient
         } else {
             bgPaint.shader = null
         }
         canvas.drawRoundRect(islandBounds, corner, corner, bgPaint)
 
-        // Draw Liquid Glass Specular Lens Highlight (matching lens(24dp) and vibrancy)
+        // Draw Liquid Glass Specular Lens Highlight
         if (isLiquidGlass) {
             val specH = (islandBounds.height() * 0.45f).coerceAtMost(24f.dp)
-            val specRect = RectF(islandBounds.left + 1f.dp, islandBounds.top + 0.8f.dp, islandBounds.right - 1f.dp, islandBounds.top + specH)
+            val specRect = RectF(islandBounds.left + 1.2f.dp, islandBounds.top + 0.8f.dp, islandBounds.right - 1.2f.dp, islandBounds.top + specH)
             val specGradient = LinearGradient(
                 specRect.left, specRect.top,
                 specRect.left, specRect.bottom,
-                Color.argb(75, 255, 255, 255),
+                Color.argb(105, 255, 255, 255),
                 Color.argb(0, 255, 255, 255),
                 Shader.TileMode.CLAMP
             )
@@ -700,17 +727,53 @@ private class DynamicIslandView(
             canvas.drawCircle(progressCurrentX, progressY, thumbRadius, progressThumbPaint)
         }
 
-        // Modern Playback Controls with glass button backing
-        drawShuffle(canvas, 54f.dp, 148f.dp, isShuffleEnabled)
-        drawPrevious(canvas, localWidth * 0.32f, 148f.dp)
+        // Draw Drawable Icons for Playback Controls
+        val controlTint = textPaint.color
+        val activeAccentTint = accentPaint.color
 
+        // Shuffle
+        val shuffleIcon = if (isShuffleEnabled) R.drawable.shuffle_on else R.drawable.shuffle
+        val shuffleTint = if (isShuffleEnabled) activeAccentTint else controlTint
+        drawDrawable(canvas, shuffleIcon, 54f.dp, 148f.dp, 24f, shuffleTint)
+
+        // Previous
+        drawDrawable(canvas, R.drawable.skip_previous, localWidth * 0.32f, 148f.dp, 28f, controlTint)
+
+        // Play / Pause with rounded glass badge
         val playCenter = localWidth * 0.5f
         val playBtnRect = RectF(playCenter - 22f.dp, 126f.dp, playCenter + 22f.dp, 170f.dp)
         canvas.drawRoundRect(playBtnRect, 22f.dp, 22f.dp, playButtonBgPaint)
-        if (isPlaying) drawPause(canvas, playCenter, 148f.dp) else drawPlay(canvas, playCenter, 148f.dp)
+        val playPauseIcon = if (isPlaying) R.drawable.pause else R.drawable.play
+        drawDrawable(canvas, playPauseIcon, playCenter, 148f.dp, 28f, controlTint)
 
-        drawNext(canvas, localWidth * 0.68f, 148f.dp)
-        drawRepeat(canvas, localWidth - 54f.dp, 148f.dp, repeatMode)
+        // Next
+        drawDrawable(canvas, R.drawable.skip_next, localWidth * 0.68f, 148f.dp, 28f, controlTint)
+
+        // Repeat
+        val repeatIcon = when (repeatMode) {
+            Player.REPEAT_MODE_ONE -> R.drawable.repeat_one_on
+            Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+            else -> R.drawable.repeat
+        }
+        val repeatTint = if (repeatMode != Player.REPEAT_MODE_OFF) activeAccentTint else controlTint
+        drawDrawable(canvas, repeatIcon, localWidth - 54f.dp, 148f.dp, 24f, repeatTint)
+    }
+
+    private fun drawDrawable(
+        canvas: Canvas,
+        @DrawableRes resId: Int,
+        cx: Float,
+        cy: Float,
+        sizeDp: Float,
+        tintColor: Int
+    ) {
+        val drawable = ContextCompat.getDrawable(context, resId) ?: return
+        val sizePx = (sizeDp * density).roundToInt()
+        val left = (cx - sizePx / 2f).roundToInt()
+        val top = (cy - sizePx / 2f).roundToInt()
+        drawable.setBounds(left, top, left + sizePx, top + sizePx)
+        drawable.setTint(tintColor)
+        drawable.draw(canvas)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -727,7 +790,7 @@ private class DynamicIslandView(
                     val y = event.y - islandBounds.top
                     val x = event.x - islandBounds.left
 
-                    if (y in 86f.dp..122f.dp && x in (progressStart - 18f.dp)..(progressEnd + 18f.dp)) {
+                    if (y in 84f.dp..124f.dp && x in (progressStart - 18f.dp)..(progressEnd + 18f.dp)) {
                         isDraggingSeekbar = true
                         val fraction = ((x - progressStart) / (progressEnd - progressStart)).coerceIn(0f, 1f)
                         scrubPositionMs = (fraction * durationMs).toLong()
@@ -751,7 +814,7 @@ private class DynamicIslandView(
 
                 val dx = kotlin.math.abs(event.x - downX)
                 val dy = kotlin.math.abs(event.y - downY)
-                if (dx > 24f.dp || dy > 24f.dp) {
+                if (dx > 20f.dp || dy > 20f.dp) {
                     isTap = false
                 }
                 return true
@@ -759,6 +822,7 @@ private class DynamicIslandView(
             MotionEvent.ACTION_UP -> {
                 if (isDraggingSeekbar && expanded) {
                     isDraggingSeekbar = false
+                    positionMs = scrubPositionMs
                     onSeekTo(scrubPositionMs)
                     invalidate()
                     return true
@@ -781,16 +845,16 @@ private class DynamicIslandView(
                     collapseWithDrop()
                     return true
                 }
-                if (y in 122f.dp..174f.dp) {
+                if (y in 120f.dp..176f.dp) {
                     val localWidth = islandBounds.width()
                     val shuffleX = 54f.dp
                     val repeatX = localWidth - 54f.dp
                     when {
                         kotlin.math.abs(x - shuffleX) < 28f.dp -> onShuffle()
                         kotlin.math.abs(x - repeatX) < 28f.dp -> onRepeat()
-                        x in (localWidth * 0.20f)..(localWidth * 0.40f) -> onPrevious()
+                        x in (localWidth * 0.18f)..(localWidth * 0.40f) -> onPrevious()
                         x in (localWidth * 0.42f)..(localWidth * 0.58f) -> onPlayPause()
-                        x in (localWidth * 0.60f)..(localWidth * 0.80f) -> onNext()
+                        x in (localWidth * 0.60f)..(localWidth * 0.82f) -> onNext()
                     }
                 }
                 return true
@@ -817,7 +881,6 @@ private class DynamicIslandView(
                 topOffset + collapsedH,
             )
 
-            // Clamped expanded bounds so it stays centered and never clips out of screen
             val expTop = currentOffsetY.coerceIn(0, 120).toFloat().dp
             expandedBounds.set(16f.dp, expTop, width - 16f.dp, expTop + 188f.dp)
             val p = morphProgress
@@ -971,84 +1034,6 @@ private class DynamicIslandView(
     override fun onDetachedFromWindow() {
         removeCallbacks(animationRunnable)
         super.onDetachedFromWindow()
-    }
-
-    private fun drawShuffle(canvas: Canvas, cx: Float, cy: Float, enabled: Boolean) {
-        val paint = Paint(controlPaint).apply {
-            if (enabled) color = accentPaint.color
-            strokeWidth = 2.5f.dp
-        }
-        // Arrow 1 (top-left to bottom-right)
-        canvas.drawLine(cx - 8f.dp, cy - 5f.dp, cx + 8f.dp, cy + 5f.dp, paint)
-        canvas.drawLine(cx + 4f.dp, cy + 5f.dp, cx + 8f.dp, cy + 5f.dp, paint)
-        canvas.drawLine(cx + 8f.dp, cy + 1f.dp, cx + 8f.dp, cy + 5f.dp, paint)
-
-        // Arrow 2 (bottom-left to top-right)
-        canvas.drawLine(cx - 8f.dp, cy + 5f.dp, cx - 2f.dp, cy + 2f.dp, paint)
-        canvas.drawLine(cx + 2f.dp, cy - 2f.dp, cx + 8f.dp, cy - 5f.dp, paint)
-        canvas.drawLine(cx + 4f.dp, cy - 5f.dp, cx + 8f.dp, cy - 5f.dp, paint)
-        canvas.drawLine(cx + 8f.dp, cy - 1f.dp, cx + 8f.dp, cy - 5f.dp, paint)
-    }
-
-    private fun drawPrevious(canvas: Canvas, cx: Float, cy: Float) {
-        canvas.drawLine(cx - 9f.dp, cy - 10f.dp, cx - 9f.dp, cy + 10f.dp, controlPaint)
-        val path = android.graphics.Path().apply {
-            moveTo(cx + 8f.dp, cy - 12f.dp)
-            lineTo(cx - 6f.dp, cy)
-            lineTo(cx + 8f.dp, cy + 12f.dp)
-            close()
-        }
-        canvas.drawPath(path, controlPaint)
-    }
-
-    private fun drawNext(canvas: Canvas, cx: Float, cy: Float) {
-        canvas.drawLine(cx + 9f.dp, cy - 10f.dp, cx + 9f.dp, cy + 10f.dp, controlPaint)
-        val path = android.graphics.Path().apply {
-            moveTo(cx - 8f.dp, cy - 12f.dp)
-            lineTo(cx + 6f.dp, cy)
-            lineTo(cx - 8f.dp, cy + 12f.dp)
-            close()
-        }
-        canvas.drawPath(path, controlPaint)
-    }
-
-    private fun drawPlay(canvas: Canvas, cx: Float, cy: Float) {
-        val path = android.graphics.Path().apply {
-            moveTo(cx - 6f.dp, cy - 12f.dp)
-            lineTo(cx + 10f.dp, cy)
-            lineTo(cx - 6f.dp, cy + 12f.dp)
-            close()
-        }
-        canvas.drawPath(path, controlPaint)
-    }
-
-    private fun drawPause(canvas: Canvas, cx: Float, cy: Float) {
-        canvas.drawLine(cx - 5f.dp, cy - 11f.dp, cx - 5f.dp, cy + 11f.dp, controlPaint)
-        canvas.drawLine(cx + 5f.dp, cy - 11f.dp, cx + 5f.dp, cy + 11f.dp, controlPaint)
-    }
-
-    private fun drawRepeat(canvas: Canvas, cx: Float, cy: Float, repeatMode: Int) {
-        val paint = Paint(controlPaint).apply {
-            if (repeatMode != Player.REPEAT_MODE_OFF) color = accentPaint.color
-            strokeWidth = 2.5f.dp
-        }
-        // Top right-pointing arrow
-        canvas.drawLine(cx - 6f.dp, cy - 4f.dp, cx + 6f.dp, cy - 4f.dp, paint)
-        canvas.drawLine(cx + 6f.dp, cy - 4f.dp, cx + 6f.dp, cy - 1f.dp, paint)
-        canvas.drawLine(cx + 3f.dp, cy - 7f.dp, cx + 6f.dp, cy - 4f.dp, paint)
-        canvas.drawLine(cx + 3f.dp, cy - 1f.dp, cx + 6f.dp, cy - 4f.dp, paint)
-
-        // Bottom left-pointing arrow
-        canvas.drawLine(cx + 6f.dp, cy + 4f.dp, cx - 6f.dp, cy + 4f.dp, paint)
-        canvas.drawLine(cx - 6f.dp, cy + 4f.dp, cx - 6f.dp, cy + 1f.dp, paint)
-        canvas.drawLine(cx - 3f.dp, cy + 7f.dp, cx - 6f.dp, cy + 4f.dp, paint)
-        canvas.drawLine(cx - 3f.dp, cy + 1f.dp, cx - 6f.dp, cy + 4f.dp, paint)
-
-        if (repeatMode == Player.REPEAT_MODE_ONE) {
-            paint.style = Paint.Style.FILL
-            paint.strokeWidth = 1f.dp
-            canvas.drawText("1", cx - 3.5f.dp, cy + 3.5f.dp, paint.apply { textSize = 10f.dp })
-        }
     }
 
     private fun formatTime(ms: Long): String {

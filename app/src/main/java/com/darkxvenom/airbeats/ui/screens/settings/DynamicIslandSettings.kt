@@ -49,7 +49,7 @@ fun DynamicIslandSettings(
         defaultValue = false
     )
 
-    var selectedOrientationTab by remember { mutableStateOf(0) } // 0: Portrait, 1: Landscape
+    var selectedOrientationTab by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(0) } // 0: Portrait, 1: Landscape
 
     // Portrait values
     val (islandOffsetX, onIslandOffsetXChange) = rememberPreference(DynamicIslandOffsetXKey, defaultValue = 0)
@@ -80,16 +80,6 @@ fun DynamicIslandSettings(
         DynamicIslandLiquidGlassKey,
         defaultValue = false
     )
-
-    // Orientation sync: Rotate screen when Landscape tab is clicked
-    LaunchedEffect(selectedOrientationTab) {
-        val activity = context as? Activity
-        if (selectedOrientationTab == 1) {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        } else {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        }
-    }
 
     DisposableEffect(Unit) {
         AppForegroundTracker.isAdjustingIsland = true
@@ -230,7 +220,15 @@ fun DynamicIslandSettings(
                                             .background(
                                                 if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
                                             )
-                                            .clickable { selectedOrientationTab = index }
+                                            .clickable {
+                                                selectedOrientationTab = index
+                                                val activity = context as? Activity
+                                                if (index == 1) {
+                                                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                                                } else {
+                                                    activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                                }
+                                            }
                                             .padding(vertical = 8.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -255,7 +253,7 @@ fun DynamicIslandSettings(
                             }
                             Slider(
                                 value = activeX.toFloat(),
-                                valueRange = -400f..400f,
+                                valueRange = -500f..500f,
                                 onValueChange = { onActiveXChange(it.toInt()) },
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -271,7 +269,7 @@ fun DynamicIslandSettings(
                             }
                             Slider(
                                 value = activeY.toFloat(),
-                                valueRange = -20f..400f,
+                                valueRange = -150f..400f,
                                 onValueChange = { onActiveYChange(it.toInt()) },
                                 modifier = Modifier.fillMaxWidth()
                             )
