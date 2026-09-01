@@ -10,15 +10,9 @@ fun String.resize(
 
     if (this.contains("googleusercontent.com") || this.contains("ggpht.com")) {
         if (this.contains(Regex("=w\\d+-h\\d+"))) {
-            return this.replace(Regex("=w\\d+-h\\d+.*"), "=w$w-h$h-l90-rj")
+            return this.replace(Regex("=w\\d+-h\\d+"), "=w$w-h$h")
         } else if (this.contains(Regex("=s\\d+"))) {
-            return this.replace(Regex("=s\\d+.*"), "=s$w-l90-rj")
-        }
-    }
-
-    if (this.contains("ytimg.com")) {
-        if (this.endsWith("/default.jpg") || this.endsWith("/mqdefault.jpg")) {
-            return this.substringBeforeLast("/") + "/hqdefault.jpg"
+            return this.replace(Regex("=s\\d+"), "=s$w")
         }
     }
 
@@ -26,5 +20,5 @@ fun String.resize(
 }
 
 fun String.highQualityThumbnail(): String =
-    resize(800, 800)
+    resize(544, 544)
 

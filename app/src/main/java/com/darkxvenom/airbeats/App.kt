@@ -239,18 +239,8 @@ class App : LocaleAwareApplication(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader {
         val cacheSize = dataStore[MaxImageCacheSizeKey]
 
-        val okHttpClient = okhttp3.OkHttpClient.Builder()
-            .dispatcher(okhttp3.Dispatcher().apply {
-                maxRequests = 64
-                maxRequestsPerHost = 16
-            })
-            .connectionPool(okhttp3.ConnectionPool(8, 5, java.util.concurrent.TimeUnit.MINUTES))
-            .retryOnConnectionFailure(true)
-            .build()
-
         val builder = ImageLoader.Builder(this)
-            .okHttpClient(okHttpClient)
-            .crossfade(150)
+            .crossfade(true)
             .respectCacheHeaders(false)
             .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
             .memoryCache {

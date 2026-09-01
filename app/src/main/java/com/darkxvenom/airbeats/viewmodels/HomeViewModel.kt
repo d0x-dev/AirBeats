@@ -201,6 +201,15 @@ class HomeViewModel @Inject constructor(
                 }
             }.onFailure { reportException(it) }
 
+            if (quickPicks.value.isNullOrEmpty()) {
+                YouTube.search("Trending Songs", YouTube.SearchFilter.FILTER_SONG).onSuccess { res ->
+                    val songs = res.items.filterIsInstance<SongItem>().map(::mapToSong).take(20)
+                    if (songs.isNotEmpty() && quickPicks.value.isNullOrEmpty()) {
+                        quickPicks.value = songs
+                    }
+                }
+            }
+
             YouTube.explore().onSuccess { explorePage.value = it }.onFailure { reportException(it) }
         }
 
