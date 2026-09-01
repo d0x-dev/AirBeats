@@ -226,7 +226,7 @@ object YTPlayerUtils {
                 }
                 ).distinct()
 
-        val preferredYouTubeClient = ANDROID_VR_NO_AUTH
+        val preferredYouTubeClient = VISIONOS
 
         val metadataClient =
             preferredYouTubeClient
@@ -235,7 +235,7 @@ object YTPlayerUtils {
         val metadataPlayerResponse =
             YouTube.player(videoId, playlistId, preferredYouTubeClient, signatureTimestamp).getOrNull()
                 ?: YouTube.player(videoId, playlistId, IOS, signatureTimestamp).getOrNull()
-                ?: YouTube.player(videoId, playlistId, VISIONOS, signatureTimestamp).getOrNull()
+                ?: YouTube.player(videoId, playlistId, ANDROID_VR_NO_AUTH, signatureTimestamp).getOrNull()
                 ?: YouTube.player(videoId, playlistId, MAIN_CLIENT, signatureTimestamp).getOrThrow()
         val audioConfig = metadataPlayerResponse.playerConfig?.audioConfig
         val videoDetails = metadataPlayerResponse.videoDetails
