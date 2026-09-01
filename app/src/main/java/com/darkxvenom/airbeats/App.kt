@@ -239,26 +239,42 @@ class App : LocaleAwareApplication(), ImageLoaderFactory {
     override fun newImageLoader(): ImageLoader {
         val cacheSize = dataStore[MaxImageCacheSizeKey]
 
-        // will crash app if you set to 0 after cache starts being used
+        val okHttpClient = okhttp3.OkHttpClient.Builder()
+            .dispatcher(okhttp3.Dispatcher().apply {
+                maxRequests = 64
+                maxRequestsPerHost = 16
+            })
+            .connectionPool(okhttp3.ConnectionPool(8, 5, java.util.concurrent.TimeUnit.MINUTES))
+            .retryOnConnectionFailure(true)
+            .build()
+
+        val builder = ImageLoader.Builder(this)
+            .okHttpClient(okHttpClient)
+            .crossfade(150)
+            .respectCacheHeaders(false)
+            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            .memoryCache {
+                coil.memory.MemoryCache.Builder(this)
+                    .maxSizePercent(0.25)
+                    .strongReferencesEnabled(true)
+                    .build()
+            }
+            .memoryCachePolicy(CachePolicy.ENABLED)
+
         if (cacheSize == 0) {
-            return ImageLoader.Builder(this)
-                .crossfade(true)
-                .respectCacheHeaders(false)
-                .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            return builder
                 .diskCachePolicy(CachePolicy.DISABLED)
                 .build()
         }
 
-        return ImageLoader.Builder(this)
-            .crossfade(true)
-            .respectCacheHeaders(false)
-            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-            .diskCache(
+        return builder
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .diskCache {
                 DiskCache.Builder()
                     .directory(cacheDir.resolve("coil"))
                     .maxSizeBytes((cacheSize ?: 512) * 1024 * 1024L)
                     .build()
-            )
+            }
             .build()
     }
 

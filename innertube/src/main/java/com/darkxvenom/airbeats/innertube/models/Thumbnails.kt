@@ -22,13 +22,14 @@ data class Thumbnail(
     val normalizedUrl: String get() {
         var finalUrl = if (url.startsWith("//")) "https:$url" else url
         if (finalUrl.contains("i.ytimg.com")) {
-            finalUrl = finalUrl.replace("hqdefault.jpg", "maxresdefault.jpg")
-                .replace("mqdefault.jpg", "maxresdefault.jpg")
-                .replace("sddefault.jpg", "maxresdefault.jpg")
-                .replace("default.jpg", "maxresdefault.jpg")
+            if (finalUrl.endsWith("/default.jpg") || finalUrl.endsWith("/mqdefault.jpg")) {
+                finalUrl = finalUrl.substringBeforeLast("/") + "/hqdefault.jpg"
+            }
         }
         if (finalUrl.contains("=w") && finalUrl.contains("-h")) {
-            finalUrl = finalUrl.replace(Regex("=w\\d+-h\\d+"), "=w8192-h8192")
+            finalUrl = finalUrl.replace(Regex("=w\\d+-h\\d+.*"), "=w544-h544-l90-rj")
+        } else if (finalUrl.contains(Regex("=s\\d+"))) {
+            finalUrl = finalUrl.replace(Regex("=s\\d+.*"), "=s544-l90-rj")
         }
         return finalUrl
     }
