@@ -116,7 +116,7 @@ class HomeViewModel @Inject constructor(
                             }
                         }
                     }
-                    val dbSongs = database.songsByPlayTimeAsc().first().filter { !it.id.startsWith("JS:") }.shuffled().take(20)
+                    val dbSongs = database.songsByPlayTimeAsc().first().filter { it.totalPlayTime > 15_000 && !it.id.startsWith("JS:") }.shuffled().take(20)
                     if (dbSongs.isNotEmpty()) {
                         quickPicks.value = dbSongs
                     } else if (quickPicks.value.isNullOrEmpty()) {
