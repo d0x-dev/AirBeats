@@ -81,7 +81,7 @@ class DynamicIslandService : Service(), Player.Listener {
     private var islandBgColor = Color.BLACK
     private var islandAccentColor = Color.rgb(229, 19, 69)
     private var islandTextColor = Color.WHITE
-    private var enableLiquidGlass = false
+    private var pauseDismissJob: Job? = null
 
     private val isLandscape: Boolean
         get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -176,7 +176,6 @@ class DynamicIslandService : Service(), Player.Listener {
                 islandBgColor = prefs[DynamicIslandBgColorKey] ?: Color.BLACK
                 islandAccentColor = prefs[DynamicIslandAccentColorKey] ?: Color.rgb(229, 19, 69)
                 islandTextColor = prefs[DynamicIslandTextColorKey] ?: Color.WHITE
-                enableLiquidGlass = prefs[DynamicIslandLiquidGlassKey] ?: false
 
                 islandView.applyDimensionsAndColors(
                     currentIslandWidth,
@@ -184,8 +183,7 @@ class DynamicIslandService : Service(), Player.Listener {
                     islandBgColor,
                     islandAccentColor,
                     islandTextColor,
-                    currentOffsetY,
-                    enableLiquidGlass
+                    currentOffsetY
                 )
                 updateLayout()
             }
@@ -217,8 +215,7 @@ class DynamicIslandService : Service(), Player.Listener {
             islandBgColor,
             islandAccentColor,
             islandTextColor,
-            currentOffsetY,
-            enableLiquidGlass
+            currentOffsetY
         )
         updateLayout()
     }
@@ -297,6 +294,7 @@ class DynamicIslandService : Service(), Player.Listener {
             return
         }
 
+        val isPlaybackActive = player.playWhenReady && player.playbackState == Player.STATE_READY
         islandView.update(
             metadata =
                 appMetadata ?: MediaMetadata(
@@ -308,13 +306,27 @@ class DynamicIslandService : Service(), Player.Listener {
                     duration = (player.duration / 1000).toInt(),
                     thumbnailUrl = null,
                 ),
-            isPlaying = player.playWhenReady && player.playbackState == Player.STATE_READY,
+            isPlaying = isPlaybackActive,
             positionMs = player.currentPosition.coerceAtLeast(0L),
             durationMs = player.duration.takeIf { it > 0 } ?: 0L,
             isShuffleEnabled = player.shuffleModeEnabled,
             repeatMode = player.repeatMode,
         )
-        showIsland()
+
+        if (isPlaybackActive) {
+            pauseDismissJob?.cancel()
+            pauseDismissJob = null
+            showIsland()
+        } else {
+            // Paused: Keep island visible but schedule automatic dismiss if paused for 3 minutes
+            if (pauseDismissJob == null || pauseDismissJob?.isActive == false) {
+                pauseDismissJob = scope.launch {
+                    delay(3 * 60 * 1000L) // 3 minutes
+                    hideIsland()
+                }
+            }
+        }
+
         loadArtwork(appMetadata?.thumbnailUrl ?: metadata?.artworkUri?.toString())
     }
 
@@ -480,11 +492,6 @@ private class DynamicIslandView(
             style = Paint.Style.STROKE
             strokeWidth = 4f * density
         }
-    private val progressThumbPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            style = Paint.Style.FILL
-        }
     private val playButtonBgPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.argb(50, 255, 255, 255)
@@ -492,11 +499,6 @@ private class DynamicIslandView(
         }
     private val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(229, 19, 69) }
     private val spotifyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(30, 215, 96) }
-    private val specularPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(60, 255, 255, 255)
-            style = Paint.Style.FILL
-        }
 
     private var metadata: MediaMetadata? = null
     private var artwork: Bitmap? = null
@@ -533,25 +535,16 @@ private class DynamicIslandView(
         bgColor: Int,
         accentColor: Int,
         textColor: Int,
-        offsetY: Int,
-        liquidGlass: Boolean
+        offsetY: Int
     ) {
         this.customWidth = width
         this.customHeight = height
         this.currentOffsetY = offsetY
-        this.isLiquidGlass = liquidGlass
 
-        if (liquidGlass) {
-            bgPaint.shader = null
-            bgPaint.color = Color.argb(200, 26, 26, 38)
-            strokePaint.color = Color.argb(125, 255, 255, 255)
-            strokePaint.strokeWidth = 1.1f * density
-        } else {
-            bgPaint.shader = null
-            bgPaint.color = bgColor
-            strokePaint.color = Color.argb(70, 255, 255, 255)
-            strokePaint.strokeWidth = 1f * density
-        }
+        bgPaint.shader = null
+        bgPaint.color = bgColor
+        strokePaint.color = Color.argb(60, 255, 255, 255)
+        strokePaint.strokeWidth = 1f * density
 
         accentPaint.color = accentColor
         spotifyPaint.color = accentColor
@@ -600,35 +593,8 @@ private class DynamicIslandView(
             lerp(islandBounds.height() / 2f, 24f.dp, morphProgress)
         }
 
-        // Draw background
-        if (isLiquidGlass) {
-            val gradient = LinearGradient(
-                islandBounds.left, islandBounds.top,
-                islandBounds.left, islandBounds.bottom,
-                Color.argb(200, 28, 28, 40),
-                Color.argb(235, 10, 10, 16),
-                Shader.TileMode.CLAMP
-            )
-            bgPaint.shader = gradient
-        } else {
-            bgPaint.shader = null
-        }
+        // Draw solid background
         canvas.drawRoundRect(islandBounds, corner, corner, bgPaint)
-
-        // Draw Liquid Glass Specular Lens Highlight
-        if (isLiquidGlass) {
-            val specH = (islandBounds.height() * 0.45f).coerceAtMost(24f.dp)
-            val specRect = RectF(islandBounds.left + 1.2f.dp, islandBounds.top + 0.8f.dp, islandBounds.right - 1.2f.dp, islandBounds.top + specH)
-            val specGradient = LinearGradient(
-                specRect.left, specRect.top,
-                specRect.left, specRect.bottom,
-                Color.argb(105, 255, 255, 255),
-                Color.argb(0, 255, 255, 255),
-                Shader.TileMode.CLAMP
-            )
-            specularPaint.shader = specGradient
-            canvas.drawRoundRect(specRect, corner, corner, specularPaint)
-        }
 
         drawDropEffect(canvas)
         canvas.drawRoundRect(islandBounds.insetBy(0.5f.dp), corner, corner, strokePaint)
@@ -648,7 +614,7 @@ private class DynamicIslandView(
         val localHeight = islandBounds.height()
 
         if (localWidth <= 52f.dp) {
-            // Mini Dot Mode (Clean rotating circular artwork without top-right indicator dot)
+            // Mini Dot Mode (Clean rotating circular artwork without indicator dot)
             val padding = 3f.dp
             val art = RectF(padding, padding, localWidth - padding, localHeight - padding)
             drawArtwork(canvas, art, corner = (localHeight - padding * 2) / 2f, rotate = true)
@@ -699,18 +665,19 @@ private class DynamicIslandView(
 
         if (progressCurrentX > progressStart) {
             if (isPlaying && !isDraggingSeekbar) {
-                // Animated Squiggly Wave Timeline while playing
+                // Animated Squiggly Wave Timeline matching classic player SquigglySlider
                 val wavePath = Path()
                 wavePath.moveTo(progressStart, progressY)
-                val phase = SystemClock.uptimeMillis() / 140f
-                val freq = 0.11f
-                val amp = 2.8f.dp
+                val wavelength = 22f.dp
+                val freq = (2f * Math.PI.toFloat()) / wavelength
+                val phase = (SystemClock.uptimeMillis() % 1000L) / 1000f * (2f * Math.PI.toFloat())
+                val amp = 2f.dp
                 var stepX = progressStart
                 while (stepX < progressCurrentX) {
                     val relX = stepX - progressStart
                     val waveY = progressY + kotlin.math.sin(relX * freq + phase) * amp
-                    wavePath.lineTo(stepX, waveY.toFloat())
-                    stepX += 2.5f.dp
+                    wavePath.lineTo(stepX, waveY)
+                    stepX += 1.5f.dp
                 }
                 wavePath.lineTo(progressCurrentX, progressY)
                 canvas.drawPath(wavePath, progressFillPaint)
@@ -718,13 +685,6 @@ private class DynamicIslandView(
                 // Straight Line while paused or scrubbing
                 canvas.drawLine(progressStart, progressY, progressCurrentX, progressY, progressFillPaint)
             }
-
-            // Glowing Thumb Dot at current position
-            val thumbRadius = if (isDraggingSeekbar) 6.5f.dp else 4.5f.dp
-            canvas.drawCircle(progressCurrentX, progressY, thumbRadius + 2f.dp, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(70, Color.red(progressFillPaint.color), Color.green(progressFillPaint.color), Color.blue(progressFillPaint.color))
-            })
-            canvas.drawCircle(progressCurrentX, progressY, thumbRadius, progressThumbPaint)
         }
 
         // Draw Drawable Icons for Playback Controls

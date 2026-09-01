@@ -63,7 +63,7 @@ fun DynamicIslandSettings(
     val (islandLandscapeWidth, onIslandLandscapeWidthChange) = rememberPreference(DynamicIslandLandscapeWidthKey, defaultValue = 160)
     val (islandLandscapeHeight, onIslandLandscapeHeightChange) = rememberPreference(DynamicIslandLandscapeHeightKey, defaultValue = 36)
 
-    // Colors & Liquid Glass
+    // Colors
     val (islandBgColor, onIslandBgColorChange) = rememberPreference(
         DynamicIslandBgColorKey,
         defaultValue = android.graphics.Color.BLACK
@@ -75,10 +75,6 @@ fun DynamicIslandSettings(
     val (islandTextColor, onIslandTextColorChange) = rememberPreference(
         DynamicIslandTextColorKey,
         defaultValue = android.graphics.Color.WHITE
-    )
-    val (enableLiquidGlass, onEnableLiquidGlassChange) = rememberPreference(
-        DynamicIslandLiquidGlassKey,
-        defaultValue = false
     )
 
     DisposableEffect(Unit) {
@@ -336,16 +332,6 @@ fun DynamicIslandSettings(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
-
-                            SwitchPreference(
-                                title = { Text("Liquid Glass Effect", fontWeight = FontWeight.SemiBold) },
-                                description = "Translucent frosted acrylic glass with specular highlights and glowing border",
-                                icon = { Icon(painterResource(R.drawable.palette), null) },
-                                checked = enableLiquidGlass,
-                                onCheckedChange = onEnableLiquidGlassChange
-                            )
-
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
 
                             // Background Color
                             val bgPresets = listOf(
