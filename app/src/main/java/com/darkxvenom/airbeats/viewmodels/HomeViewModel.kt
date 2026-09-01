@@ -98,40 +98,19 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            database.quickPicks().collectLatest { qpList ->
-                if (isJioSaavn) return@collectLatest
-                val filtered = qpList.filter { !it.id.startsWith("JS:") }
-                if (filtered.isNotEmpty()) {
-                    quickPicks.value = filtered.shuffled().take(20)
+            combine(
+                database.quickPicks(),
+                database.recentSongs(limit = 20)
+            ) { qpList, recentList ->
+                if (isJioSaavn) return@combine emptyList()
+                val qp = qpList.filter { !it.id.startsWith("JS:") }
+                if (qp.isNotEmpty()) {
+                    qp.shuffled().take(20)
                 } else {
-                    val recentSong = database.recentSongs(limit = 1).first().firstOrNull()
-                    if (recentSong != null) {
-                        val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
-                        if (endpoint != null) {
-                            val page = YouTube.related(endpoint).getOrNull()
-                            val songs = page?.songs?.map(::mapToSong)?.shuffled()?.take(20).orEmpty()
-                            if (songs.isNotEmpty()) {
-                                quickPicks.value = songs
-                                return@collectLatest
-                            }
-                        }
-                    }
-                    val dbSongs = database.songsByPlayTimeAsc().first().filter { it.song.totalPlayTime > 15_000 && !it.id.startsWith("JS:") }.shuffled().take(20)
-                    if (dbSongs.isNotEmpty()) {
-                        quickPicks.value = dbSongs
-                    } else if (quickPicks.value.isNullOrEmpty()) {
-                        val homeResult = homePage.value?.sections?.asSequence()
-                            ?.flatMap { it.items.asSequence() }
-                            ?.filterIsInstance<SongItem>()
-                            ?.map(::mapToSong)
-                            ?.take(20)
-                            ?.toList()
-                            .orEmpty()
-                        if (homeResult.isNotEmpty()) {
-                            quickPicks.value = homeResult
-                        }
-                    }
+                    recentList.filter { !it.id.startsWith("JS:") }
                 }
+            }.collectLatest {
+                quickPicks.value = it.takeIf { it.isNotEmpty() }
             }
         }
 
@@ -188,27 +167,7 @@ class HomeViewModel @Inject constructor(
 
             YouTube.home().onSuccess { page ->
                 homePage.value = page
-                if (quickPicks.value.isNullOrEmpty()) {
-                    val fallbackPicks = page.sections.asSequence()
-                        .flatMap { it.items.asSequence() }
-                        .filterIsInstance<SongItem>()
-                        .map(::mapToSong)
-                        .take(20)
-                        .toList()
-                    if (fallbackPicks.isNotEmpty()) {
-                        quickPicks.value = fallbackPicks
-                    }
-                }
             }.onFailure { reportException(it) }
-
-            if (quickPicks.value.isNullOrEmpty()) {
-                YouTube.search("Trending Songs", YouTube.SearchFilter.FILTER_SONG).onSuccess { res ->
-                    val songs = res.items.filterIsInstance<SongItem>().map(::mapToSong).take(20)
-                    if (songs.isNotEmpty() && quickPicks.value.isNullOrEmpty()) {
-                        quickPicks.value = songs
-                    }
-                }
-            }
 
             YouTube.explore().onSuccess { explorePage.value = it }.onFailure { reportException(it) }
         }
