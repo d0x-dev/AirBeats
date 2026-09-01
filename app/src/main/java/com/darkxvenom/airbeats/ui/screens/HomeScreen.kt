@@ -504,8 +504,9 @@ fun HomeScreen(
                                 .animateItem()
                         ) { index ->
                             val originalSong = distinctPicks[index]
-                            val song by database.song(originalSong.id).collectAsState(initial = originalSong)
-                            val isActive = song!!.id == mediaMetadata?.id
+                            val dbSong by database.song(originalSong.id).collectAsState(initial = originalSong)
+                            val currentSong = dbSong ?: originalSong
+                            val isActive = currentSong.id == mediaMetadata?.id
 
                             Box(
                                 modifier = Modifier
@@ -520,14 +521,14 @@ fun HomeScreen(
                                             if (isActive) {
                                                 playerConnection.player.togglePlayPause()
                                             } else {
-                                                playerConnection.playQueue(YouTubeQueue.radio(song!!.toMediaMetadata()))
+                                                playerConnection.playQueue(YouTubeQueue.radio(currentSong.toMediaMetadata()))
                                             }
                                         },
                                         onLongClick = {
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             menuState.show {
                                                 SongMenu(
-                                                    originalSong = song!!,
+                                                    originalSong = currentSong,
                                                     navController = navController,
                                                     onDismiss = menuState::dismiss
                                                 )
@@ -537,10 +538,10 @@ fun HomeScreen(
                             ) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(LocalContext.current)
-                                        .data(song!!.thumbnailUrl?.highQualityThumbnail())
+                                        .data(currentSong.thumbnailUrl?.highQualityThumbnail())
                                         .crossfade(true)
                                         .diskCachePolicy(CachePolicy.ENABLED)
-                                        .diskCacheKey(song!!.thumbnailUrl?.highQualityThumbnail())
+                                        .diskCacheKey(currentSong.thumbnailUrl?.highQualityThumbnail())
                                         .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
@@ -588,14 +589,14 @@ fun HomeScreen(
                                         .padding(16.dp)
                                 ) {
                                     Text(
-                                        text = song!!.title,
+                                        text = currentSong.title,
                                         style = MaterialTheme.typography.titleMedium,
                                         color = Color.White,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = song!!.artists.joinToString { it.name },
+                                        text = currentSong.artists.joinToString { it.name },
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = Color.White.copy(alpha = 0.7f),
                                         maxLines = 1,
@@ -873,29 +874,30 @@ fun HomeScreen(
                                 items = forgottenFavorites,
                                 key = { it.id }
                             ) { originalSong ->
-                                val song by database.song(originalSong.id)
+                                val dbSong by database.song(originalSong.id)
                                     .collectAsState(initial = originalSong)
+                                val currentSong = dbSong ?: originalSong
 
                                 SongListItem(
-                                    song = song!!,
+                                    song = currentSong,
                                     showInLibraryIcon = true,
-                                    isActive = song!!.id == mediaMetadata?.id,
+                                    isActive = currentSong.id == mediaMetadata?.id,
                                     isPlaying = isPlaying,
                                     modifier = Modifier
                                         .width(horizontalLazyGridItemWidth)
                                         .combinedClickable(
                                             onClick = {
-                                                if (song!!.id == mediaMetadata?.id) {
+                                                if (currentSong.id == mediaMetadata?.id) {
                                                     playerConnection.player.togglePlayPause()
                                                 } else {
-                                                    playerConnection.playQueue(YouTubeQueue.radio(song!!.toMediaMetadata()))
+                                                    playerConnection.playQueue(YouTubeQueue.radio(currentSong.toMediaMetadata()))
                                                 }
                                             },
                                             onLongClick = {
                                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                 menuState.show {
                                                     SongMenu(
-                                                        originalSong = song!!,
+                                                        originalSong = currentSong,
                                                         navController = navController,
                                                         onDismiss = menuState::dismiss
                                                     )
