@@ -10,9 +10,11 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Shader
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
@@ -35,6 +37,7 @@ import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeHeightKey
 import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetXKey
 import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeOffsetYKey
 import com.darkxvenom.airbeats.constants.DynamicIslandLandscapeWidthKey
+import com.darkxvenom.airbeats.constants.DynamicIslandLiquidGlassKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetXKey
 import com.darkxvenom.airbeats.constants.DynamicIslandOffsetYKey
 import com.darkxvenom.airbeats.constants.DynamicIslandTextColorKey
@@ -95,6 +98,7 @@ class DynamicIslandService : Service(), Player.Listener {
     private var islandBgColor = Color.BLACK
     private var islandAccentColor = Color.rgb(229, 19, 69)
     private var islandTextColor = Color.WHITE
+    private var enableLiquidGlass = false
 
     private val isLandscape: Boolean
         get() = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -159,6 +163,9 @@ class DynamicIslandService : Service(), Player.Listener {
                         player.repeatMode = if (player.repeatMode == Player.REPEAT_MODE_OFF) Player.REPEAT_MODE_ALL else if (player.repeatMode == Player.REPEAT_MODE_ALL) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
                     }
                 },
+                onSeekTo = { posMs ->
+                    musicService?.player?.seekTo(posMs)
+                }
             )
         bindService(Intent(this, MusicService::class.java), connection, Context.BIND_AUTO_CREATE)
         AppForegroundTracker.addListener(foregroundListener)
@@ -179,6 +186,7 @@ class DynamicIslandService : Service(), Player.Listener {
                 islandBgColor = prefs[DynamicIslandBgColorKey] ?: Color.BLACK
                 islandAccentColor = prefs[DynamicIslandAccentColorKey] ?: Color.rgb(229, 19, 69)
                 islandTextColor = prefs[DynamicIslandTextColorKey] ?: Color.WHITE
+                enableLiquidGlass = prefs[DynamicIslandLiquidGlassKey] ?: false
 
                 islandView.applyDimensionsAndColors(
                     currentIslandWidth,
@@ -186,7 +194,8 @@ class DynamicIslandService : Service(), Player.Listener {
                     islandBgColor,
                     islandAccentColor,
                     islandTextColor,
-                    currentOffsetY
+                    currentOffsetY,
+                    enableLiquidGlass
                 )
                 updateLayout()
             }
@@ -201,7 +210,8 @@ class DynamicIslandService : Service(), Player.Listener {
             islandBgColor,
             islandAccentColor,
             islandTextColor,
-            currentOffsetY
+            currentOffsetY,
+            enableLiquidGlass
         )
         updateLayout()
     }
@@ -227,12 +237,12 @@ class DynamicIslandService : Service(), Player.Listener {
                     id = "preview",
                     title = "Adjusting position & size...",
                     artists = emptyList(),
-                    duration = 100,
+                    duration = 180,
                     thumbnailUrl = null,
                 ),
                 isPlaying = true,
-                positionMs = 50000,
-                durationMs = 100000,
+                positionMs = 65000,
+                durationMs = 180000,
                 isShuffleEnabled = false,
                 repeatMode = Player.REPEAT_MODE_OFF,
             )
@@ -338,7 +348,7 @@ class DynamicIslandService : Service(), Player.Listener {
         val height = if (isExp) {
             WindowManager.LayoutParams.MATCH_PARENT
         } else {
-            currentIslandHeight.coerceAtLeast(24).dp
+            currentIslandHeight.coerceAtLeast(20).dp
         }
 
         return WindowManager.LayoutParams(
@@ -385,6 +395,7 @@ private class DynamicIslandView(
     private val onPlayPause: () -> Unit,
     private val onNext: () -> Unit,
     private val onRepeat: () -> Unit,
+    private val onSeekTo: (Long) -> Unit,
 ) : View(context) {
     var expanded = false
         private set
@@ -396,11 +407,14 @@ private class DynamicIslandView(
         private set
 
     private var currentOffsetY = 8
+    private var isLiquidGlass = false
     private var rotationAngle = 0f
 
     private var downX = 0f
     private var downY = 0f
     private var isTap = false
+    private var isDraggingSeekbar = false
+    private var scrubPositionMs = 0L
 
     private val density = resources.displayMetrics.density
     private val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK }
@@ -429,18 +443,36 @@ private class DynamicIslandView(
         }
     private val progressPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.argb(80, 255, 255, 255)
+            color = Color.argb(75, 255, 255, 255)
             strokeCap = Paint.Cap.ROUND
+            style = Paint.Style.STROKE
             strokeWidth = 4f * density
         }
     private val progressFillPaint =
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
+            color = Color.rgb(229, 19, 69)
             strokeCap = Paint.Cap.ROUND
+            style = Paint.Style.STROKE
             strokeWidth = 4f * density
+        }
+    private val progressThumbPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            style = Paint.Style.FILL
+        }
+    private val playButtonBgPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(45, 255, 255, 255)
+            style = Paint.Style.FILL
         }
     private val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(229, 19, 69) }
     private val spotifyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(30, 215, 96) }
+    private val specularPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(60, 255, 255, 255)
+            style = Paint.Style.FILL
+        }
+
     private var metadata: MediaMetadata? = null
     private var artwork: Bitmap? = null
     private var isPlaying = false
@@ -476,12 +508,26 @@ private class DynamicIslandView(
         bgColor: Int,
         accentColor: Int,
         textColor: Int,
-        offsetY: Int
+        offsetY: Int,
+        liquidGlass: Boolean
     ) {
         this.customWidth = width
         this.customHeight = height
         this.currentOffsetY = offsetY
-        bgPaint.color = bgColor
+        this.isLiquidGlass = liquidGlass
+
+        if (liquidGlass) {
+            bgPaint.shader = null
+            bgPaint.color = Color.argb(185, 18, 18, 26)
+            strokePaint.color = Color.argb(110, 255, 255, 255)
+            strokePaint.strokeWidth = 1.2f * density
+        } else {
+            bgPaint.shader = null
+            bgPaint.color = bgColor
+            strokePaint.color = Color.argb(70, 255, 255, 255)
+            strokePaint.strokeWidth = 1f * density
+        }
+
         accentPaint.color = accentColor
         spotifyPaint.color = accentColor
         progressFillPaint.color = accentColor
@@ -518,7 +564,37 @@ private class DynamicIslandView(
         } else {
             lerp(islandBounds.height() / 2f, 24f.dp, morphProgress)
         }
+
+        // Draw background
+        if (isLiquidGlass) {
+            val gradient = LinearGradient(
+                islandBounds.left, islandBounds.top,
+                islandBounds.left, islandBounds.bottom,
+                Color.argb(205, 32, 32, 46),
+                Color.argb(235, 10, 10, 16),
+                Shader.TileMode.CLAMP
+            )
+            bgPaint.shader = gradient
+        } else {
+            bgPaint.shader = null
+        }
         canvas.drawRoundRect(islandBounds, corner, corner, bgPaint)
+
+        // Draw Liquid Glass Specular Top Highlight
+        if (isLiquidGlass) {
+            val specH = (islandBounds.height() * 0.35f).coerceAtMost(20f.dp)
+            val specRect = RectF(islandBounds.left + 2f.dp, islandBounds.top + 1f.dp, islandBounds.right - 2f.dp, islandBounds.top + specH)
+            val specGradient = LinearGradient(
+                specRect.left, specRect.top,
+                specRect.left, specRect.bottom,
+                Color.argb(85, 255, 255, 255),
+                Color.argb(0, 255, 255, 255),
+                Shader.TileMode.CLAMP
+            )
+            specularPaint.shader = specGradient
+            canvas.drawRoundRect(specRect, corner, corner, specularPaint)
+        }
+
         drawDropEffect(canvas)
         canvas.drawRoundRect(islandBounds.insetBy(0.5f.dp), corner, corner, strokePaint)
 
@@ -543,13 +619,13 @@ private class DynamicIslandView(
             drawArtwork(canvas, art, corner = (localHeight - padding * 2) / 2f, rotate = true)
         } else if (localWidth < 110f.dp) {
             // Compact Mini-Pill Mode (Rotating circular artwork on left, waveform on right)
-            val artSize = localHeight - 8f.dp
+            val artSize = (localHeight - 8f.dp).coerceAtLeast(14f.dp)
             val art = RectF(4f.dp, 4f.dp, 4f.dp + artSize, 4f.dp + artSize)
             drawArtwork(canvas, art, corner = artSize / 2f, rotate = true)
             drawSpotifyWaveform(canvas, localWidth - 22f.dp, localHeight / 2f, compact = true)
         } else {
             // Standard Full Pill Mode (Rotating circular artwork on left, live dot in center, waveform on right)
-            val artSize = localHeight - 8f.dp
+            val artSize = (localHeight - 8f.dp).coerceAtLeast(14f.dp)
             val art = RectF(5f.dp, 4f.dp, 5f.dp + artSize, 4f.dp + artSize)
             drawArtwork(canvas, art, corner = artSize / 2f, rotate = true)
             drawLiveDot(canvas, localWidth / 2f, localHeight / 2f)
@@ -567,24 +643,65 @@ private class DynamicIslandView(
         canvas.drawText(artists.ellipsize(30), 92f.dp, 65f.dp, subTextPaint)
         drawSpotifyWaveform(canvas, localWidth - 44f.dp, 42f.dp, compact = false)
 
+        // Progress Bar & Squiggly Wave Seekbar
         val progressStart = 72f.dp
         val progressEnd = localWidth - 72f.dp
-        val progressY = 102f.dp
-        canvas.drawText(formatTime(positionMs), 24f.dp, 106f.dp, subTextPaint)
-        canvas.drawText(formatTime(durationMs), localWidth - 58f.dp, 106f.dp, subTextPaint)
+        val progressY = 104f.dp
+        val curMs = if (isDraggingSeekbar) scrubPositionMs else positionMs
+        canvas.drawText(formatTime(curMs), 24f.dp, 108f.dp, subTextPaint)
+        canvas.drawText(formatTime(durationMs), localWidth - 58f.dp, 108f.dp, subTextPaint)
+
+        // Base Track Line
         canvas.drawLine(progressStart, progressY, progressEnd, progressY, progressPaint)
+
         val progress =
             if (durationMs > 0) {
-                (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                (curMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
             } else {
                 0f
             }
-        canvas.drawLine(progressStart, progressY, progressStart + (progressEnd - progressStart) * progress, progressY, progressFillPaint)
+        val progressCurrentX = progressStart + (progressEnd - progressStart) * progress
 
+        if (progressCurrentX > progressStart) {
+            if (isPlaying && !isDraggingSeekbar) {
+                // Animated Squiggly Wave Timeline while playing
+                val wavePath = Path()
+                wavePath.moveTo(progressStart, progressY)
+                val phase = SystemClock.uptimeMillis() / 140f
+                val freq = 0.11f
+                val amp = 2.8f.dp
+                var stepX = progressStart
+                while (stepX < progressCurrentX) {
+                    val relX = stepX - progressStart
+                    val waveY = progressY + kotlin.math.sin(relX * freq + phase) * amp
+                    wavePath.lineTo(stepX, waveY.toFloat())
+                    stepX += 2.5f.dp
+                }
+                wavePath.lineTo(progressCurrentX, progressY)
+                canvas.drawPath(wavePath, progressFillPaint)
+            } else {
+                // Straight Line while paused or scrubbing
+                canvas.drawLine(progressStart, progressY, progressCurrentX, progressY, progressFillPaint)
+            }
+
+            // Glowing Thumb Dot at current position
+            val thumbRadius = if (isDraggingSeekbar) 6.5f.dp else 4.5f.dp
+            canvas.drawCircle(progressCurrentX, progressY, thumbRadius + 2f.dp, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(70, Color.red(progressFillPaint.color), Color.green(progressFillPaint.color), Color.blue(progressFillPaint.color))
+            })
+            canvas.drawCircle(progressCurrentX, progressY, thumbRadius, progressThumbPaint)
+        }
+
+        // Modern Playback Controls with glass button backing
         drawShuffle(canvas, 54f.dp, 148f.dp, isShuffleEnabled)
-        drawPrevious(canvas, localWidth * 0.33f, 148f.dp)
-        if (isPlaying) drawPause(canvas, localWidth * 0.5f, 148f.dp) else drawPlay(canvas, localWidth * 0.5f, 148f.dp)
-        drawNext(canvas, localWidth * 0.67f, 148f.dp)
+        drawPrevious(canvas, localWidth * 0.32f, 148f.dp)
+
+        val playCenter = localWidth * 0.5f
+        val playBtnRect = RectF(playCenter - 22f.dp, 126f.dp, playCenter + 22f.dp, 170f.dp)
+        canvas.drawRoundRect(playBtnRect, 22f.dp, 22f.dp, playButtonBgPaint)
+        if (isPlaying) drawPause(canvas, playCenter, 148f.dp) else drawPlay(canvas, playCenter, 148f.dp)
+
+        drawNext(canvas, localWidth * 0.68f, 148f.dp)
         drawRepeat(canvas, localWidth - 54f.dp, 148f.dp, repeatMode)
     }
 
@@ -594,9 +711,36 @@ private class DynamicIslandView(
                 downX = event.x
                 downY = event.y
                 isTap = true
+
+                if (expanded) {
+                    val localWidth = islandBounds.width()
+                    val progressStart = 72f.dp
+                    val progressEnd = localWidth - 72f.dp
+                    val y = event.y - islandBounds.top
+                    val x = event.x - islandBounds.left
+
+                    if (y in 86f.dp..122f.dp && x in (progressStart - 18f.dp)..(progressEnd + 18f.dp)) {
+                        isDraggingSeekbar = true
+                        val fraction = ((x - progressStart) / (progressEnd - progressStart)).coerceIn(0f, 1f)
+                        scrubPositionMs = (fraction * durationMs).toLong()
+                        invalidate()
+                        return true
+                    }
+                }
                 return true
             }
             MotionEvent.ACTION_MOVE -> {
+                if (isDraggingSeekbar && expanded) {
+                    val localWidth = islandBounds.width()
+                    val progressStart = 72f.dp
+                    val progressEnd = localWidth - 72f.dp
+                    val x = event.x - islandBounds.left
+                    val fraction = ((x - progressStart) / (progressEnd - progressStart)).coerceIn(0f, 1f)
+                    scrubPositionMs = (fraction * durationMs).toLong()
+                    invalidate()
+                    return true
+                }
+
                 val dx = kotlin.math.abs(event.x - downX)
                 val dy = kotlin.math.abs(event.y - downY)
                 if (dx > 24f.dp || dy > 24f.dp) {
@@ -605,10 +749,17 @@ private class DynamicIslandView(
                 return true
             }
             MotionEvent.ACTION_UP -> {
+                if (isDraggingSeekbar && expanded) {
+                    isDraggingSeekbar = false
+                    onSeekTo(scrubPositionMs)
+                    invalidate()
+                    return true
+                }
+
                 if (!isTap && expanded) return true
 
                 if (!expanded) {
-                    // Tap on collapsed island (any size/height) reliably opens expanded player
+                    // Tap on collapsed island reliably opens expanded player
                     expandWithDrop()
                     return true
                 }
@@ -618,26 +769,27 @@ private class DynamicIslandView(
                 }
                 val x = event.x - islandBounds.left
                 val y = event.y - islandBounds.top
-                if (y < 34f.dp || y > islandBounds.height() - 12f.dp) {
+                if (y < 28f.dp || y > islandBounds.height() - 10f.dp) {
                     collapseWithDrop()
                     return true
                 }
-                if (y in 126f.dp..172f.dp) {
+                if (y in 122f.dp..174f.dp) {
                     val localWidth = islandBounds.width()
                     val shuffleX = 54f.dp
                     val repeatX = localWidth - 54f.dp
                     when {
                         kotlin.math.abs(x - shuffleX) < 28f.dp -> onShuffle()
                         kotlin.math.abs(x - repeatX) < 28f.dp -> onRepeat()
-                        x in (localWidth * 0.22f)..(localWidth * 0.42f) -> onPrevious()
+                        x in (localWidth * 0.20f)..(localWidth * 0.40f) -> onPrevious()
                         x in (localWidth * 0.42f)..(localWidth * 0.58f) -> onPlayPause()
-                        x in (localWidth * 0.58f)..(localWidth * 0.78f) -> onNext()
+                        x in (localWidth * 0.60f)..(localWidth * 0.80f) -> onNext()
                     }
                 }
                 return true
             }
             MotionEvent.ACTION_CANCEL -> {
                 isTap = false
+                isDraggingSeekbar = false
                 return true
             }
         }
@@ -648,7 +800,7 @@ private class DynamicIslandView(
         if (expanded || morphAnimating) {
             val collapsedW = customWidth.toFloat().dp
             val collapsedH = customHeight.toFloat().dp
-            val topOffset = currentOffsetY.coerceAtLeast(8).toFloat().dp
+            val topOffset = currentOffsetY.toFloat().dp
 
             collapsedBounds.set(
                 (width - collapsedW) / 2f,
@@ -658,7 +810,7 @@ private class DynamicIslandView(
             )
 
             // Clamped expanded bounds so it stays centered and never clips out of screen
-            val expTop = currentOffsetY.coerceIn(8, 60).toFloat().dp
+            val expTop = currentOffsetY.coerceIn(0, 120).toFloat().dp
             expandedBounds.set(16f.dp, expTop, width - 16f.dp, expTop + 188f.dp)
             val p = morphProgress
             islandBounds.set(

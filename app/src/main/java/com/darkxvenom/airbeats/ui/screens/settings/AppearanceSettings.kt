@@ -168,15 +168,6 @@ fun AppearanceSettings(
         DynamicIslandKey,
         defaultValue = false
     )
-    val (islandBgColor, onIslandBgColorChange) = rememberPreference(
-        DynamicIslandBgColorKey,
-        defaultValue = android.graphics.Color.BLACK
-    )
-    val (islandAccentColor, onIslandAccentColorChange) = rememberPreference(
-        DynamicIslandAccentColorKey,
-        defaultValue = android.graphics.Color.rgb(229, 19, 69)
-    )
-    var showIslandColorDialog by remember { mutableStateOf(false) }
 
     val (appFontKey, onAppFontKeyChange) = rememberPreference(
         AppFontKey,
@@ -209,9 +200,6 @@ fun AppearanceSettings(
         defaultValue = LibraryFilter.LIBRARY
     )
 
-    var showIslandAdjustmentDialog by rememberSaveable {
-        mutableStateOf(false)
-    }
     var showSliderOptionDialog by rememberSaveable {
         mutableStateOf(false)
     }
@@ -437,167 +425,6 @@ fun AppearanceSettings(
         }
     }
 
-    if (showIslandAdjustmentDialog) {
-        val context = LocalContext.current
-        var selectedOrientationTab by remember { mutableStateOf(0) } // 0: Portrait, 1: Landscape
-
-        val (islandOffsetX, onIslandOffsetXChange) = rememberPreference(DynamicIslandOffsetXKey, defaultValue = 0)
-        val (islandOffsetY, onIslandOffsetYChange) = rememberPreference(DynamicIslandOffsetYKey, defaultValue = 8)
-        val (islandWidth, onIslandWidthChange) = rememberPreference(DynamicIslandWidthKey, defaultValue = 160)
-        val (islandHeight, onIslandHeightChange) = rememberPreference(DynamicIslandHeightKey, defaultValue = 36)
-
-        val (islandLandscapeOffsetX, onIslandLandscapeOffsetXChange) = rememberPreference(DynamicIslandLandscapeOffsetXKey, defaultValue = 0)
-        val (islandLandscapeOffsetY, onIslandLandscapeOffsetYChange) = rememberPreference(DynamicIslandLandscapeOffsetYKey, defaultValue = 8)
-        val (islandLandscapeWidth, onIslandLandscapeWidthChange) = rememberPreference(DynamicIslandLandscapeWidthKey, defaultValue = 160)
-        val (islandLandscapeHeight, onIslandLandscapeHeightChange) = rememberPreference(DynamicIslandLandscapeHeightKey, defaultValue = 36)
-        
-        val activeX = if (selectedOrientationTab == 0) islandOffsetX else islandLandscapeOffsetX
-        val onActiveXChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandOffsetXChange else onIslandLandscapeOffsetXChange
-
-        val activeY = if (selectedOrientationTab == 0) islandOffsetY else islandLandscapeOffsetY
-        val onActiveYChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandOffsetYChange else onIslandLandscapeOffsetYChange
-
-        val activeW = if (selectedOrientationTab == 0) islandWidth else islandLandscapeWidth
-        val onActiveWChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandWidthChange else onIslandLandscapeWidthChange
-
-        val activeH = if (selectedOrientationTab == 0) islandHeight else islandLandscapeHeight
-        val onActiveHChange: (Int) -> Unit = if (selectedOrientationTab == 0) onIslandHeightChange else onIslandLandscapeHeightChange
-
-        DisposableEffect(Unit) {
-            AppForegroundTracker.isAdjustingIsland = true
-            onDispose {
-                AppForegroundTracker.isAdjustingIsland = false
-            }
-        }
-        
-        DefaultDialog(
-            buttons = {
-                TextButton(onClick = { 
-                    onActiveXChange(0)
-                    onActiveYChange(8)
-                    onActiveWChange(160)
-                    onActiveHChange(36)
-                }) {
-                    Text(stringResource(R.string.reset))
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = { showIslandAdjustmentDialog = false }) {
-                    Text(stringResource(R.string.done))
-                }
-            },
-            onDismiss = { showIslandAdjustmentDialog = false }
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                Text("Adjust Dynamic Island", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-
-                // Orientation Segmented Tabs
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    listOf("Portrait", "Landscape").forEachIndexed { index, label ->
-                        val isSelected = selectedOrientationTab == index
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-                                )
-                                .clickable { selectedOrientationTab = index }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-
-                // Horizontal Position (X) Slider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Horizontal Position (X)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Text(if (activeX == 0) "Center (0 dp)" else if (activeX > 0) "+$activeX dp" else "$activeX dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = activeX.toFloat(),
-                    valueRange = -200f..200f,
-                    onValueChange = { onActiveXChange(it.toInt()) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Vertical Position (Y) Slider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Vertical Position (Y)", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Text("$activeY dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = activeY.toFloat(),
-                    valueRange = 0f..120f,
-                    onValueChange = { onActiveYChange(it.toInt()) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-
-                // Width Slider
-                val widthLabel = if (activeW <= 46) "Mini Dot ($activeW dp)" else if (activeW < 120) "Compact ($activeW dp)" else "Pill ($activeW dp)"
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Width", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Text(widthLabel, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = activeW.toFloat(),
-                    valueRange = 32f..240f,
-                    onValueChange = { onActiveWChange(it.toInt()) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // Height Slider
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Height", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-                    Text("$activeH dp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
-                Slider(
-                    value = activeH.toFloat(),
-                    valueRange = 24f..48f,
-                    onValueChange = { onActiveHChange(it.toInt()) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
 
     // Get player connection for album artwork
     val playerConnection = LocalPlayerConnection.current
@@ -778,53 +605,15 @@ fun AppearanceSettings(
                             isEnabled = !enableLiquidGlass && !isPlayful
                         )},
                         {
-                            val context = LocalContext.current
-                            SwitchPreference(
-                                title = { Text(stringResource(R.string.enable_dynamic_island)) },
-                                description = stringResource(R.string.enable_dynamic_island_desc),
+                            PreferenceEntry(
+                                title = { Text(stringResource(R.string.dynamic_island)) },
+                                description = "Position, fluid size, landscape settings, liquid glass & colors",
                                 icon = { Icon(painterResource(R.drawable.music_note), null) },
-                                checked = enableDynamicIsland,
-                                onCheckedChange = { newValue ->
-                                    if (newValue && !Settings.canDrawOverlays(context)) {
-                                        val intent = Intent(
-                                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                            Uri.parse("package:${context.packageName}")
-                                        )
-                                        context.startActivity(intent)
-                                    } else {
-                                        onEnableDynamicIslandChange(newValue)
-                                        val serviceIntent = Intent(context, com.darkxvenom.airbeats.playback.DynamicIslandService::class.java)
-                                        try {
-                                            if (newValue) {
-                                                context.startService(serviceIntent)
-                                            } else {
-                                                context.stopService(serviceIntent)
-                                            }
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                    }
+                                onClick = {
+                                    navController.navigate("settings/dynamic_island")
                                 }
                             )
                         },
-                        *(if (enableDynamicIsland) arrayOf(
-                            { PreferenceEntry(
-                                title = { Text(stringResource(R.string.adjust_dynamic_island)) },
-                                description = "Adjust position and resize pill / dot",
-                                icon = { Icon(painterResource(R.drawable.add), null) },
-                                onClick = {
-                                    showIslandAdjustmentDialog = true
-                                }
-                            ) },
-                            { PreferenceEntry(
-                                title = { Text("Dynamic Island Colors") },
-                                description = "Customize background and accent colors",
-                                icon = { Icon(painterResource(R.drawable.palette), null) },
-                                onClick = {
-                                    showIslandColorDialog = true
-                                }
-                            ) }
-                        ) else emptyArray()),
                         {SwitchPreference(
                             title = { Text(stringResource(R.string.enable_liquid_glass)) },
                             description = stringResource(R.string.enable_liquid_glass_desc),
@@ -848,6 +637,7 @@ fun AppearanceSettings(
                                         onPureBlackChange(newValue)
                                     }
                                 },
+                                subText = { Text(stringResource(R.string.pure_black_desc)) },
                                 isEnabled = useDarkTheme && !enableLiquidGlass
                             )
                         }},
@@ -861,89 +651,6 @@ fun AppearanceSettings(
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                if (showIslandColorDialog) {
-                    val bgPresets = listOf(
-                        "Pure Black" to android.graphics.Color.BLACK,
-                        "Deep Night" to android.graphics.Color.parseColor("#121218"),
-                        "Dark Glass" to android.graphics.Color.parseColor("#1C1C28"),
-                        "Navy Blue" to android.graphics.Color.parseColor("#0A192F"),
-                        "AMOLED Dark" to android.graphics.Color.parseColor("#212121"),
-                    )
-                    val accentPresets = listOf(
-                        "Apple Red" to android.graphics.Color.parseColor("#E51345"),
-                        "Spotify Green" to android.graphics.Color.parseColor("#1ED760"),
-                        "Cyan Blue" to android.graphics.Color.parseColor("#00E5FF"),
-                        "Neon Purple" to android.graphics.Color.parseColor("#BB86FC"),
-                        "Electric Amber" to android.graphics.Color.parseColor("#FF6D00"),
-                        "Bubble Pink" to android.graphics.Color.parseColor("#FF4081"),
-                    )
-
-                    AlertDialog(
-                        onDismissRequest = { showIslandColorDialog = false },
-                        title = { Text("Dynamic Island Colors", fontWeight = FontWeight.Bold) },
-                        text = {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .verticalScroll(rememberScrollState()),
-                                verticalArrangement = Arrangement.spacedBy(14.dp)
-                            ) {
-                                Text("Background Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    bgPresets.forEach { (name, colorInt) ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(CircleShape)
-                                                .background(androidx.compose.ui.graphics.Color(colorInt))
-                                                .border(
-                                                    width = if (islandBgColor == colorInt) 2.5.dp else 1.dp,
-                                                    color = if (islandBgColor == colorInt) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray,
-                                                    shape = CircleShape
-                                                )
-                                                .clickable {
-                                                    onIslandBgColorChange(colorInt)
-                                                }
-                                        )
-                                    }
-                                }
-
-                                Spacer(Modifier.height(4.dp))
-                                Text("Accent Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    accentPresets.forEach { (name, colorInt) ->
-                                        Box(
-                                            modifier = Modifier
-                                                .size(38.dp)
-                                                .clip(CircleShape)
-                                                .background(androidx.compose.ui.graphics.Color(colorInt))
-                                                .border(
-                                                    width = if (islandAccentColor == colorInt) 2.5.dp else 1.dp,
-                                                    color = if (islandAccentColor == colorInt) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Gray,
-                                                    shape = CircleShape
-                                                )
-                                                .clickable {
-                                                    onIslandAccentColorChange(colorInt)
-                                                }
-                                        )
-                                    }
-                                }
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = { showIslandColorDialog = false }) {
-                                Text("Done")
-                            }
-                        }
-                    )
-                }
 
                 if (showFontDialog) {
                     AlertDialog(
