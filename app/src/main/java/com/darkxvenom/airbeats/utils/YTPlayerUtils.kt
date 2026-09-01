@@ -81,18 +81,18 @@ object YTPlayerUtils {
      * Clients used for fallback streams in case the streams of the main client do not work.
      */
     private val STREAM_FALLBACK_CLIENTS: Array<YouTubeClient> = arrayOf(
+        VISIONOS,
         IOS,
-        MOBILE,
-        ANDROID_MUSIC,
         IOS_MUSIC,
+        IPADOS,
         ANDROID_VR_NO_AUTH,
         ANDROID_VR_1_61_48,
         ANDROID_VR_1_43_32,
+        ANDROID_MUSIC,
         ANDROID_CREATOR,
         ANDROID_TESTSUITE,
         ANDROID_UNPLUGGED,
-        IPADOS,
-        VISIONOS,
+        MOBILE,
         TVHTML5,
         TVHTML5_SIMPLY_EMBEDDED_PLAYER,
         WEB,
@@ -226,14 +226,17 @@ object YTPlayerUtils {
                 }
                 ).distinct()
 
-        val preferredYouTubeClient = ANDROID_VR_NO_AUTH
+        val preferredYouTubeClient = VISIONOS
 
         val metadataClient =
             preferredYouTubeClient
 
         Timber.tag(logTag).i("Fetching metadata response using client: ${metadataClient.clientName}")
         val metadataPlayerResponse =
-            YouTube.player(videoId, playlistId, metadataClient, signatureTimestamp).getOrThrow()
+            YouTube.player(videoId, playlistId, preferredYouTubeClient, signatureTimestamp).getOrNull()
+                ?: YouTube.player(videoId, playlistId, IOS, signatureTimestamp).getOrNull()
+                ?: YouTube.player(videoId, playlistId, ANDROID_VR_NO_AUTH, signatureTimestamp).getOrNull()
+                ?: YouTube.player(videoId, playlistId, MAIN_CLIENT, signatureTimestamp).getOrThrow()
         val audioConfig = metadataPlayerResponse.playerConfig?.audioConfig
         val videoDetails = metadataPlayerResponse.videoDetails
         val playbackTracking = metadataPlayerResponse.playbackTracking
