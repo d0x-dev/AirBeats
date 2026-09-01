@@ -767,7 +767,7 @@ private class DynamicIslandView(
         sizeDp: Float,
         tintColor: Int
     ) {
-        val drawable = ContextCompat.getDrawable(context, resId) ?: return
+        val drawable = ContextCompat.getDrawable(context, resId)?.mutate() ?: return
         val sizePx = (sizeDp * density).roundToInt()
         val left = (cx - sizePx / 2f).roundToInt()
         val top = (cy - sizePx / 2f).roundToInt()
