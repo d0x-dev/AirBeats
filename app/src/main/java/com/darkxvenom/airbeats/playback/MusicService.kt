@@ -1664,6 +1664,10 @@ class MusicService :
                     contentLength = format.contentLength,
                 )
                 return@Factory dataSpec.withStreamUrl(streamUrl, format.contentLength)
+            } catch (e: InterruptedException) {
+                throw e
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Timber.tag(ytLogTag).e(e, "YouTube playback error, trying JossRed as fallback")
 
