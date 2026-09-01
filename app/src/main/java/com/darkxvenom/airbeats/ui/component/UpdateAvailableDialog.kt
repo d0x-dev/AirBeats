@@ -340,11 +340,20 @@ fun UpdateAvailableDialog(
 
                     Button(
                         onClick = {
-                            val targetUrl = updateInfo.releaseUrl.ifBlank {
-                                "https://github.com/d0x-dev/AirBeats/releases/latest"
+                            val directApkUrl = updateInfo.apkDownloadUrl.ifBlank {
+                                updateInfo.releaseUrl.ifBlank {
+                                    "https://github.com/d0x-dev/AirBeats/releases/latest"
+                                }
                             }
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
-                            context.startActivity(intent)
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(directApkUrl)).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.releaseUrl))
+                                context.startActivity(fallbackIntent)
+                            }
                             onDismiss()
                         },
                         modifier = Modifier
