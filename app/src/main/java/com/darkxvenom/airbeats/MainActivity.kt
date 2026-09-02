@@ -412,6 +412,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+        val versionName = BuildConfig.VERSION_NAME
+        FirebaseMessaging.getInstance().subscribeToTopic(versionName)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    Log.d("FCM", "Subscribed to $versionName")
+                }
+            }
+
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
