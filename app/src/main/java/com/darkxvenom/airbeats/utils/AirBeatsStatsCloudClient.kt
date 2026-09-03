@@ -41,6 +41,13 @@ class AirBeatsStatsCloudClient {
     private val client =
         OkHttpClient
             .Builder()
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
+                        .build()
+                )
+            }
             .connectTimeout(8, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
@@ -55,6 +62,7 @@ class AirBeatsStatsCloudClient {
                         .url("$BASE_URL/read?file=$fileName&_t=${System.currentTimeMillis()}")
                         .header("Cache-Control", "no-cache")
                         .header("Pragma", "no-cache")
+                        .header("X-API-Key", API_KEY)
                         .get()
                         .build()
                 client.newCall(request).execute().use { response ->
