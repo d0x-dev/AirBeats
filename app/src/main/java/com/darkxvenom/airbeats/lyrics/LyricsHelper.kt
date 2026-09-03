@@ -30,16 +30,15 @@ constructor(
 ) {
     private var lyricsProviders =
         listOf(
+            LrcLibLyricsProvider,
+            AirBeatsSimpLyricsProvider,
+            YouTubeSubtitleLyricsProvider,
+            KuGouLyricsProvider,
+            AirBeatsPaxsenixLyricsProvider,
+            AirBeatsUnisonLyricsProvider,
             BetterLyricsProvider,
             AirBeatsPortatoLyricsProvider,
-            AirBeatsSimpLyricsProvider,
-            AirBeatsUnisonLyricsProvider,
             AirBeatsYouLyLyricsProvider,
-            AirBeatsPaxsenixLyricsProvider,
-            LrcLibLyricsProvider,
-            KuGouLyricsProvider,
-            AirBeatsMegalobizLyricsProvider,
-            YouTubeSubtitleLyricsProvider,
             YouTubeLyricsProvider
         )
     val preferred =
@@ -52,29 +51,27 @@ constructor(
                     if (it == PreferredLyricsProvider.LRCLIB) {
                         listOf(
                             LrcLibLyricsProvider,
+                            AirBeatsSimpLyricsProvider,
+                            YouTubeSubtitleLyricsProvider,
+                            KuGouLyricsProvider,
+                            AirBeatsPaxsenixLyricsProvider,
+                            AirBeatsUnisonLyricsProvider,
                             BetterLyricsProvider,
                             AirBeatsPortatoLyricsProvider,
-                            AirBeatsSimpLyricsProvider,
-                            AirBeatsUnisonLyricsProvider,
                             AirBeatsYouLyLyricsProvider,
-                            AirBeatsPaxsenixLyricsProvider,
-                            KuGouLyricsProvider,
-                            AirBeatsMegalobizLyricsProvider,
-                            YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                     } else {
                         listOf(
                             KuGouLyricsProvider,
+                            LrcLibLyricsProvider,
+                            AirBeatsSimpLyricsProvider,
+                            YouTubeSubtitleLyricsProvider,
+                            AirBeatsPaxsenixLyricsProvider,
+                            AirBeatsUnisonLyricsProvider,
                             BetterLyricsProvider,
                             AirBeatsPortatoLyricsProvider,
-                            AirBeatsSimpLyricsProvider,
-                            AirBeatsUnisonLyricsProvider,
                             AirBeatsYouLyLyricsProvider,
-                            AirBeatsPaxsenixLyricsProvider,
-                            LrcLibLyricsProvider,
-                            AirBeatsMegalobizLyricsProvider,
-                            YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                     }

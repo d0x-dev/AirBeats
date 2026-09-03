@@ -66,16 +66,16 @@ object AirBeatsSimpLyricsProvider : LyricsProvider {
                 val itemDuration = item.optInt("duration", 0)
                 if (duration > 0 && itemDuration > 0) {
                     val diff = abs(itemDuration - duration)
-                    if (diff < minDiff) {
+                    if (diff <= 10 && diff < minDiff) {
                         minDiff = diff
                         bestLyrics = lyrics
                     }
-                } else if (bestLyrics == null) {
+                } else if (bestLyrics == null && (duration <= 0 || itemDuration <= 0)) {
                     bestLyrics = lyrics
                 }
             }
 
-            bestLyrics ?: throw IllegalStateException("No valid lyrics in response")
+            bestLyrics ?: throw IllegalStateException("No lyrics matching song duration")
         }
     }
 

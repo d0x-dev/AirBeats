@@ -34,43 +34,7 @@ object AirBeatsPaxsenixLyricsProvider : LyricsProvider {
         duration: Int,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
-            val cleanTitle = title.trim()
-            val cleanArtist = artist.trim()
-            val encTitle = URLEncoder.encode(cleanTitle, "UTF-8")
-            val encArtist = URLEncoder.encode(cleanArtist, "UTF-8")
-
-            // Multi-backend fallback order: Apple Music -> Spotify -> Musixmatch -> Netease -> YouTube ID
-            val endpoints = listOf(
-                "apple-music/lyrics?title=$encTitle&artist=$encArtist",
-                "spotify/lyrics?title=$encTitle&artist=$encArtist",
-                "musixmatch/lyrics?title=$encTitle&artist=$encArtist",
-                "netease/lyrics?title=$encTitle&artist=$encArtist"
-            )
-
-            for (path in endpoints) {
-                try {
-                    val req = Request.Builder()
-                        .url(BASE_URL + path)
-                        .header("User-Agent", "AirBeats/1.0")
-                        .header("Accept", "application/json, text/plain, */*")
-                        .build()
-
-                    val resp = client.newCall(req).execute()
-                    if (resp.isSuccessful) {
-                        val body = resp.body?.string()
-                        if (!body.isNullOrBlank()) {
-                            val lrc = extractLyricsText(body)
-                            if (!lrc.isNullOrBlank()) {
-                                return@runCatching lrc
-                            }
-                        }
-                    }
-                } catch (_: Exception) {
-                    continue
-                }
-            }
-
-            // Fallback by video ID if available
+            // 1. Try exact video ID match first
             val cleanId = if (id.startsWith("JS:")) "" else id.trim()
             if (cleanId.isNotBlank()) {
                 try {
@@ -88,6 +52,44 @@ object AirBeatsPaxsenixLyricsProvider : LyricsProvider {
                         }
                     }
                 } catch (_: Exception) {}
+            }
+
+            // 2. Metadata fallback (Spotify -> Musixmatch -> Apple Music -> Netease)
+            val cleanTitle = title.trim()
+            val cleanArtist = artist.trim()
+            if (cleanTitle.isNotBlank() && cleanArtist.isNotBlank()) {
+                val encTitle = URLEncoder.encode(cleanTitle, "UTF-8")
+                val encArtist = URLEncoder.encode(cleanArtist, "UTF-8")
+
+                val endpoints = listOf(
+                    "spotify/lyrics?title=$encTitle&artist=$encArtist",
+                    "musixmatch/lyrics?title=$encTitle&artist=$encArtist",
+                    "apple-music/lyrics?title=$encTitle&artist=$encArtist",
+                    "netease/lyrics?title=$encTitle&artist=$encArtist"
+                )
+
+                for (path in endpoints) {
+                    try {
+                        val req = Request.Builder()
+                            .url(BASE_URL + path)
+                            .header("User-Agent", "AirBeats/1.0")
+                            .header("Accept", "application/json, text/plain, */*")
+                            .build()
+
+                        val resp = client.newCall(req).execute()
+                        if (resp.isSuccessful) {
+                            val body = resp.body?.string()
+                            if (!body.isNullOrBlank()) {
+                                val lrc = extractLyricsText(body)
+                                if (!lrc.isNullOrBlank()) {
+                                    return@runCatching lrc
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {
+                        continue
+                    }
+                }
             }
 
             throw IllegalStateException("Lyrics not found on Paxsenix")
