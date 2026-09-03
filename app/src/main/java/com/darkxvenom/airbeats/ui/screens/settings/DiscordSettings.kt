@@ -97,7 +97,7 @@ import com.darkxvenom.airbeats.ui.utils.backToMain
 import com.darkxvenom.airbeats.utils.makeTimeString
 import com.darkxvenom.airbeats.utils.rememberEnumPreference
 import com.darkxvenom.airbeats.utils.rememberPreference
-import com.darkxvenom.airbeats.kizzy.rpc.KizzyRPC
+import com.darkxvenom.airbeats.discordrpc.rpc.DiscordRpcClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -135,7 +135,7 @@ fun DiscordSettings(
         val token = discordToken
         if (token.isEmpty()) return@LaunchedEffect
         coroutineScope.launch(Dispatchers.IO) {
-            KizzyRPC.getUserInfo(token).onSuccess {
+            DiscordRpcClient.getUserInfo(token).onSuccess {
                 discordUsername = it.username
                 discordName = it.name
             }

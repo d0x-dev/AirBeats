@@ -64,7 +64,7 @@ import androidx.media3.session.SessionToken
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.SongItem
 import com.darkxvenom.airbeats.innertube.models.WatchEndpoint
-import com.darkxvenom.airbeats.jossredconnect.JossRedClient
+import com.darkxvenom.airbeats.airconnect.AirConnectClient
 import com.darkxvenom.airbeats.MainActivity
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioNormalizationKey
@@ -1690,7 +1690,7 @@ class MusicService :
                     val alternativeUrl = runCatching {
                         runBlocking(Dispatchers.IO) {
                             withTimeout(5000) {
-                                JossRedClient.getStreamingUrl(mediaId)
+                                AirConnectClient.getStreamingUrl(mediaId)
                             }
                         }
                     }.getOrNull()
@@ -1733,7 +1733,7 @@ class MusicService :
                     }
                 } catch (jrException: Exception) {
                     when (jrException) {
-                        is JossRedClient.JossRedException -> {
+                        is AirConnectClient.JossRedException -> {
                             Timber.tag(JRlogTag)
                                 .w("JossRed error: ${jrException.message}, throwing original error")
                         }

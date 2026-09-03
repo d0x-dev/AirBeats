@@ -12,24 +12,7 @@ import androidx.navigation.NavController
 import com.darkxvenom.airbeats.NotificationPermissionPreference
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.innertube.YouTube
-import com.darkxvenom.airbeats.constants.ContentCountryKey
-import com.darkxvenom.airbeats.constants.MusicProviderKey
-import com.darkxvenom.airbeats.constants.ContentLanguageKey
-import com.darkxvenom.airbeats.constants.CountryCodeToName
-import com.darkxvenom.airbeats.constants.EnableKugouKey
-import com.darkxvenom.airbeats.constants.EnableLrcLibKey
-import com.darkxvenom.airbeats.constants.HideExplicitKey
-import com.darkxvenom.airbeats.constants.HistoryDuration
-import com.darkxvenom.airbeats.constants.LanguageCodeToName
-import com.darkxvenom.airbeats.constants.PreferredLyricsProvider
-import com.darkxvenom.airbeats.constants.PreferredLyricsProviderKey
-import com.darkxvenom.airbeats.constants.ProxyEnabledKey
-import com.darkxvenom.airbeats.constants.ProxyTypeKey
-import com.darkxvenom.airbeats.constants.ProxyUrlKey
-import com.darkxvenom.airbeats.constants.QuickPicks
-import com.darkxvenom.airbeats.constants.QuickPicksKey
-import com.darkxvenom.airbeats.constants.SYSTEM_DEFAULT
-import com.darkxvenom.airbeats.constants.TopSize
+import com.darkxvenom.airbeats.constants.*
 import com.darkxvenom.airbeats.ui.component.EditTextPreference
 import com.darkxvenom.airbeats.ui.component.ListPreference
 import com.darkxvenom.airbeats.ui.component.SettingsGeneralCategory
@@ -94,6 +77,30 @@ fun ContentSettings(
     )
     val (enableLrclib, onEnableLrclibChange) = rememberPreference(
         key = EnableLrcLibKey,
+        defaultValue = true
+    )
+    val (enableSimpMusic, onEnableSimpMusicChange) = rememberPreference(
+        key = EnableSimpMusicLyricsKey,
+        defaultValue = true
+    )
+    val (enableUnison, onEnableUnisonChange) = rememberPreference(
+        key = EnableUnisonLyricsKey,
+        defaultValue = true
+    )
+    val (enableYouLy, onEnableYouLyChange) = rememberPreference(
+        key = EnableYouLyLyricsKey,
+        defaultValue = true
+    )
+    val (enableMegalobiz, onEnableMegalobizChange) = rememberPreference(
+        key = EnableMegalobizLyricsKey,
+        defaultValue = true
+    )
+    val (enablePaxsenix, onEnablePaxsenixChange) = rememberPreference(
+        key = EnablePaxsenixLyricsKey,
+        defaultValue = true
+    )
+    val (enablePortato, onEnablePortatoChange) = rememberPreference(
+        key = EnablePortatoLyricsKey,
         defaultValue = true
     )
     val (preferredProvider, onPreferredProviderChange) = rememberEnumPreference(
@@ -216,6 +223,42 @@ fun ContentSettings(
                     icon = { Icon(painterResource(R.drawable.lyrics), null) },
                     checked = enableKugou,
                     onCheckedChange = onEnableKugouChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable SimpMusic Lyrics") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enableSimpMusic,
+                    onCheckedChange = onEnableSimpMusicChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable Unison Lyrics") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enableUnison,
+                    onCheckedChange = onEnableUnisonChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable YouLyPlus Lyrics") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enableYouLy,
+                    onCheckedChange = onEnableYouLyChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable Megalobiz Lyrics") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enableMegalobiz,
+                    onCheckedChange = onEnableMegalobizChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable Paxsenix Lyrics (Multi-Source)") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enablePaxsenix,
+                    onCheckedChange = onEnablePaxsenixChange,
+                )},
+                {SwitchPreference(
+                    title = { Text("Enable BetterLyrics (Portato Mirror)") },
+                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
+                    checked = enablePortato,
+                    onCheckedChange = onEnablePortatoChange,
                 )},
             )
         )

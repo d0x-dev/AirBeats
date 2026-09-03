@@ -15,6 +15,13 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import androidx.annotation.Keep
 
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsSimpLyricsProvider
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsUnisonLyricsProvider
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsYouLyLyricsProvider
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsMegalobizLyricsProvider
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsPaxsenixLyricsProvider
+import com.darkxvenom.airbeats.lyrics.providers.AirBeatsPortatoLyricsProvider
+
 @Keep
 class LyricsHelper
 @Inject
@@ -23,8 +30,15 @@ constructor(
 ) {
     private var lyricsProviders =
         listOf(
+            BetterLyricsProvider,
+            AirBeatsPortatoLyricsProvider,
+            AirBeatsSimpLyricsProvider,
+            AirBeatsUnisonLyricsProvider,
+            AirBeatsYouLyLyricsProvider,
+            AirBeatsPaxsenixLyricsProvider,
             LrcLibLyricsProvider,
             KuGouLyricsProvider,
+            AirBeatsMegalobizLyricsProvider,
             YouTubeSubtitleLyricsProvider,
             YouTubeLyricsProvider
         )
@@ -38,14 +52,28 @@ constructor(
                     if (it == PreferredLyricsProvider.LRCLIB) {
                         listOf(
                             LrcLibLyricsProvider,
+                            BetterLyricsProvider,
+                            AirBeatsPortatoLyricsProvider,
+                            AirBeatsSimpLyricsProvider,
+                            AirBeatsUnisonLyricsProvider,
+                            AirBeatsYouLyLyricsProvider,
+                            AirBeatsPaxsenixLyricsProvider,
                             KuGouLyricsProvider,
+                            AirBeatsMegalobizLyricsProvider,
                             YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
                     } else {
                         listOf(
                             KuGouLyricsProvider,
+                            BetterLyricsProvider,
+                            AirBeatsPortatoLyricsProvider,
+                            AirBeatsSimpLyricsProvider,
+                            AirBeatsUnisonLyricsProvider,
+                            AirBeatsYouLyLyricsProvider,
+                            AirBeatsPaxsenixLyricsProvider,
                             LrcLibLyricsProvider,
+                            AirBeatsMegalobizLyricsProvider,
                             YouTubeSubtitleLyricsProvider,
                             YouTubeLyricsProvider
                         )
