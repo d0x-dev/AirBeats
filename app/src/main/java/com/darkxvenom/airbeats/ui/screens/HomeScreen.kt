@@ -353,12 +353,11 @@ fun HomeScreen(
         )
     }
 
-    LaunchedEffect(quickPicks) {
-        quickPicksLazyGridState.scrollToItem(0)
-    }
-
-    LaunchedEffect(forgottenFavorites) {
-        forgottenFavoritesLazyGridState.scrollToItem(0)
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            quickPicksLazyGridState.scrollToItem(0)
+            forgottenFavoritesLazyGridState.scrollToItem(0)
+        }
     }
 
     // Main container Box that holds everything (same pattern as ExploreScreen)

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * AirBeats Project (2026)
  * Arturo254 (github.com/Arturo254)
  * Licensed Under GPL-3.0 | see git history for contributors
@@ -217,16 +217,17 @@ object YTPlayerUtils {
         var streamExpiresInSeconds: Int? = null
         var streamPlayerResponse: PlayerResponse? = null
 
+        val preferredYouTubeClient = VISIONOS
+
         val orderedFallbackClients =
             (
+                listOf(VISIONOS, IOS, IPADOS, ANDROID_TESTSUITE, ANDROID_VR_NO_AUTH) +
                 if (isLoggedIn) {
                     STREAM_FALLBACK_CLIENTS.filter { it.loginSupported } + STREAM_FALLBACK_CLIENTS.filterNot { it.loginSupported }
                 } else {
                     STREAM_FALLBACK_CLIENTS.toList()
                 }
-                ).distinct()
-
-        val preferredYouTubeClient = VISIONOS
+            ).distinct()
 
         val metadataClient =
             preferredYouTubeClient
