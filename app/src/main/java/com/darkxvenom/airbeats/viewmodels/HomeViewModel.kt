@@ -37,6 +37,7 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     val database: MusicDatabase,
 ) : ViewModel() {
+    private val homeRandom = kotlin.random.Random(System.currentTimeMillis())
     val isRefreshing = MutableStateFlow(false)
     val isLoading = MutableStateFlow(false)
 
@@ -105,7 +106,7 @@ class HomeViewModel @Inject constructor(
                 if (isJioSaavn) return@combine emptyList()
                 val qp = qpList.filter { !it.id.startsWith("JS:") }
                 if (qp.isNotEmpty()) {
-                    qp.shuffled().take(20)
+                    qp.shuffled(homeRandom).take(20)
                 } else {
                     recentList.filter { !it.id.startsWith("JS:") }
                 }
@@ -120,16 +121,16 @@ class HomeViewModel @Inject constructor(
                 database.recentAlbums(limit = 50, offset = 0),
                 database.recentArtists(limit = 50, offset = 0)
             ) { songs, albums, artists ->
-                val klSongs = songs.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled().take(10)
-                val klAlbums = albums.filter { it.album.thumbnailUrl != null }.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled().take(5)
-                val klArtists = artists.filter { it.artist.isYouTubeArtist && it.artist.thumbnailUrl != null }.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled().take(5)
-                (klSongs + klAlbums + klArtists).shuffled()
+                val klSongs = songs.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled(homeRandom).take(10)
+                val klAlbums = albums.filter { it.album.thumbnailUrl != null }.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled(homeRandom).take(5)
+                val klArtists = artists.filter { it.artist.isYouTubeArtist && it.artist.thumbnailUrl != null }.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled(homeRandom).take(5)
+                (klSongs + klAlbums + klArtists).shuffled(homeRandom)
             }.collectLatest { keepListening.value = it }
         }
 
         viewModelScope.launch(Dispatchers.IO) {
             database.forgottenFavorites().collectLatest { favs ->
-                forgottenFavorites.value = favs.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled().take(20)
+                forgottenFavorites.value = favs.filter { if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:") }.shuffled(homeRandom).take(20)
             }
         }
 
@@ -148,20 +149,20 @@ class HomeViewModel @Inject constructor(
 
             viewModelScope.launch(Dispatchers.IO) {
                 database.recentArtists(limit = 10).collectLatest { recentList ->
-                    val artistRecs = recentList.filter { it.artist.isYouTubeArtist }.shuffled().take(3).mapNotNull {
+                    val artistRecs = recentList.filter { it.artist.isYouTubeArtist }.shuffled(homeRandom).take(3).mapNotNull {
                         val items = mutableListOf<YTItem>()
                         YouTube.artist(it.id).onSuccess { page ->
                             items += page.sections.getOrNull(page.sections.size - 2)?.items.orEmpty()
                             items += page.sections.lastOrNull()?.items.orEmpty()
                         }
-                        SimilarRecommendation(title = it, items = items.shuffled().take(8)).takeIf { it.items.isNotEmpty() }
+                        SimilarRecommendation(title = it, items = items.shuffled(homeRandom).take(8)).takeIf { it.items.isNotEmpty() }
                     }
-                    val songRecs = database.recentSongs(limit = 10).first().filter { !it.id.startsWith("JS:") }.shuffled().take(2).mapNotNull { song ->
+                    val songRecs = database.recentSongs(limit = 10).first().filter { !it.id.startsWith("JS:") }.shuffled(homeRandom).take(2).mapNotNull { song ->
                         val endpoint = YouTube.next(WatchEndpoint(videoId = song.id)).getOrNull()?.relatedEndpoint ?: return@mapNotNull null
                         val page = YouTube.related(endpoint).getOrNull() ?: return@mapNotNull null
-                        SimilarRecommendation(title = song, items = (page.songs.shuffled().take(8) + page.albums.shuffled().take(4) + page.artists.shuffled().take(4) + page.playlists.shuffled().take(4)).shuffled().take(10))
+                        SimilarRecommendation(title = song, items = (page.songs.shuffled(homeRandom).take(8) + page.albums.shuffled(homeRandom).take(4) + page.artists.shuffled(homeRandom).take(4) + page.playlists.shuffled(homeRandom).take(4)).shuffled(homeRandom).take(10))
                     }
-                    similarRecommendations.value = (artistRecs + songRecs).shuffled()
+                    similarRecommendations.value = (artistRecs + songRecs).shuffled(homeRandom)
                 }
             }
 
@@ -191,3 +192,4 @@ class HomeViewModel @Inject constructor(
         }
     }
 }
+
