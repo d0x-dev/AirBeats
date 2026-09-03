@@ -196,9 +196,9 @@ fun SpotifyLyrics(
 
     LaunchedEffect(playbackState) {
         while (isActive) {
-            position = playerConnection.player.currentPosition
+            position = sliderPosition ?: playerConnection.player.currentPosition
             duration = playerConnection.player.duration
-            delay(250)
+            delay(16)
         }
     }
 
