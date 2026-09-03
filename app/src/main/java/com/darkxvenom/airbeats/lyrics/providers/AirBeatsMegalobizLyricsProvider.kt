@@ -74,7 +74,7 @@ object AirBeatsMegalobizLyricsProvider : LyricsProvider {
                 .replace(Regex("""<[^>]+>"""), "")
                 .trim()
 
-            if (LyricsUtils.isLineSyncedLrc(cleanedText)) {
+            if (LyricsUtils.parseLyrics(cleanedText).isNotEmpty()) {
                 cleanedText
             } else {
                 throw IllegalStateException("Lyrics not synced")
