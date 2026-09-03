@@ -1,5 +1,6 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -684,50 +685,187 @@ fun AccountSettings(
     }
 
     if (showTokenEditor) {
-        var cookieValue by remember { mutableStateOf(TextFieldValue(innerTubeCookie)) }
-        var visitorDataValue by remember { mutableStateOf(TextFieldValue(visitorData)) }
-
-        AlertDialog(
-            onDismissRequest = { showTokenEditor = false },
-            icon = { Icon(painterResource(R.drawable.token), null) },
-            title = { Text(stringResource(R.string.advanced_login)) },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = cookieValue,
-                        onValueChange = { cookieValue = it },
-                        label = { Text(stringResource(R.string.inner_tube_cookie)) },
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = visitorDataValue,
-                        onValueChange = { visitorDataValue = it },
-                        label = { Text(stringResource(R.string.visitor_data)) },
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onInnerTubeCookieChange(cookieValue.text)
-                        onVisitorDataChange(visitorDataValue.text)
-                        showTokenEditor = false
-                    }
-                ) {
-                    Text(stringResource(R.string.save))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showTokenEditor = false }
-                ) {
-                    Text(stringResource(R.string.cancel))
-                }
+        AdvancedTokenLoginDialog(
+            initialCookie = innerTubeCookie,
+            initialVisitorData = visitorData,
+            onDismiss = { showTokenEditor = false },
+            onSave = { newCookie, newVisitorData ->
+                onInnerTubeCookieChange(newCookie)
+                onVisitorDataChange(newVisitorData)
+                showTokenEditor = false
             }
         )
     }
+}
+
+@Composable
+fun AdvancedTokenLoginDialog(
+    initialCookie: String,
+    initialVisitorData: String,
+    onDismiss: () -> Unit,
+    onSave: (cookie: String, visitorData: String) -> Unit,
+) {
+    val existingCookies = remember(initialCookie) { parseCookieString(initialCookie) }
+    var useRawMode by remember { mutableStateOf(false) }
+    var showHelp by remember { mutableStateOf(false) }
+
+    var sapisid by remember { mutableStateOf(existingCookies["SAPISID"].orEmpty()) }
+    var hsid by remember { mutableStateOf(existingCookies["HSID"].orEmpty()) }
+    var ssid by remember { mutableStateOf(existingCookies["SSID"].orEmpty()) }
+    var sid by remember { mutableStateOf(existingCookies["SID"].orEmpty()) }
+    var loginInfo by remember { mutableStateOf(existingCookies["LOGIN_INFO"].orEmpty()) }
+    var rawCookie by remember { mutableStateOf(initialCookie) }
+    var visitorData by remember { mutableStateOf(initialVisitorData) }
+
+    val formattedCookie = remember(sapisid, hsid, ssid, sid, loginInfo, useRawMode, rawCookie) {
+        if (useRawMode) {
+            rawCookie.trim()
+        } else {
+            buildList {
+                if (sapisid.isNotBlank()) add("SAPISID=${sapisid.trim()}")
+                if (hsid.isNotBlank()) add("HSID=${hsid.trim()}")
+                if (ssid.isNotBlank()) add("SSID=${ssid.trim()}")
+                if (sid.isNotBlank()) add("SID=${sid.trim()}")
+                if (loginInfo.isNotBlank()) add("LOGIN_INFO=${loginInfo.trim()}")
+            }.joinToString("; ")
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(painterResource(R.drawable.token), contentDescription = null) },
+        title = { Text(stringResource(R.string.advanced_login)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // How-to guide accordion
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showHelp = !showHelp },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "📖 How to get your cookies",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = if (showHelp) "▲" else "▼",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        if (showHelp) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "1. Open music.youtube.com in your PC browser (or Kiwi Browser) and log in.\n" +
+                                        "2. Press F12 -> Application tab -> Cookies -> https://music.youtube.com.\n" +
+                                        "3. Copy the values of SAPISID, HSID, SSID, SID, and LOGIN_INFO into the fields below.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Mode switch
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = { useRawMode = !useRawMode }) {
+                        Text(
+                            text = if (useRawMode) "Switch to Individual Fields" else "Switch to Raw Cookie",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+
+                if (!useRawMode) {
+                    OutlinedTextField(
+                        value = sapisid,
+                        onValueChange = { sapisid = it },
+                        label = { Text("SAPISID (Required)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = hsid,
+                        onValueChange = { hsid = it },
+                        label = { Text("HSID (Required)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = ssid,
+                        onValueChange = { ssid = it },
+                        label = { Text("SSID (Required)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = sid,
+                        onValueChange = { sid = it },
+                        label = { Text("SID (Required)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = loginInfo,
+                        onValueChange = { loginInfo = it },
+                        label = { Text("LOGIN_INFO (Required)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = rawCookie,
+                        onValueChange = { rawCookie = it },
+                        label = { Text(stringResource(R.string.inner_tube_cookie)) },
+                        minLines = 3,
+                        maxLines = 6,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                OutlinedTextField(
+                    value = visitorData,
+                    onValueChange = { visitorData = it },
+                    label = { Text(stringResource(R.string.visitor_data) + " (Optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(formattedCookie, visitorData.trim())
+                }
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 
