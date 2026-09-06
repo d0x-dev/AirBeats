@@ -1,0 +1,73 @@
+﻿name: Product Signed APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-product-apk:
+    name: Build & Sign Product Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Remove local Java path from gradle.properties
+        run: sed -i '/org.gradle.java.home/d' gradle.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Inject Secrets
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          STATS_API_KEY: ${{ secrets.STATS_API_KEY }}
+          STATS_BASE_URL: ${{ secrets.STATS_BASE_URL }}
+          AUTH_API_BASE_URL: ${{ secrets.AUTH_API_BASE_URL }}
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+        run: |
+          echo "${GOOGLE_SERVICES_JSON}" | base64 --decode > app/google-services.json
+          echo "${SIGNING_KEY_BASE64}" | base64 --decode > app/keystore.jks
+          
+          echo "google.api.key=${GOOGLE_API_KEY}" >> local.properties
+          echo "stats.api.key=${STATS_API_KEY}" >> local.properties
+          echo "stats.base.url=${STATS_BASE_URL}" >> local.properties
+          echo "auth.api.base.url=${AUTH_API_BASE_URL}" >> local.properties
+
+      - name: Build Product Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file="${GITHUB_WORKSPACE}/app/keystore.jks" \
+            -Pandroid.injected.signing.store.password="${KEYSTORE_PASSWORD}" \
+            -Pandroid.injected.signing.key.alias="${KEY_ALIAS}" \
+            -Pandroid.injected.signing.key.password="${KEY_PASSWORD}"
+
+      - name: Prepare APK Artifact
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts || echo "release")
+          RELEASE_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          if [ -z "$RELEASE_APK" ]; then
+            echo "Error: No release APK found in app/build/outputs/apk/release"
+            exit 1
+          fi
+          FINAL_APK_NAME="AirBeats-v${VERSION_NAME}-Release-Signed.apk"
+          cp "$RELEASE_APK" "$FINAL_APK_NAME"
+          echo "FINAL_APK_NAME=$FINAL_APK_NAME" >> $GITHUB_ENV
+
+      - name: Upload Signed Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AirBeats-Product-Signed-APK
+          path: ${{ env.FINAL_APK_NAME }}
+          if-no-files-found: error
