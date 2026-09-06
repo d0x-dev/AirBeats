@@ -2619,41 +2619,38 @@ fun BottomSheetPlayer(
                 lyrics = (spotifyLyricsEntity ?: currentLyrics)?.lyrics
             )
         } else if (playerScreenStyle == PlayerScreenStyle.MODERN) {
-            ModernPlayer(
-                state = state,
-                mediaMetadata = mediaMetadata,
-                position = sliderPosition ?: position,
-                duration = duration,
-                isPlaying = isPlaying,
-                isLoading = playbackState != STATE_READY && playbackState != STATE_ENDED,
-                canSkipPrevious = canSkipPrevious,
-                canSkipNext = canSkipNext,
-                onSeek = { sliderPosition = it },
-                onSeekFinished = {
-                    sliderPosition?.let { playerConnection.player.seekTo(it) }
-                    sliderPosition = null
-                },
-                onPlayPause = { playerConnection.player.togglePlayPause() },
-                onPrevious = { playerConnection.player.seekToPrevious() },
-                onNext = { playerConnection.player.seekToNext() },
-                onCollapse = state::collapseSoft,
-                onMenuClick = {
-                    menuState.show {
-                        PlayerMenu(
-                            mediaMetadata = mediaMetadata ?: return@show,
-                            navController = navController,
-                            playerBottomSheetState = state,
-                            onShowDetailsDialog = { showDetailsDialog = true },
-                            onDismiss = menuState::dismiss,
-                        )
+            val playbackOutputName = rememberPlaybackOutputName()
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                ImmersivePlayerBackdrop(
+                    thumbnailUrl = mediaMetadata?.thumbnailUrl,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 58.dp)
+                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+                ) {
+                    mediaMetadata?.let {
+                        selectedControlsContent(it)
                     }
-                },
-                isLiked = currentSong?.song?.liked == true,
-                onLikeClick = playerConnection::toggleLike,
-                onQueueClick = { queueSheetState.expandSoft() },
-                onOpenFullscreenLyrics = onOpenFullscreenLyrics,
-                navController = navController
-            )
+
+                    Spacer(Modifier.height(34.dp))
+
+                    ImmersiveBottomActions(
+                        textColor = Color.White,
+                        onOpenQueue = queueSheetState::expandSoft,
+                        onOpenLyrics = onOpenFullscreenLyrics,
+                        onDeviceClick = {
+                            Toast.makeText(context, playbackOutputName, Toast.LENGTH_SHORT).show()
+                        },
+                        deviceName = playbackOutputName,
+                    )
+                }
+            }
         } else when (LocalConfiguration.current.orientation) {
             Configuration.ORIENTATION_LANDSCAPE -> {
                 Row(
@@ -3464,7 +3461,7 @@ private fun SpotifyPlainIconButton(
 }
 
 @Composable
-fun ImmersivePlayerBackdrop(
+private fun ImmersivePlayerBackdrop(
     thumbnailUrl: String?,
     modifier: Modifier = Modifier,
 ) {
