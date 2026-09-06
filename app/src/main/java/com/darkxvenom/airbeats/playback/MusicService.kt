@@ -71,6 +71,7 @@ import com.darkxvenom.airbeats.constants.AudioNormalizationKey
 import com.darkxvenom.airbeats.constants.AudioQualityKey
 import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
+import com.darkxvenom.airbeats.constants.CrossfadeKey
 import com.darkxvenom.airbeats.constants.DisableLoadMoreWhenRepeatAllKey
 import com.darkxvenom.airbeats.constants.DiscordTokenKey
 import com.darkxvenom.airbeats.constants.DiscordUseDetailsKey
@@ -267,6 +268,11 @@ class MusicService :
     lateinit var downloadCache: SimpleCache
 
     lateinit var player: ExoPlayer
+    /** A second decoder is required for a real overlap; changing one player's volume is only a fade. */
+    private lateinit var crossfadePlayer: ExoPlayer
+    private var crossfadeJob: Job? = null
+    private var preparedCrossfadeIndex = C.INDEX_UNSET
+    private var crossfadeTargetIndex = C.INDEX_UNSET
     private lateinit var mediaSession: MediaLibrarySession
 
     private var isAudioEffectSessionOpened = false
@@ -322,6 +328,19 @@ class MusicService :
                     addListener(sleepTimer)
                     addAnalyticsListener(PlaybackStatsListener(false, this@MusicService))
                 }
+
+        crossfadePlayer =
+            ExoPlayer.Builder(this)
+                .setMediaSourceFactory(createMediaSourceFactory())
+                .setRenderersFactory(createRenderersFactory())
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(C.USAGE_MEDIA)
+                        .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                        .build(),
+                    false,
+                )
+                .build()
 
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         setupAudioFocus()
@@ -380,6 +399,15 @@ class MusicService :
         playerVolume.debounce(1000).collect(scope) { volume ->
             dataStore.edit { settings ->
                 settings[PlayerVolumeKey] = volume
+            }
+        }
+
+        // Prepare the following song early, then overlap both decoders at the boundary.
+        // This is deliberately separate from UI/image "crossfade" animations.
+        scope.launch {
+            while (isActive) {
+                updateCrossfade()
+                delay(100)
             }
         }
 
@@ -1756,6 +1784,86 @@ class MusicService :
     private fun createMediaSourceFactory() =
         DefaultMediaSourceFactory(createDataSourceFactory())
 
+    /**
+     * A true crossfade needs two simultaneous audio streams: the current song
+     * fades down while the already-buffered next song fades up.  The main
+     * session player stays authoritative; after the overlap it resumes the
+     * next item at the elapsed overlap position and the temporary player stops.
+     */
+    private fun updateCrossfade() {
+        if (!::crossfadePlayer.isInitialized || crossfadeJob?.isActive == true) return
+        val seconds = dataStore.get(CrossfadeKey, 0).coerceIn(0, 15)
+        if (seconds == 0 || !player.isPlaying || player.repeatMode == REPEAT_MODE_ONE) {
+            clearPreparedCrossfade()
+            return
+        }
+        val duration = player.duration
+        if (duration <= 0L || duration == C.TIME_UNSET) return
+        val nextIndex = player.nextMediaItemIndex
+        if (nextIndex == C.INDEX_UNSET || nextIndex !in 0 until player.mediaItemCount) return
+        val fadeMs = seconds * 1000L
+        // Do not crossfade a song shorter than the requested overlap.
+        if (duration <= fadeMs + 500L) return
+        val remaining = duration - player.currentPosition
+        if (remaining > fadeMs + 8_000L) return
+
+        if (preparedCrossfadeIndex != nextIndex) {
+            crossfadePlayer.stop()
+            crossfadePlayer.clearMediaItems()
+            crossfadePlayer.setMediaItem(player.getMediaItemAt(nextIndex))
+            crossfadePlayer.volume = 0f
+            crossfadePlayer.prepare()
+            preparedCrossfadeIndex = nextIndex
+        }
+        if (remaining <= fadeMs && crossfadePlayer.playbackState == Player.STATE_READY) {
+            beginCrossfade(nextIndex, fadeMs)
+        }
+    }
+
+    private fun beginCrossfade(nextIndex: Int, fadeMs: Long) {
+        if (crossfadeJob?.isActive == true) return
+        crossfadeTargetIndex = nextIndex
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(@Player.State state: Int) {
+                if (state == Player.STATE_READY) {
+                    crossfadePlayer.removeListener(this)
+                    crossfadePlayer.playWhenReady = true
+                }
+            }
+        }
+        crossfadePlayer.addListener(listener)
+        crossfadePlayer.playWhenReady = true
+        crossfadeJob = scope.launch {
+            val steps = (fadeMs / 20L).coerceAtLeast(1L)
+            repeat(steps.toInt()) { step ->
+                if (!player.isPlaying) return@launch
+                val progress = (step + 1f) / steps
+                player.volume = playerVolume.value * (1f - progress)
+                crossfadePlayer.volume = playerVolume.value * progress
+                delay(20)
+            }
+            // The overlap has played the first fadeMs of the next item. Make
+            // the session player continue from that exact point before stopping
+            // the secondary decoder, so there is no restart or audible gap.
+            player.volume = 0f
+            player.seekTo(nextIndex, fadeMs)
+            player.playWhenReady = true
+            crossfadePlayer.stop()
+            player.volume = playerVolume.value
+            preparedCrossfadeIndex = C.INDEX_UNSET
+            crossfadeTargetIndex = C.INDEX_UNSET
+        }
+    }
+
+    private fun clearPreparedCrossfade() {
+        if (!::crossfadePlayer.isInitialized || crossfadeJob?.isActive == true) return
+        if (preparedCrossfadeIndex != C.INDEX_UNSET) {
+            crossfadePlayer.stop()
+            crossfadePlayer.clearMediaItems()
+            preparedCrossfadeIndex = C.INDEX_UNSET
+        }
+    }
+
     private fun createRenderersFactory() =
         object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(
@@ -1906,6 +2014,10 @@ class MusicService :
         mediaController?.release()
         mediaController = null
         mediaSession.release()
+        crossfadeJob?.cancel()
+        if (::crossfadePlayer.isInitialized) {
+            crossfadePlayer.release()
+        }
         player.removeListener(this)
         player.removeListener(sleepTimer)
         player.release()

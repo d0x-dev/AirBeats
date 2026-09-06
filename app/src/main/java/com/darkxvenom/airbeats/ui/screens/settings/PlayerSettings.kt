@@ -4,6 +4,12 @@ package com.darkxvenom.airbeats.ui.screens.settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.Slider
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
+
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -19,6 +25,7 @@ import com.darkxvenom.airbeats.constants.AudioQualityKey
 import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
 import com.darkxvenom.airbeats.constants.PermanentShuffleKey
+import com.darkxvenom.airbeats.constants.CrossfadeKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
@@ -50,6 +57,10 @@ fun PlayerSettings(
     val (permanentShuffle, onPermanentShuffleChange) = rememberPreference(
         PermanentShuffleKey,
         defaultValue = false
+    )
+    val (crossfade, onCrossfadeChange) = rememberPreference(
+        CrossfadeKey,
+        defaultValue = 0
     )
     val (skipSilence, onSkipSilenceChange) = rememberPreference(
         SkipSilenceKey,
@@ -105,6 +116,23 @@ fun PlayerSettings(
                     checked = permanentShuffle,
                     onCheckedChange = onPermanentShuffleChange
                 )},
+
+                {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Crossfade", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Fade between songs seamlessly (${crossfade}s)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = crossfade.toFloat(),
+                            onValueChange = { onCrossfadeChange(it.toInt()) },
+                            valueRange = 0f..15f,
+                            steps = 14
+                        )
+                    }
+                },
 
                 {SwitchPreference(
                     title = { Text(stringResource(R.string.skip_silence)) },
