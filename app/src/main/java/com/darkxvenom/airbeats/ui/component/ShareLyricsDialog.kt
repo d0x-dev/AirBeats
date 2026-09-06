@@ -149,7 +149,7 @@ fun ShareLyricsDialog(
                             val shareIntent = Intent().apply {
                                 action = Intent.ACTION_SEND
                                 type = "text/plain"
-                                val songLink = "https://play.airbeats.app/song?id=${mediaMetadata?.id}"
+                                val songLink = "https://play.airbeats.org/song?id=${mediaMetadata?.id}"
                                 putExtra(Intent.EXTRA_TEXT, "\"$lyricsText\"\n\n$songTitle - $artists\n$songLink")
                             }
                             context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_lyrics)))

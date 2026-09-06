@@ -499,7 +499,7 @@ fun VersionCard(uriHandler: UriHandler) {
                                 )
                             }
                         },
-                        onClick = { uriHandler.openUri("https://airbeats.app") }
+                        onClick = { uriHandler.openUri("https://airbeats.org") }
                     ),
                     isLast = true
                 )

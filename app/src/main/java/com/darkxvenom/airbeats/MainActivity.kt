@@ -853,7 +853,7 @@ class MainActivity : ComponentActivity() {
                                         val uri = intent.data ?: intent.extras?.getString(Intent.EXTRA_TEXT)
                                             ?.toUri() ?: return@Consumer
                                         
-                                        if (uri.host == "listentogether.airbeats.app") {
+                                        if (uri.host == "listentogether.airbeats.org" || uri.host == "listentogether.airbeats.app") {
                                             val code = uri.getQueryParameter("code")
                                             if (code != null) {
                                                 ListenTogetherSync.joinSession(code)
@@ -899,8 +899,8 @@ class MainActivity : ComponentActivity() {
                                                 when {
                                                     path == "watch" -> uri.getQueryParameter("v")
                                                     uri.host == "youtu.be" -> path
-                                                    uri.host == "play.airbeats.app" && path == "song" -> uri.getQueryParameter("id")
-                                                    uri.host == "play.airbeats.app" -> path
+                                                    (uri.host == "play.airbeats.org" || uri.host == "play.airbeats.app" || uri.host == "airbeats.org") && path == "song" -> uri.getQueryParameter("id")
+                                                    uri.host == "play.airbeats.org" || uri.host == "play.airbeats.app" || uri.host == "airbeats.org" -> path
                                                     else -> null
                                                 }?.let { videoId ->
                                                     coroutineScope.launch {
@@ -1670,7 +1670,7 @@ class MainActivity : ComponentActivity() {
         when {
             uri.pathSegments.firstOrNull() == "watch" -> uri.getQueryParameter("v")
             uri.host == "youtu.be" -> uri.pathSegments.firstOrNull()
-            uri.host == "play.airbeats.app" -> {
+            uri.host == "play.airbeats.org" || uri.host == "play.airbeats.app" || uri.host == "airbeats.org" -> {
                 if (uri.pathSegments.firstOrNull() == "song") {
                     uri.getQueryParameter("id")
                 } else if (uri.pathSegments.firstOrNull() == "artist") {

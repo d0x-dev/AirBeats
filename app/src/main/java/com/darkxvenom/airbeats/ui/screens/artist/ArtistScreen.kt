@@ -1017,7 +1017,7 @@ fun ArtistScreen(
                         putExtra(
                             Intent.EXTRA_TEXT,
                             viewModel.artistPage?.artist?.shareLink
-                                ?: "https://play.airbeats.app/artist?id=${viewModel.artistId}"
+                                ?: "https://play.airbeats.org/artist?id=${viewModel.artistId}"
                         )
                     }
                     context.startActivity(Intent.createChooser(shareIntent, null))
