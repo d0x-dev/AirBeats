@@ -216,9 +216,9 @@ dependencies {
     implementation(projects.innertube)
     implementation(projects.kugou)
     implementation(projects.lrclib)
-    implementation(projects.kizzy)
+    implementation(projects.discordrpc)
     implementation(projects.spotify)
-    implementation(project(":jossredconnect"))
+    implementation(project(":airconnect"))
     implementation(project(":shazamkit"))
     implementation(project(":betterlyrics"))
 

@@ -502,9 +502,7 @@ fun HomeScreen(
                                 .padding(top = 10.dp, bottom = 14.dp)
                                 .animateItem()
                         ) { index ->
-                            val originalSong = distinctPicks[index]
-                            val dbSong by database.song(originalSong.id).collectAsState(initial = originalSong)
-                            val currentSong = dbSong ?: originalSong
+                            val currentSong = distinctPicks[index]
                             val isActive = currentSong.id == mediaMetadata?.id
 
                             Box(
@@ -873,9 +871,7 @@ fun HomeScreen(
                                 items = forgottenFavorites,
                                 key = { it.id }
                             ) { originalSong ->
-                                val dbSong by database.song(originalSong.id)
-                                    .collectAsState(initial = originalSong)
-                                val currentSong = dbSong ?: originalSong
+                                val currentSong = originalSong
 
                                 SongListItem(
                                     song = currentSong,

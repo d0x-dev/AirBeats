@@ -479,13 +479,13 @@ fun Lyrics(
             return@LaunchedEffect
         }
         while (isActive) {
-            delay(50)
             val sliderPos = sliderPositionProvider()
             isSeeking = sliderPos != null
             currentLineIndex = findCurrentLineIndex(
                 lines,
                 sliderPos ?: playerConnection.player.currentPosition
             )
+            delay(16)
         }
     }
 

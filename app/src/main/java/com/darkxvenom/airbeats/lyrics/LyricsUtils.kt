@@ -29,9 +29,10 @@ object LyricsUtils {
                 val min = timeMatchResult.groupValues[1].toLong()
                 val sec = timeMatchResult.groupValues[2].toLong()
                 val milString = timeMatchResult.groupValues[3]
-                var mil = milString.toLong()
-                if (milString.length == 2) {
-                    mil *= 10
+                val mil = when (milString.length) {
+                    1 -> milString.toLong() * 100
+                    2 -> milString.toLong() * 10
+                    else -> milString.take(3).toLong()
                 }
                 val time = min * DateUtils.MINUTE_IN_MILLIS + sec * DateUtils.SECOND_IN_MILLIS + mil
                 LyricsEntry(time, text)
@@ -42,11 +43,17 @@ object LyricsUtils {
         lines: List<LyricsEntry>,
         position: Long,
     ): Int {
-        for (index in lines.indices) {
-            if (lines[index].time >= position + ANIMATE_SCROLL_DURATION) {
-                return index - 1
+        if (lines.isEmpty()) return -1
+        var low = 0
+        var high = lines.lastIndex
+        while (low <= high) {
+            val mid = (low + high).ushr(1)
+            if (lines[mid].time <= position) {
+                low = mid + 1
+            } else {
+                high = mid - 1
             }
         }
-        return lines.lastIndex
+        return high.coerceIn(0, lines.lastIndex)
     }
 }
