@@ -12,7 +12,7 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 object ListenTogetherClient {
-    const val BACKEND_URL = "https://listentogether.airbeats.app"
+    const val BACKEND_URL = "https://listentogether.airbeats.org"
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val httpClient =
