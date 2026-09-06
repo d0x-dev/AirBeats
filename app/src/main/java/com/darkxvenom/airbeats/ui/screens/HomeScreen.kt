@@ -871,9 +871,7 @@ fun HomeScreen(
                                 items = forgottenFavorites,
                                 key = { it.id }
                             ) { originalSong ->
-                                val dbSong by database.song(originalSong.id)
-                                    .collectAsState(initial = originalSong)
-                                val currentSong = dbSong ?: originalSong
+                                val currentSong = originalSong
 
                                 SongListItem(
                                     song = currentSong,
