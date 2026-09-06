@@ -607,6 +607,62 @@ fun AccountSettings(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Discord Group
+                val discordToken by context.dataStore.data.map { it[DiscordTokenKey] ?: "" }.collectAsState(initial = "")
+                val hasDiscordToken = discordToken.isNotEmpty()
+                val (discordRPC, onDiscordRPCChange) = rememberPreference(
+                    key = EnableDiscordRPCKey,
+                    defaultValue = true
+                )
+
+                SettingsGeneralCategory(
+                    title = stringResource(R.string.discord_integration),
+                    items = listOf(
+                        {
+                            PreferenceEntry(
+                                title = { Text(if (hasDiscordToken) "Connected" else "Login to Discord") },
+                                description = if (hasDiscordToken) "Connected to Discord account" else "Sign in to enable Rich Presence",
+                                icon = { Icon(painterResource(R.drawable.discord), null) },
+                                trailingContent = {
+                                    if (hasDiscordToken) {
+                                        OutlinedButton(onClick = {
+                                            scope.launch {
+                                                context.dataStore.edit { 
+                                                    it.remove(DiscordTokenKey) 
+                                                    it[EnableDiscordRPCKey] = false
+                                                }
+                                            }
+                                        }) {
+                                            Text(stringResource(R.string.logout))
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    if (!hasDiscordToken) {
+                                        navController.navigate("settings/discord/login")
+                                    } else {
+                                        navController.navigate("settings/discord")
+                                    }
+                                }
+                            )
+                        },
+                        {
+                            if (hasDiscordToken) {
+                                SwitchPreference(
+                                    title = { Text(stringResource(R.string.enable_discord_rpc)) },
+                                    icon = {
+                                        Icon(painterResource(R.drawable.discord), null)
+                                    },
+                                    checked = discordRPC,
+                                    onCheckedChange = onDiscordRPCChange
+                                )
+                            }
+                        }
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 // 🔥 AVATAR SELECTOR
                 GlassCard(
                     modifier = Modifier
