@@ -441,6 +441,7 @@ private fun CachedSongsBottomSheet(
     viewModel: HistoryViewModel,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val events by viewModel.events.collectAsState()
