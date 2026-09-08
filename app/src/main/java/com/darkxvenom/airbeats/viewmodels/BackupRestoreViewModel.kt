@@ -567,6 +567,8 @@ class BackupRestoreViewModel @Inject constructor(
 
                 val exoDir = context.filesDir.resolve("exoplayer")
                 val dlDir = context.filesDir.resolve("download")
+                tryOrNull { exoDir.listFiles()?.forEach { it.deleteRecursively() } }
+                tryOrNull { dlDir.listFiles()?.forEach { it.deleteRecursively() } }
                 exoDir.mkdirs()
                 dlDir.mkdirs()
 
@@ -581,37 +583,39 @@ class BackupRestoreViewModel @Inject constructor(
                 exoDbShm.delete()
                 exoDbJournal.delete()
 
+                val restoredSongIds = mutableListOf<String>()
+
                 context.applicationContext.contentResolver.openInputStream(uri)?.use { stream ->
                     stream.zipInputStream().use { zipIn ->
                         var entry = tryOrNull { zipIn.nextEntry }
                         while (entry != null) {
-                            val name = entry.name
+                            val normName = entry.name.replace('\\', '/').trimStart('/')
                             when {
-                                name.startsWith("exoplayer/") -> {
-                                    val rel = name.removePrefix("exoplayer/")
+                                normName.startsWith("exoplayer/") || normName.startsWith("files/exoplayer/") -> {
+                                    val rel = normName.removePrefix("files/exoplayer/").removePrefix("exoplayer/")
                                     if (rel.isNotEmpty()) {
                                         val target = exoDir.resolve(rel)
                                         target.parentFile?.mkdirs()
                                         target.outputStream().buffered().use { zipIn.copyTo(it) }
                                     }
                                 }
-                                name.startsWith("download/") -> {
-                                    val rel = name.removePrefix("download/")
+                                normName.startsWith("download/") || normName.startsWith("files/download/") -> {
+                                    val rel = normName.removePrefix("files/download/").removePrefix("download/")
                                     if (rel.isNotEmpty()) {
                                         val target = dlDir.resolve(rel)
                                         target.parentFile?.mkdirs()
                                         target.outputStream().buffered().use { zipIn.copyTo(it) }
                                     }
                                 }
-                                name == "exoplayer_internal.db" || name.endsWith("/exoplayer_internal.db") -> {
+                                normName == "exoplayer_internal.db" || normName.endsWith("/exoplayer_internal.db") -> {
                                     exoDb.parentFile?.mkdirs()
                                     exoDb.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
-                                name == "exoplayer_internal.db-wal" || name.endsWith("/exoplayer_internal.db-wal") -> {
+                                normName == "exoplayer_internal.db-wal" || normName.endsWith("/exoplayer_internal.db-wal") -> {
                                     exoDbWal.parentFile?.mkdirs()
                                     exoDbWal.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
-                                name == "cached_songs_metadata.json" || name.endsWith("/cached_songs_metadata.json") || name == "metadata.json" -> {
+                                normName == "cached_songs_metadata.json" || normName.endsWith("/cached_songs_metadata.json") || normName.endsWith("/metadata.json") || normName == "metadata.json" -> {
                                     val jsonStr = zipIn.readBytes().toString(Charsets.UTF_8)
                                     val array = JSONArray(jsonStr)
                                     for (i in 0 until array.length()) {
@@ -627,6 +631,7 @@ class BackupRestoreViewModel @Inject constructor(
                                                 artists.add(artistsArray.getString(j))
                                             }
                                         }
+                                        restoredSongIds.add(id)
                                         val mediaMetadata = MediaMetadata(
                                             id = id,
                                             title = title,
@@ -680,6 +685,17 @@ class BackupRestoreViewModel @Inject constructor(
                         }
                     }
                 }
+
+                if (restoredSongIds.isNotEmpty()) {
+                    tryOrNull {
+                        val restoredFile = context.filesDir.resolve("restored_cache_ids.json")
+                        restoredFile.writeText(JSONArray(restoredSongIds).toString())
+                    }
+                }
+
+                // Align cache UIDs with restored database tables
+                com.darkxvenom.airbeats.di.AppModule.ensureCacheUidAligned(context, "exoplayer")
+                com.darkxvenom.airbeats.di.AppModule.ensureCacheUidAligned(context, "download")
 
                 // Checkpoint database to flush restored entries
                 database.checkpoint()

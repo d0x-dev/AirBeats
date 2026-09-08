@@ -80,6 +80,7 @@ import com.darkxvenom.airbeats.constants.ThumbnailCornerRadius
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.extensions.togglePlayPause
+import com.darkxvenom.airbeats.extensions.tryOrNull
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import com.darkxvenom.airbeats.ui.component.EmptyPlaceholder
 import com.darkxvenom.airbeats.ui.component.IconButton
@@ -91,6 +92,8 @@ import com.darkxvenom.airbeats.ui.utils.ItemWrapper
 import com.darkxvenom.airbeats.ui.utils.backToMain
 import com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel
 import com.darkxvenom.airbeats.viewmodels.HistoryViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -123,11 +126,41 @@ fun CachePlaylistScreen(
     val playerCache = service?.playerCache
     val downloadCache = service?.downloadCache
 
-    val cachedSongIds = remember(playerCache, downloadCache) {
-        val keys = mutableSetOf<String>()
-        playerCache?.keys?.mapNotNullTo(keys) { it.toString() }
-        downloadCache?.keys?.mapNotNullTo(keys) { it.toString() }
-        keys.toSet()
+    val restoredCacheIds = remember {
+        runCatching {
+            val file = context.filesDir.resolve("restored_cache_ids.json")
+            if (file.exists()) {
+                val json = org.json.JSONArray(file.readText())
+                val set = mutableSetOf<String>()
+                for (i in 0 until json.length()) {
+                    set.add(json.getString(i))
+                }
+                set
+            } else emptySet()
+        }.getOrDefault(emptySet())
+    }
+
+    var cachedSongIds by remember {
+        mutableStateOf(
+            buildSet {
+                addAll(restoredCacheIds)
+                tryOrNull { playerCache?.keys }?.mapNotNullTo(this) { it.toString() }
+                tryOrNull { downloadCache?.keys }?.mapNotNullTo(this) { it.toString() }
+            }
+        )
+    }
+
+    LaunchedEffect(playerCache, downloadCache) {
+        while (isActive) {
+            val keys = mutableSetOf<String>()
+            keys.addAll(restoredCacheIds)
+            tryOrNull { playerCache?.keys }?.mapNotNullTo(keys) { it.toString() }
+            tryOrNull { downloadCache?.keys }?.mapNotNullTo(keys) { it.toString() }
+            if (keys != cachedSongIds) {
+                cachedSongIds = keys.toSet()
+            }
+            delay(1000)
+        }
     }
 
     val allSongs = remember(events, dbSongs, cachedSongIds) {

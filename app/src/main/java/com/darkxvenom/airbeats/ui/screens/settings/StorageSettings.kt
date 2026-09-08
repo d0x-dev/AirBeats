@@ -180,6 +180,7 @@ fun StorageSettings(
                             playerCache.keys.toList().forEach { key ->
                                 tryOrNull { playerCache.removeResource(key) }
                             }
+                            context.filesDir.resolve("restored_cache_ids.json").delete()
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -445,9 +446,40 @@ private fun CachedSongsBottomSheet(
     val events by viewModel.events.collectAsState()
     val dbSongs by viewModel.database.allSongs().collectAsState(initial = emptyList())
 
+    val restoredCacheIds = remember {
+        runCatching {
+            val file = context.filesDir.resolve("restored_cache_ids.json")
+            if (file.exists()) {
+                val json = org.json.JSONArray(file.readText())
+                val set = mutableSetOf<String>()
+                for (i in 0 until json.length()) {
+                    set.add(json.getString(i))
+                }
+                set
+            } else emptySet()
+        }.getOrDefault(emptySet())
+    }
+
     // Obtener IDs de canciones en caché
-    val cachedSongIds = remember(playerCache) {
-        playerCache.keys.map { it.toString() }.toSet()
+    var cachedSongIds by remember {
+        mutableStateOf(
+            buildSet {
+                addAll(restoredCacheIds)
+                tryOrNull { playerCache.keys }?.mapNotNullTo(this) { it.toString() }
+            }
+        )
+    }
+
+    LaunchedEffect(playerCache) {
+        while (isActive) {
+            val keys = mutableSetOf<String>()
+            keys.addAll(restoredCacheIds)
+            tryOrNull { playerCache.keys }?.mapNotNullTo(keys) { it.toString() }
+            if (keys != cachedSongIds) {
+                cachedSongIds = keys.toSet()
+            }
+            delay(1000)
+        }
     }
 
     // Obtener canciones completas desde el historial y base de datos
@@ -465,7 +497,7 @@ private fun CachedSongsBottomSheet(
                 playerCache.getCachedBytes(song.id, 0, Long.MAX_VALUE)
             } ?: 0L
 
-            if (size > 0) {
+            if (size > 0 || song.id in restoredCacheIds) {
                 CachedSongInfo(song = song, size = size)
             } else null
         }.sortedByDescending { it.size }
