@@ -149,11 +149,11 @@ object AppModule {
                         }
                     }
 
-                    val totalRows = try {
+                    val totalRows: Int = try {
                         db.rawQuery("SELECT count(*) FROM $table", null).use { c ->
                             if (c.moveToFirst()) c.getInt(0) else 0
                         }
-                    } catch (_: Exception) {}
+                    } catch (_: Exception) { 0 }
 
                     val finalScore = if (matchingScore > 0) matchingScore * 1000 + totalRows else totalRows
 

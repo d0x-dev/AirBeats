@@ -19,6 +19,7 @@ import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.FormatEntity
 import com.darkxvenom.airbeats.di.DownloadCache
 import com.darkxvenom.airbeats.di.PlayerCache
+import com.darkxvenom.airbeats.extensions.tryOrNull
 import com.darkxvenom.airbeats.utils.YTPlayerUtils
 import com.darkxvenom.airbeats.utils.enumPreference
 import dagger.hilt.android.qualifiers.ApplicationContext
