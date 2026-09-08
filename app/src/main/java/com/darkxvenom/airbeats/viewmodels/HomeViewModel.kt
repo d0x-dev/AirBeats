@@ -58,6 +58,7 @@ class HomeViewModel @Inject constructor(
     val accountImageUrl = MutableStateFlow<String?>(null)
 
     private var loadJob: Job? = null
+    private var accountFingerprint: Int? = null
 
     private fun mapToSong(item: SongItem): Song {
         return Song(
@@ -138,7 +139,7 @@ class HomeViewModel @Inject constructor(
             // 4. Remote items snapshot (YouTube)
             if (!isJioSaavn) {
                 launch(Dispatchers.IO) {
-                    if (YouTube.cookie != null) {
+                    if (YouTube.cookie?.contains("SAPISID=") == true) {
                         YouTube.library("FEmusic_liked_playlists").completedLibraryPage().onSuccess {
                             accountPlaylists.value = it.items.filterIsInstance<PlaylistItem>().filterNot { it.id == "SE" }
                         }.onFailure { reportException(it) }
@@ -183,11 +184,27 @@ class HomeViewModel @Inject constructor(
     fun refresh() {
         if (isRefreshing.value) return
         loadJob?.cancel()
+        // Set this before launching. Setting it inside the coroutine leaves a
+        // race where repeated UI events can each cancel and restart Home.
+        isRefreshing.value = true
         loadJob = viewModelScope.launch(Dispatchers.IO) {
-            isRefreshing.value = true
-            load()
-            isRefreshing.value = false
+            try {
+                load()
+            } finally {
+                isRefreshing.value = false
+            }
         }
+    }
+
+    /** Refresh the personalised YouTube Music home feed exactly once per login/logout. */
+    fun onAccountChanged(cookie: String) {
+        val fingerprint = cookie.hashCode()
+        if (accountFingerprint == fingerprint) return
+        accountFingerprint = fingerprint
+        // The application collector is asynchronous; set the client now so the
+        // refresh cannot accidentally request the anonymous home feed.
+        YouTube.cookie = cookie
+        refresh()
     }
 
     init {

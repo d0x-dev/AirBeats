@@ -83,6 +83,9 @@ val EnableYouLyLyricsKey = booleanPreferencesKey("enableYouLy")
 val EnableMegalobizLyricsKey = booleanPreferencesKey("enableMegalobiz")
 val EnablePaxsenixLyricsKey = booleanPreferencesKey("enablePaxsenix")
 val EnablePortatoLyricsKey = booleanPreferencesKey("enablePortato")
+val EnableBetterLyricsKey = booleanPreferencesKey("enableBetterLyrics")
+val EnableYouTubeSubtitleLyricsKey = booleanPreferencesKey("enableYouTubeSubtitles")
+val EnableYouTubeMusicLyricsKey = booleanPreferencesKey("enableYouTubeMusicLyrics")
 val MusicProviderKey = stringPreferencesKey("musicProvider")
 val HideExplicitKey = booleanPreferencesKey("hideExplicit")
 val LastNewReleaseCheckKey = longPreferencesKey("last_new_release_check")
@@ -97,6 +100,7 @@ val AudioQualityKey = stringPreferencesKey("audioQuality")
 enum class AudioQuality {
     AUTO,
     HIGH,
+    MEDIUM,
     LOW,
 }
 
@@ -186,7 +190,6 @@ val LyricFontSizeKey = intPreferencesKey("lyricFontSize")
 val fullScreenLyricsKey = booleanPreferencesKey("fullScreenLyrics")
 val AnimateLyricsKey = booleanPreferencesKey("animate_lyrics")
 val EnableNewLyricsScreenKey = booleanPreferencesKey("enable_new_lyrics_screen")
-val EnableNewQueueScreenKey = booleanPreferencesKey("enable_new_queue_screen")
 
 
 val PlayPauseButtonShapeKey = stringPreferencesKey("playPauseButtonShape")
@@ -335,6 +338,15 @@ enum class QuickPicks {
 enum class PreferredLyricsProvider {
     LRCLIB,
     KUGOU,
+    SIMP_MUSIC,
+    YOUTUBE_SUBTITLES,
+    PAXSENIX,
+    UNISON,
+    BETTER_LYRICS,
+    PORTATO,
+    YOULY,
+    MEGALOBIZ,
+    YOUTUBE_MUSIC,
 }
 
 enum class PlayerBackgroundStyle {

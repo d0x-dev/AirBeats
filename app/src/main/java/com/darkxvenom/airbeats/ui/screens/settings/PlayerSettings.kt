@@ -109,6 +109,7 @@ fun PlayerSettings(
                         when (it) {
                             AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                             AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
+                            AudioQuality.MEDIUM -> "Medium"
                             AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
                         }
                     }

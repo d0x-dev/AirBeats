@@ -272,6 +272,23 @@ fun PlayerMenu(
     var showPitchTempoDialog by rememberSaveable {
         mutableStateOf(false)
     }
+    var showSleepTimerDialog by rememberSaveable { mutableStateOf(false) }
+
+    if (showSleepTimerDialog) {
+        com.darkxvenom.airbeats.ui.player.SleepTimerDialog(
+            onDismiss = { showSleepTimerDialog = false },
+            onConfirm = { minutes ->
+                playerConnection.service.sleepTimer.start(minutes)
+                showSleepTimerDialog = false
+                onDismiss()
+            },
+            onEndOfSong = {
+                playerConnection.service.sleepTimer.start(-1)
+                showSleepTimerDialog = false
+                onDismiss()
+            },
+        )
+    }
 
     if (showPitchTempoDialog) {
         TempoPitchDialog(
@@ -484,6 +501,15 @@ fun PlayerMenu(
                                     permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                                 }
                             }
+                        )
+                    }
+
+                    item {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = { Text(stringResource(R.string.sleep_timer)) },
+                            leadingContent = { Icon(painterResource(R.drawable.schedule), contentDescription = null) },
+                            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable { showSleepTimerDialog = true },
                         )
                     }
 

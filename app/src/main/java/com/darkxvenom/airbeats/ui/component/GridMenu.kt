@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,25 +16,41 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.offline.Download
 import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.constants.AudioQuality
+import com.darkxvenom.airbeats.constants.AudioQualityKey
+import com.darkxvenom.airbeats.utils.dataStore
+import com.darkxvenom.airbeats.utils.dataStoreCache
+import com.darkxvenom.airbeats.utils.get
 import com.darkxvenom.airbeats.utils.makeTimeString
+import androidx.datastore.preferences.core.edit
+import kotlinx.coroutines.launch
 
 val GridMenuItemHeight = 108.dp
 
@@ -142,13 +159,89 @@ fun LazyGridScope.DownloadGridMenu(
         }
 
         else -> {
-            GridMenuItem(
-                icon = R.drawable.download,
-                title = R.string.download,
-                onClick = onDownload
-            )
+            item { DownloadQualityGridMenuItem(onDownload) }
         }
     }
+}
+
+@Composable
+private fun DownloadQualityGridMenuItem(onDownload: () -> Unit) {
+    var showQualityDialog by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .clip(ShapeDefaults.Large)
+            .height(GridMenuItemHeight)
+            .clickable { showQualityDialog = true }
+            .padding(12.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+            Icon(painterResource(R.drawable.download), contentDescription = null)
+        }
+        Text(
+            text = stringResource(R.string.download),
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (showQualityDialog) {
+        DownloadQualityDialog(
+            onDismiss = { showQualityDialog = false },
+            onQualitySelected = {
+                showQualityDialog = false
+                onDownload()
+            },
+        )
+    }
+}
+
+/** Selects the actual source bitrate before a cache or local download begins. */
+@Composable
+fun DownloadQualityDialog(
+    onDismiss: () -> Unit,
+    onQualitySelected: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var selected by remember {
+        mutableStateOf(
+            context.dataStore[AudioQualityKey]
+                ?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() }
+                ?: AudioQuality.HIGH,
+        )
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Download quality") },
+        text = {
+            Column {
+                listOf(
+                    AudioQuality.LOW to "Low · saves the most space",
+                    AudioQuality.MEDIUM to "Medium · balanced",
+                    AudioQuality.HIGH to "High · best available audio",
+                ).forEach { (quality, label) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().clickable { selected = quality },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = selected == quality, onClick = { selected = quality })
+                        Text(label)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                dataStoreCache[AudioQualityKey.name] = selected.name
+                scope.launch {
+                    context.dataStore.edit { it[AudioQualityKey] = selected.name }
+                    onQualitySelected()
+                }
+            }) { Text("Download") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 fun LazyGridScope.SleepTimerGridMenu(

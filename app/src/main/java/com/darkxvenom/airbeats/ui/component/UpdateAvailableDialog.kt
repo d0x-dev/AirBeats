@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.utils.AppUpdateService
 import com.darkxvenom.airbeats.utils.UpdateInfo
 
 @Composable
@@ -73,6 +74,7 @@ fun UpdateAvailableDialog(
 ) {
     val context = LocalContext.current
     var isWhatIsNewExpanded by remember { mutableStateOf(false) }
+    var updateStarted by remember { mutableStateOf(false) }
 
     val arrowRotation by animateFloatAsState(
         targetValue = if (isWhatIsNewExpanded) 180f else 0f,
@@ -92,7 +94,7 @@ fun UpdateAvailableDialog(
     )
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!updateStarted) onDismiss() },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
@@ -323,6 +325,7 @@ fun UpdateAvailableDialog(
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
+                        enabled = !updateStarted,
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
@@ -345,17 +348,10 @@ fun UpdateAvailableDialog(
                                     "https://github.com/d0x-dev/AirBeats/releases/latest"
                                 }
                             }
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(directApkUrl)).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            } catch (_: Exception) {
-                                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(updateInfo.releaseUrl))
-                                context.startActivity(fallbackIntent)
-                            }
-                            onDismiss()
+                            updateStarted = context.packageManager.canRequestPackageInstalls()
+                            AppUpdateService.start(context, directApkUrl)
                         },
+                        enabled = !updateStarted,
                         modifier = Modifier
                             .weight(1.3f)
                             .height(48.dp),
@@ -372,7 +368,7 @@ fun UpdateAvailableDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Download",
+                            text = if (updateStarted) "Downloading…" else "Download",
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold
                             )

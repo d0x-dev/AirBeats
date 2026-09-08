@@ -1011,6 +1011,11 @@ fun SettingsScreen(
                                 onClick = { navController.navigate("settings/content") }
                             ),
                             SettingsCategoryItem(
+                                icon = painterResource(R.drawable.lyrics),
+                                title = { Text("Lyrics", color = MaterialTheme.colorScheme.onSurface) },
+                                onClick = { navController.navigate("settings/lyrics") }
+                            ),
+                            SettingsCategoryItem(
                                 icon = painterResource(R.drawable.play),
                                 title = {
                                     Text(

@@ -71,44 +71,6 @@ fun ContentSettings(
         key = QuickPicksKey,
         defaultValue = QuickPicks.QUICK_PICKS
     )
-    val (enableKugou, onEnableKugouChange) = rememberPreference(
-        key = EnableKugouKey,
-        defaultValue = true
-    )
-    val (enableLrclib, onEnableLrclibChange) = rememberPreference(
-        key = EnableLrcLibKey,
-        defaultValue = true
-    )
-    val (enableSimpMusic, onEnableSimpMusicChange) = rememberPreference(
-        key = EnableSimpMusicLyricsKey,
-        defaultValue = true
-    )
-    val (enableUnison, onEnableUnisonChange) = rememberPreference(
-        key = EnableUnisonLyricsKey,
-        defaultValue = true
-    )
-    val (enableYouLy, onEnableYouLyChange) = rememberPreference(
-        key = EnableYouLyLyricsKey,
-        defaultValue = true
-    )
-    val (enableMegalobiz, onEnableMegalobizChange) = rememberPreference(
-        key = EnableMegalobizLyricsKey,
-        defaultValue = true
-    )
-    val (enablePaxsenix, onEnablePaxsenixChange) = rememberPreference(
-        key = EnablePaxsenixLyricsKey,
-        defaultValue = true
-    )
-    val (enablePortato, onEnablePortatoChange) = rememberPreference(
-        key = EnablePortatoLyricsKey,
-        defaultValue = true
-    )
-    val (preferredProvider, onPreferredProviderChange) = rememberEnumPreference(
-        key = PreferredLyricsProviderKey,
-        defaultValue = PreferredLyricsProvider.LRCLIB
-    )
-
-
     SettingsPage(
         title = stringResource(R.string.content),
         navController = navController,
@@ -205,61 +167,6 @@ fun ContentSettings(
                         )
                     }
                 }}
-            )
-        )
-
-        // Lyrics settings
-        SettingsGeneralCategory(
-            title = stringResource(R.string.lyrics),
-            items = listOf(
-                {SwitchPreference(
-                    title = { Text(stringResource(R.string.enable_lrclib)) },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableLrclib,
-                    onCheckedChange = onEnableLrclibChange,
-                )},
-                {SwitchPreference(
-                    title = { Text(stringResource(R.string.enable_kugou)) },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableKugou,
-                    onCheckedChange = onEnableKugouChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable SimpMusic Lyrics") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableSimpMusic,
-                    onCheckedChange = onEnableSimpMusicChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable Unison Lyrics") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableUnison,
-                    onCheckedChange = onEnableUnisonChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable YouLyPlus Lyrics") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableYouLy,
-                    onCheckedChange = onEnableYouLyChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable Megalobiz Lyrics") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enableMegalobiz,
-                    onCheckedChange = onEnableMegalobizChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable Paxsenix Lyrics (Multi-Source)") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enablePaxsenix,
-                    onCheckedChange = onEnablePaxsenixChange,
-                )},
-                {SwitchPreference(
-                    title = { Text("Enable BetterLyrics (Portato Mirror)") },
-                    icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                    checked = enablePortato,
-                    onCheckedChange = onEnablePortatoChange,
-                )},
             )
         )
 

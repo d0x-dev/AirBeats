@@ -492,6 +492,7 @@ object YTPlayerUtils {
         val targetBitrateBps =
             when (effectiveQuality) {
                 AudioQuality.LOW -> 70_000
+                AudioQuality.MEDIUM -> 128_000
                 AudioQuality.HIGH -> 160_000
                 AudioQuality.AUTO -> null
             }

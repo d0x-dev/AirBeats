@@ -497,86 +497,104 @@ fun SpotifyExploreScreen(
 @Composable
 fun SpotifyLibraryScreen(navController: NavController) {
     var filterType by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS) }
+    val playerInsets = LocalPlayerAwareWindowInsets.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val contentInsets = androidx.compose.foundation.layout.WindowInsets(
+        playerInsets.getLeft(density, layoutDirection),
+        0,
+        playerInsets.getRight(density, layoutDirection),
+        // Keep the player-aware bottom inset for child lists and their FABs.
+        // The top inset is intentionally supplied by this screen's own header spacing.
+        playerInsets.getBottom(density),
+    )
 
-    SpotifyScaffold(
-        title = stringResource(R.string.library),
-        subtitle = "Saved music in AirBeats",
-        actions = {
-            androidx.compose.material3.IconButton(onClick = { navController.navigate(Screens.Search.route) }) {
-                androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.search), contentDescription = null, tint = SpotifyText, modifier = Modifier.size(24.dp))
-            }
-            androidx.compose.material3.IconButton(onClick = { navController.navigate("settings") }) {
-                androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.settings), contentDescription = null, tint = SpotifyText, modifier = Modifier.size(24.dp))
-            }
-        }
-    ) {
-        item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                item {
-                    SpotifyChip(text = stringResource(R.string.playlists), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS) {
-                        filterType = com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS
-                    }
-                }
-                item {
-                    SpotifyChip(text = stringResource(R.string.songs), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.SONGS) {
-                        filterType = com.darkxvenom.airbeats.constants.LibraryFilter.SONGS
-                    }
-                }
-                item {
-                    SpotifyChip(text = stringResource(R.string.albums), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.ALBUMS) {
-                        filterType = com.darkxvenom.airbeats.constants.LibraryFilter.ALBUMS
-                    }
-                }
-                item {
-                    SpotifyChip(text = stringResource(R.string.artists), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.ARTISTS) {
-                        filterType = com.darkxvenom.airbeats.constants.LibraryFilter.ARTISTS
-                    }
-                }
-                item {
-                    SpotifyChip(text = stringResource(R.string.local_files), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.LOCAL) {
-                        filterType = com.darkxvenom.airbeats.constants.LibraryFilter.LOCAL
-                    }
-                }
-                item {
-                    SpotifyChip(text = stringResource(R.string.history), isSelected = false) {
-                        navController.navigate("history")
-                    }
-                }
-            }
-        }
-        item {
-            val insets = com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets.current
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
-            val bottom = insets.getBottom(density)
-            val left = insets.getLeft(density, layoutDirection)
-            val right = insets.getRight(density, layoutDirection)
-            val customInsets = androidx.compose.foundation.layout.WindowInsets(left, 0, right, 0)
-            
+    Box(Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(SpotifyBg)
+                .haze(state = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }),
+        ) {
+            SimpMusicMeshBackground()
             androidx.compose.runtime.CompositionLocalProvider(
-                com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets provides customInsets
+                LocalPlayerAwareWindowInsets provides contentInsets,
             ) {
-                Box(Modifier.fillParentMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(
+                            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 144.dp,
+                        ),
+                ) {
                     when (filterType) {
                         com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS ->
-                            com.darkxvenom.airbeats.ui.screens.library.LibraryPlaylistsScreen(navController = navController, filterContent = {}, onLocalClick = { filterType = com.darkxvenom.airbeats.constants.LibraryFilter.LOCAL })
+                            com.darkxvenom.airbeats.ui.screens.library.LibraryPlaylistsScreen(navController = navController, filterContent = {})
                         com.darkxvenom.airbeats.constants.LibraryFilter.SONGS ->
                             com.darkxvenom.airbeats.ui.screens.library.LibrarySongsScreen(navController = navController, onDeselect = { filterType = com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS })
                         com.darkxvenom.airbeats.constants.LibraryFilter.ALBUMS ->
                             com.darkxvenom.airbeats.ui.screens.library.LibraryAlbumsScreen(navController = navController, onDeselect = { filterType = com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS })
                         com.darkxvenom.airbeats.constants.LibraryFilter.ARTISTS ->
                             com.darkxvenom.airbeats.ui.screens.library.LibraryArtistsScreen(navController = navController, onDeselect = { filterType = com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS })
-                        com.darkxvenom.airbeats.constants.LibraryFilter.LOCAL ->
-                            com.darkxvenom.airbeats.ui.screens.library.LocalSongsScreen(navController = navController)
-                        else -> {}
+                        else -> Unit
                     }
                 }
             }
         }
+
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 76.dp),
+        ) {
+            item {
+                SpotifyChip(text = stringResource(R.string.playlists), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS) {
+                    filterType = com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS
+                }
+            }
+            item {
+                SpotifyChip(text = stringResource(R.string.songs), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.SONGS) {
+                    filterType = com.darkxvenom.airbeats.constants.LibraryFilter.SONGS
+                }
+            }
+            item {
+                SpotifyChip(text = stringResource(R.string.albums), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.ALBUMS) {
+                    filterType = com.darkxvenom.airbeats.constants.LibraryFilter.ALBUMS
+                }
+            }
+            item {
+                SpotifyChip(text = stringResource(R.string.artists), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.ARTISTS) {
+                    filterType = com.darkxvenom.airbeats.constants.LibraryFilter.ARTISTS
+                }
+            }
+            item {
+                SpotifyChip(text = stringResource(R.string.local_files), isSelected = false) {
+                    navController.navigate("local_songs")
+                }
+            }
+            item {
+                SpotifyChip(text = stringResource(R.string.history), isSelected = false) {
+                    navController.navigate("history")
+                }
+            }
+        }
+
+        SpotifyHeader(
+            title = stringResource(R.string.library),
+            subtitle = "Saved music in AirBeats",
+            modifier = Modifier.align(Alignment.TopCenter),
+            actions = {
+                androidx.compose.material3.IconButton(onClick = { navController.navigate(Screens.Search.route) }) {
+                    androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.search), contentDescription = null, tint = SpotifyText, modifier = Modifier.size(24.dp))
+                }
+                androidx.compose.material3.IconButton(onClick = { navController.navigate("settings") }) {
+                    androidx.compose.material3.Icon(androidx.compose.ui.res.painterResource(R.drawable.settings), contentDescription = null, tint = SpotifyText, modifier = Modifier.size(24.dp))
+                }
+            },
+        )
     }
 }
 
@@ -584,6 +602,7 @@ fun SpotifyLibraryScreen(navController: NavController) {
 private fun SpotifyScaffold(
     title: String,
     subtitle: String,
+    reservePlayerInset: Boolean = true,
     actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
 ) {
@@ -602,7 +621,11 @@ private fun SpotifyScaffold(
             state = lazyListState,
             contentPadding = PaddingValues(
                 top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 90.dp,
-                bottom = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding(),
+                bottom = if (reservePlayerInset) {
+                    LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding()
+                } else {
+                    0.dp
+                },
                 start = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                 end = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
             ),

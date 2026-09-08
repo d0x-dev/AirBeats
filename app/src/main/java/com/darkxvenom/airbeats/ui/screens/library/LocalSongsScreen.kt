@@ -37,6 +37,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.models.LocalSong
@@ -128,6 +129,12 @@ fun LocalSongsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
+                IconButton(onClick = navController::navigateUp) {
+                    Icon(
+                        painter = painterResource(R.drawable.arrow_back),
+                        contentDescription = "Back",
+                    )
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Local Songs",
@@ -208,7 +215,11 @@ fun LocalSongsScreen(
                 else -> {
                     LazyColumn(
                         state = listState,
-                        contentPadding = PaddingValues(bottom = 160.dp),
+                        contentPadding = PaddingValues(
+                            bottom = LocalPlayerAwareWindowInsets.current
+                                .asPaddingValues()
+                                .calculateBottomPadding() + 16.dp,
+                        ),
                         modifier = Modifier.fillMaxSize()
                     ) {
                         itemsIndexed(

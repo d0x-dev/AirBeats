@@ -199,6 +199,12 @@ fun HomeScreen(
     }
     val url = if (isLoggedIn) accountImageUrl else null
 
+    // Returning from YouTube login used to leave the already-created Home
+    // ViewModel showing the anonymous feed until the user manually refreshed.
+    LaunchedEffect(innerTubeCookie) {
+        viewModel.onAccountChanged(innerTubeCookie)
+    }
+
     val scope = rememberCoroutineScope()
     val lazylistState = rememberLazyListState()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -442,14 +448,14 @@ fun HomeScreen(
             )
             {
                 // ModernHomeTopBarInline is now inside the LazyColumn
-                item {
+                item(key = "home_top_bar") {
                     ModernHomeTopBarInline(
                         navController = navController,
                         onSearchClick = onSearchClick
                     )
                 }
 
-                item {
+                item(key = "home_chips") {
                     Row(
                         modifier = Modifier
                             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
@@ -483,13 +489,13 @@ fun HomeScreen(
                 }
 
                 quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-                    item {
+                    item(key = "quick_picks_title") {
                         NavigationTitle(
                             title = stringResource(R.string.quick_picks),
                             modifier = Modifier.animateItem()
                         )
                     }
-                    item {
+                    item(key = "quick_picks_carousel") {
                         val distinctPicks = remember(picks) { picks.distinctBy { it.id } }
                         HorizontalCenteredHeroCarousel(
                             state = rememberCarouselState { distinctPicks.size },
@@ -688,15 +694,15 @@ fun HomeScreen(
                     }
                 }
 
-                similarRecommendations?.forEach {
-                    item {
+                similarRecommendations?.forEach { recommendation ->
+                    item(key = "similar_title_${recommendation.title.id}") {
                         NavigationTitle(
                             label = stringResource(R.string.similar_to),
-                            title = it.title.title,
-                            thumbnail = it.title.thumbnailUrl?.let { thumbnailUrl ->
+                            title = recommendation.title.title,
+                            thumbnail = recommendation.title.thumbnailUrl?.let { thumbnailUrl ->
                                 {
                                     val shape =
-                                        if (it.title is Artist) CircleShape else RoundedCornerShape(
+                                        if (recommendation.title is Artist) CircleShape else RoundedCornerShape(
                                             ThumbnailCornerRadius
                                         )
                                     AsyncImage(
@@ -709,10 +715,10 @@ fun HomeScreen(
                                 }
                             },
                             onClick = {
-                                when (it.title) {
-                                    is Song -> navController.navigate("album/${it.title.album!!.id}")
-                                    is Album -> navController.navigate("album/${it.title.id}")
-                                    is Artist -> navController.navigate("artist/${it.title.id}")
+                                when (recommendation.title) {
+                                    is Song -> navController.navigate("album/${recommendation.title.album!!.id}")
+                                    is Album -> navController.navigate("album/${recommendation.title.id}")
+                                    is Artist -> navController.navigate("artist/${recommendation.title.id}")
                                     is Playlist -> {}
                                 }
                             },
@@ -720,29 +726,29 @@ fun HomeScreen(
                         )
                     }
 
-                    item {
+                    item(key = "similar_row_${recommendation.title.id}") {
                         LazyRow(
                             contentPadding = WindowInsets.systemBars
                                 .only(WindowInsetsSides.Horizontal)
                                 .asPaddingValues(),
                             modifier = Modifier.animateItem()
                         ) {
-                            items(it.items) { item ->
+                            items(recommendation.items, key = { item -> item.id }) { item ->
                                 ytGridItem(item)
                             }
                         }
                     }
                 }
 
-                homePage?.sections?.forEach {
-                    item {
+                homePage?.sections?.forEach { section ->
+                    item(key = "yt_home_title_${section.title}_${section.endpoint}") {
                         NavigationTitle(
-                            title = it.title,
-                            label = it.label,
-                            thumbnail = it.thumbnail?.let { thumbnailUrl ->
+                            title = section.title,
+                            label = section.label,
+                            thumbnail = section.thumbnail?.let { thumbnailUrl ->
                                 {
                                     val shape =
-                                        if (it.endpoint?.isArtistEndpoint == true) CircleShape else RoundedCornerShape(
+                                        if (section.endpoint?.isArtistEndpoint == true) CircleShape else RoundedCornerShape(
                                             ThumbnailCornerRadius
                                         )
                                     AsyncImage(
@@ -758,14 +764,14 @@ fun HomeScreen(
                         )
                     }
 
-                    item {
+                    item(key = "yt_home_row_${section.title}_${section.endpoint}") {
                         LazyRow(
                             contentPadding = WindowInsets.systemBars
                                 .only(WindowInsetsSides.Horizontal)
                                 .asPaddingValues(),
                             modifier = Modifier.animateItem()
                         ) {
-                            items(it.items) { item ->
+                            items(section.items, key = { item -> item.id }) { item ->
                                 ytGridItem(item)
                             }
                         }

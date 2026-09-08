@@ -163,6 +163,9 @@ import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.seconds
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 data class EqualizerUiState(
     val isAvailable: Boolean = false,
@@ -289,6 +292,8 @@ class MusicService :
     private var mediaController: MediaController? = null
 
     val automixItems = MutableStateFlow<List<MediaItem>>(emptyList())
+    /** Keeps a short related-track tail available when the user enables Infinite queue. */
+    private var infiniteQueueLoadJob: Job? = null
 
     private var consecutivePlaybackErr = 0
     private var offlineBufferingJob: Job? = null
@@ -327,7 +332,7 @@ class MusicService :
                 .build()
                 .apply {
                     addListener(this@MusicService)
-                    sleepTimer = SleepTimer(scope, this)
+                    sleepTimer = SleepTimer(scope, ::stopPlaybackForSleepTimer)
                     addListener(sleepTimer)
                     addAnalyticsListener(PlaybackStatsListener(false, this@MusicService))
                 }
@@ -1335,20 +1340,25 @@ class MusicService :
         // Resetear errores consecutivos cuando hay transición exitosa
         consecutivePlaybackErr = 0
 
-        // Auto cargar más canciones
-        if (dataStore.get(AutoLoadMoreKey, true) &&
-            reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT &&
-            player.mediaItemCount - player.currentMediaItemIndex <= 5 &&
-            currentQueue.hasNextPage() &&
-            !(dataStore.get(DisableLoadMoreWhenRepeatAllKey, false) && player.repeatMode == REPEAT_MODE_ALL)
+        // Keep the source queue paged first. When it has no continuation, Infinite queue
+        // extends it with a small, de-duplicated related-track tail instead.
+        val shouldExtendQueue =
+            dataStore.get(AutoLoadMoreKey, true) &&
+                reason != Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT &&
+                player.mediaItemCount - player.currentMediaItemIndex <= 5 &&
+                !(dataStore.get(DisableLoadMoreWhenRepeatAllKey, false) && player.repeatMode == REPEAT_MODE_ALL)
+
+        if (shouldExtendQueue && currentQueue.hasNextPage()
         ) {
             scope.launch(SilentHandler) {
                 val mediaItems =
                     currentQueue.nextPage().filterExplicit(dataStore.get(HideExplicitKey, false))
                 if (player.playbackState != STATE_IDLE) {
-                    player.addMediaItems(mediaItems.drop(1))
+                    appendQueueItems(mediaItems.drop(1))
                 }
             }
+        } else if (shouldExtendQueue && !currentQueue.hasNextPage()) {
+            mediaItem?.mediaId?.takeIf { it.isNotBlank() }?.let(::extendInfiniteQueue)
         }
 
         // Guardar estado cuando cambia el item de medios
@@ -1825,12 +1835,22 @@ class MusicService :
 
     /**
      * A true crossfade needs two simultaneous audio streams: the current song
-     * fades down while the already-buffered next song fades up.  The main
-     * session player stays authoritative; after the overlap it resumes the
-     * next item at the elapsed overlap position and the temporary player stops.
+     * fades down while the session player immediately becomes the incoming
+     * song. This makes the player UI change at the beginning of the overlap.
      */
+    private fun stopPlaybackForSleepTimer() {
+        // Both decoders can be audible during a crossfade. Stopping only one lets the
+        // already-promoted incoming track continue after the timer has expired.
+        crossfadeJob?.cancel()
+        player.pause()
+        if (::crossfadePlayer.isInitialized) crossfadePlayer.pause()
+    }
+
     private fun updateCrossfade() {
-        if (!::crossfadePlayer.isInitialized || crossfadeJob?.isActive == true) return
+        if (!::crossfadePlayer.isInitialized || crossfadeJob?.isActive == true || sleepTimer.pauseWhenSongEnd) {
+            clearPreparedCrossfade()
+            return
+        }
         val seconds = dataStore.get(CrossfadeKey, 0).coerceIn(0, 15)
         if (seconds == 0 || !player.isPlaying || player.repeatMode == REPEAT_MODE_ONE) {
             clearPreparedCrossfade()
@@ -1849,7 +1869,10 @@ class MusicService :
         if (preparedCrossfadeIndex != nextIndex) {
             crossfadePlayer.stop()
             crossfadePlayer.clearMediaItems()
-            crossfadePlayer.setMediaItem(player.getMediaItemAt(nextIndex))
+            val queue = (0 until player.mediaItemCount).map(player::getMediaItemAt)
+            // The spare player owns the complete queue at the
+            // incoming item, fully prepared but silent before the fade starts.
+            crossfadePlayer.setMediaItems(queue, nextIndex, 0L)
             crossfadePlayer.volume = 0f
             crossfadePlayer.prepare()
             preparedCrossfadeIndex = nextIndex
@@ -1859,38 +1882,93 @@ class MusicService :
         }
     }
 
+    private fun extendInfiniteQueue(seedId: String) {
+        if (infiniteQueueLoadJob?.isActive == true) return
+        infiniteQueueLoadJob = scope.launch(SilentHandler) {
+            val endpoint = YouTube.next(WatchEndpoint(videoId = seedId)).getOrNull()?.relatedEndpoint
+                ?: return@launch
+            val relatedItems = YouTube.related(endpoint).getOrNull()?.songs
+                ?.map(SongItem::toMediaItem)
+                .orEmpty()
+            if (relatedItems.isEmpty()) return@launch
+
+            val existingIds = player.mediaItems.map(MediaItem::mediaId).toHashSet()
+            val newItems = relatedItems.filter { it.mediaId.isNotBlank() && existingIds.add(it.mediaId) }.take(10)
+            if (newItems.isNotEmpty() && player.playbackState != STATE_IDLE) {
+                appendQueueItems(newItems)
+            }
+        }
+    }
+
+    private fun appendQueueItems(items: List<MediaItem>) {
+        if (items.isEmpty()) return
+        player.addMediaItems(items)
+        // A prepared overlap player owns the same future tail, so keep it in sync.
+        if (::crossfadePlayer.isInitialized &&
+            preparedCrossfadeIndex != C.INDEX_UNSET &&
+            crossfadeJob?.isActive != true
+        ) {
+            crossfadePlayer.addMediaItems(items)
+        }
+    }
+
     private fun beginCrossfade(nextIndex: Int, fadeMs: Long) {
         if (crossfadeJob?.isActive == true) return
         crossfadeTargetIndex = nextIndex
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(@Player.State state: Int) {
-                if (state == Player.STATE_READY) {
-                    crossfadePlayer.removeListener(this)
-                    crossfadePlayer.playWhenReady = true
-                }
-            }
-        }
-        crossfadePlayer.addListener(listener)
-        crossfadePlayer.playWhenReady = true
         crossfadeJob = scope.launch {
-            val steps = (fadeMs / 20L).coerceAtLeast(1L)
-            repeat(steps.toInt()) { step ->
-                if (!player.isPlaying) return@launch
-                val progress = (step + 1f) / steps
-                player.volume = playerVolume.value * (1f - progress)
-                crossfadePlayer.volume = playerVolume.value * progress
-                delay(20)
+            var completed = false
+            try {
+                val outgoing = player
+                val incoming = crossfadePlayer
+                if (incoming.playbackState != Player.STATE_READY) return@launch
+
+                incoming.volume = 0f
+                incoming.playWhenReady = true
+                // Promote the already-playing incoming decoder immediately.
+                // The UI, notification and queue advance here, not after fade.
+                outgoing.removeListener(this@MusicService)
+                outgoing.removeListener(sleepTimer)
+                incoming.addListener(this@MusicService)
+                incoming.addListener(sleepTimer)
+                player = incoming
+                crossfadePlayer = outgoing
+                mediaSession.setPlayer(incoming)
+                currentMediaMetadata.value = incoming.currentMetadata
+
+                // The retired player must never auto-advance into a duplicate
+                // copy of the incoming song while it finishes its tail.
+                if (outgoing.mediaItemCount > outgoing.currentMediaItemIndex + 1) {
+                    outgoing.removeMediaItems(outgoing.currentMediaItemIndex + 1, outgoing.mediaItemCount)
+                }
+
+                // Do not point the app UI at the prepared decoder until its timeline has
+                // actually published. Alternating between two decoders otherwise exposes a
+                // one-frame empty timeline every other crossfade.
+                while (incoming.currentTimeline.isEmpty) delay(10)
+                PlayerConnection.instance?.replacePlayer(incoming)
+
+                while (true) {
+                    if (crossfadeTargetIndex != nextIndex) return@launch
+                    val progress = (incoming.currentPosition.toFloat() / fadeMs)
+                        .coerceIn(0f, 1f)
+                    // Equal-power curve keeps the perceived loudness steady.
+                    incoming.volume = playerVolume.value * sin(progress * PI.toFloat() / 2f)
+                    outgoing.volume = playerVolume.value * cos(progress * PI.toFloat() / 2f)
+                    if (progress >= 1f) break
+                    delay(20)
+                }
+                outgoing.stop()
+                outgoing.clearMediaItems()
+                incoming.volume = playerVolume.value
+                completed = true
+            } finally {
+                if (!completed) {
+                    crossfadePlayer.stop()
+                    player.volume = playerVolume.value
+                }
+                preparedCrossfadeIndex = C.INDEX_UNSET
+                crossfadeTargetIndex = C.INDEX_UNSET
             }
-            // The overlap has played the first fadeMs of the next item. Make
-            // the session player continue from that exact point before stopping
-            // the secondary decoder, so there is no restart or audible gap.
-            player.volume = 0f
-            player.seekTo(nextIndex, fadeMs)
-            player.playWhenReady = true
-            crossfadePlayer.stop()
-            player.volume = playerVolume.value
-            preparedCrossfadeIndex = C.INDEX_UNSET
-            crossfadeTargetIndex = C.INDEX_UNSET
         }
     }
 

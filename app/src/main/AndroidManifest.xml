@@ -290,6 +290,11 @@
             android:exported="false" />
 
         <service
+            android:name=".utils.AppUpdateService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
             android:name=".playback.ExoDownloadService"
             android:exported="false"
             android:foregroundServiceType="dataSync">

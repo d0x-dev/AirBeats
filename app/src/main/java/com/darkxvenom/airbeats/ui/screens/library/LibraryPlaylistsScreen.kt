@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -295,7 +296,7 @@ fun LibraryPlaylistsScreen(
                     entries = shortcuts,
                     onClick = { route ->
                         when (route) {
-                            "local" -> onLocalClick()
+                            "local" -> navController.navigate("local_songs")
                             "import" -> showSpotifyImportDialog = true
                             "import_yt" -> showYouTubeImportDialog = true
                             else -> navController.navigate(route)
@@ -327,6 +328,12 @@ fun LibraryPlaylistsScreen(
                         .padding(horizontal = 16.dp)
                         .animateItem(),
                 )
+            }
+
+            // Keep the list scrollable when the shortcut cards are the only content.
+            // This is in-list space, so it does not create a fixed sheet behind the nav bar.
+            item(key = "scroll_buffer") {
+                Spacer(modifier = Modifier.height(160.dp))
             }
         }
 
