@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.library
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,7 +89,10 @@ import com.darkxvenom.airbeats.ui.menu.SelectionSongMenu
 import com.darkxvenom.airbeats.ui.menu.SongMenu
 import com.darkxvenom.airbeats.ui.utils.ItemWrapper
 import com.darkxvenom.airbeats.ui.utils.backToMain
+import com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel
 import com.darkxvenom.airbeats.viewmodels.HistoryViewModel
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -95,8 +100,15 @@ fun CachePlaylistScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
     viewModel: HistoryViewModel = hiltViewModel(),
+    backupViewModel: BackupRestoreViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val backupCacheLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            if (uri != null) {
+                backupViewModel.backupCache(context, uri)
+            }
+        }
     val menuState = LocalMenuState.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
@@ -329,7 +341,7 @@ fun CachePlaylistScreen(
                                         .clip(RoundedCornerShape(ThumbnailCornerRadius))
                                 ) {
                                     AsyncImage(
-                                        model = filteredSongs.first().item.thumbnailUrl,
+                                        model = filteredSongs.firstOrNull()?.item?.thumbnailUrl,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -573,6 +585,17 @@ fun CachePlaylistScreen(
                         )
                     }
                 } else if (!isSearching) {
+                    IconButton(onClick = {
+                        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                        backupCacheLauncher.launch(
+                            "AirBeats_Cache_${LocalDateTime.now().format(formatter)}.airbeatscache"
+                        )
+                    }) {
+                        Icon(
+                            painter = painterResource(R.drawable.backup),
+                            contentDescription = stringResource(R.string.backup_cached_songs)
+                        )
+                    }
                     IconButton(onClick = { isSearching = true }) {
                         Icon(
                             painter = painterResource(R.drawable.search),

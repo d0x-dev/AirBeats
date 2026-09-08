@@ -81,7 +81,7 @@ sudo snap install airbeats
 - <img src="https://avatars.githubusercontent.com/u/241423835" width="60" style="border-radius: 50%; margin-top: 10px;"/>
 **Venom** - Creative Design Visionary
 - 🔗 [GitHub](https://github.com/drkvenom786)
-- 🌐 [Website](http://venomx.pro)
+- 🌐 [Website](https://drkvenom786.github.io/webpage/)
 - 🎨 [Portfolio](https://drkvenom786.github.io/webpage/)
 
 ---

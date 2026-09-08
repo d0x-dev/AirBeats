@@ -29,6 +29,7 @@ import com.darkxvenom.airbeats.constants.CrossfadeKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
+import com.darkxvenom.airbeats.constants.SkipUncachedPartKey
 import com.darkxvenom.airbeats.constants.StopMusicOnTaskClearKey
 import com.darkxvenom.airbeats.ui.component.EnumListPreference
 import com.darkxvenom.airbeats.ui.component.IconButton
@@ -80,6 +81,10 @@ fun PlayerSettings(
     )
     val (autoSkipNextOnError, onAutoSkipNextOnErrorChange) = rememberPreference(
         AutoSkipNextOnErrorKey,
+        defaultValue = false
+    )
+    val (skipUncachedPart, onSkipUncachedPartChange) = rememberPreference(
+        SkipUncachedPartKey,
         defaultValue = false
     )
     val (stopMusicOnTaskClear, onStopMusicOnTaskClearChange) = rememberPreference(
@@ -183,6 +188,14 @@ fun PlayerSettings(
                     icon = { Icon(painterResource(R.drawable.skip_next), null) },
                     checked = autoSkipNextOnError,
                     onCheckedChange = onAutoSkipNextOnErrorChange
+                )},
+
+                {SwitchPreference(
+                    title = { Text(stringResource(R.string.skip_uncached_part)) },
+                    description = stringResource(R.string.skip_uncached_part_desc),
+                    icon = { Icon(painterResource(R.drawable.cached), null) },
+                    checked = skipUncachedPart,
+                    onCheckedChange = onSkipUncachedPartChange
                 )},
             )
         )

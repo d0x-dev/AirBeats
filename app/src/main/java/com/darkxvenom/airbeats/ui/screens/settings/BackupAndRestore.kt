@@ -184,6 +184,20 @@ fun BackupAndRestore(
             }
         }
 
+    val backupCacheLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            if (uri != null) {
+                viewModel.backupCache(context, uri)
+            }
+        }
+
+    val restoreCacheLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                viewModel.restoreCache(context, uri)
+            }
+        }
+
     val importPlaylistFromCsv =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri == null) return@rememberLauncherForActivityResult
@@ -269,6 +283,27 @@ fun BackupAndRestore(
                     isEnabled = uploadStatus !is UploadStatus.Uploading,
                     onClick = {
                         restoreLauncher.launch(arrayOf("application/octet-stream"))
+                    }
+                )},
+                {PreferenceEntry(
+                    title = { Text(stringResource(R.string.backup_cached_songs)) },
+                    icon = { Icon(painterResource(R.drawable.cached), null) },
+                    description = stringResource(R.string.backup_cached_songs_desc),
+                    isEnabled = uploadStatus !is UploadStatus.Uploading,
+                    onClick = {
+                        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                        backupCacheLauncher.launch(
+                            "AirBeats_Cache_${LocalDateTime.now().format(formatter)}.airbeatscache"
+                        )
+                    }
+                )},
+                {PreferenceEntry(
+                    title = { Text(stringResource(R.string.restore_cached_songs)) },
+                    icon = { Icon(painterResource(R.drawable.restore), null) },
+                    description = stringResource(R.string.restore_cached_songs_desc),
+                    isEnabled = uploadStatus !is UploadStatus.Uploading,
+                    onClick = {
+                        restoreCacheLauncher.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                     }
                 )},
                 {AnimatedVisibility(

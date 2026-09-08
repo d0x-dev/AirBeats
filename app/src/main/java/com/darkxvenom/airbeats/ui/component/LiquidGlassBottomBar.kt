@@ -50,6 +50,7 @@ fun LiquidGlassBottomNavigationBar(
     onItemSelected: (Int) -> Unit,
     backdrop: PlatformBackdrop
 ) {
+    if (items.isEmpty()) return
     val layer = rememberGraphicsLayer()
     val luminanceAnimation = remember { Animatable(0.3f) }
 

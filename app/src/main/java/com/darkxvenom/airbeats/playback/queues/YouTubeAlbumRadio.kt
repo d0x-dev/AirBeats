@@ -27,7 +27,7 @@ class YouTubeAlbumRadio(
         val albumSongs = YouTube.albumSongs(playlistId).getOrThrow()
         albumSongCount = albumSongs.size
         Queue.Status(
-            title = albumSongs.first().album?.name.orEmpty(),
+            title = albumSongs.firstOrNull()?.album?.name.orEmpty(),
             items = albumSongs.map { it.toMediaItem() },
             mediaItemIndex = 0
         )
