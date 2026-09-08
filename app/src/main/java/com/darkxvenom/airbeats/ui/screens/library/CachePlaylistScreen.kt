@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.library
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,6 +80,7 @@ import com.darkxvenom.airbeats.constants.ThumbnailCornerRadius
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.extensions.togglePlayPause
+import com.darkxvenom.airbeats.extensions.tryOrNull
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import com.darkxvenom.airbeats.ui.component.EmptyPlaceholder
 import com.darkxvenom.airbeats.ui.component.IconButton
@@ -87,7 +90,12 @@ import com.darkxvenom.airbeats.ui.menu.SelectionSongMenu
 import com.darkxvenom.airbeats.ui.menu.SongMenu
 import com.darkxvenom.airbeats.ui.utils.ItemWrapper
 import com.darkxvenom.airbeats.ui.utils.backToMain
+import com.darkxvenom.airbeats.viewmodels.BackupRestoreViewModel
 import com.darkxvenom.airbeats.viewmodels.HistoryViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -95,8 +103,15 @@ fun CachePlaylistScreen(
     navController: NavController,
     scrollBehavior: TopAppBarScrollBehavior,
     viewModel: HistoryViewModel = hiltViewModel(),
+    backupViewModel: BackupRestoreViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val backupCacheLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+            if (uri != null) {
+                backupViewModel.backupCache(context, uri)
+            }
+        }
     val menuState = LocalMenuState.current
     val playerConnection = LocalPlayerConnection.current ?: return
     val haptic = LocalHapticFeedback.current
@@ -105,16 +120,52 @@ fun CachePlaylistScreen(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val events by viewModel.events.collectAsState()
+    val dbSongs by viewModel.database.allSongs().collectAsState(initial = emptyList())
 
-    val playerCache = LocalPlayerConnection.current?.service?.playerCache
+    val service = LocalPlayerConnection.current?.service
+    val playerCache = service?.playerCache
+    val downloadCache = service?.downloadCache
 
-    val cachedSongIds = remember(playerCache) {
-        playerCache?.keys?.mapNotNull { it.toString() }?.toSet() ?: emptySet()
+    val restoredCacheIds = remember {
+        runCatching {
+            val file = context.filesDir.resolve("restored_cache_ids.json")
+            if (file.exists()) {
+                val json = org.json.JSONArray(file.readText())
+                val set = mutableSetOf<String>()
+                for (i in 0 until json.length()) {
+                    set.add(json.getString(i))
+                }
+                set
+            } else emptySet()
+        }.getOrDefault(emptySet())
     }
 
-    val allSongs = remember(events, cachedSongIds) {
-        events.values.flatten()
-            .map { it.song }
+    var cachedSongIds by remember {
+        mutableStateOf(
+            buildSet {
+                addAll(restoredCacheIds)
+                tryOrNull { playerCache?.keys }?.mapNotNullTo(this) { it.toString() }
+                tryOrNull { downloadCache?.keys }?.mapNotNullTo(this) { it.toString() }
+            }
+        )
+    }
+
+    LaunchedEffect(playerCache, downloadCache) {
+        while (isActive) {
+            val keys = mutableSetOf<String>()
+            keys.addAll(restoredCacheIds)
+            tryOrNull { playerCache?.keys }?.mapNotNullTo(keys) { it.toString() }
+            tryOrNull { downloadCache?.keys }?.mapNotNullTo(keys) { it.toString() }
+            if (keys != cachedSongIds) {
+                cachedSongIds = keys.toSet()
+            }
+            delay(1000)
+        }
+    }
+
+    val allSongs = remember(events, dbSongs, cachedSongIds) {
+        val historySongs = events.values.flatten().map { it.song }
+        (historySongs + dbSongs)
             .distinctBy { it.id }
             .filter { it.id in cachedSongIds }
     }
@@ -329,7 +380,7 @@ fun CachePlaylistScreen(
                                         .clip(RoundedCornerShape(ThumbnailCornerRadius))
                                 ) {
                                     AsyncImage(
-                                        model = filteredSongs.first().item.thumbnailUrl,
+                                        model = filteredSongs.firstOrNull()?.item?.thumbnailUrl,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -573,6 +624,17 @@ fun CachePlaylistScreen(
                         )
                     }
                 } else if (!isSearching) {
+                    IconButton(onClick = {
+                        val formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                        backupCacheLauncher.launch(
+                            "AirBeats_Cache_${LocalDateTime.now().format(formatter)}.airbeatscache"
+                        )
+                    }) {
+                        Icon(
+                            painter = painterResource(R.drawable.backup),
+                            contentDescription = stringResource(R.string.backup_cached_songs)
+                        )
+                    }
                     IconButton(onClick = { isSearching = true }) {
                         Icon(
                             painter = painterResource(R.drawable.search),

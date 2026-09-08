@@ -41,4 +41,6 @@ constructor(
         get() = song.title
     override val thumbnailUrl: String?
         get() = song.thumbnailUrl
+    val duration: Int
+        get() = song.duration
 }

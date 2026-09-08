@@ -91,6 +91,7 @@ import com.darkxvenom.airbeats.constants.RepeatModeKey
 import com.darkxvenom.airbeats.constants.ShowLyricsKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
+import com.darkxvenom.airbeats.constants.SkipUncachedPartKey
 import com.darkxvenom.airbeats.constants.StopMusicOnTaskClearKey
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.Event
@@ -99,6 +100,7 @@ import com.darkxvenom.airbeats.db.entities.LyricsEntity
 import com.darkxvenom.airbeats.db.entities.RelatedSongMap
 import com.darkxvenom.airbeats.di.DownloadCache
 import com.darkxvenom.airbeats.di.PlayerCache
+import com.darkxvenom.airbeats.extensions.tryOrNull
 import com.darkxvenom.airbeats.extensions.SilentHandler
 import com.darkxvenom.airbeats.extensions.collect
 import com.darkxvenom.airbeats.extensions.collectLatest
@@ -289,6 +291,7 @@ class MusicService :
     val automixItems = MutableStateFlow<List<MediaItem>>(emptyList())
 
     private var consecutivePlaybackErr = 0
+    private var offlineBufferingJob: Job? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
@@ -1310,6 +1313,24 @@ class MusicService :
         setupEqualizer()
 
         discordUpdateJob?.cancel()
+        offlineBufferingJob?.cancel()
+
+        // If offline and skip uncached is enabled, verify the track is cached
+        if (!isNetworkConnected.value && dataStore.get(SkipUncachedPartKey, false)) {
+            val mediaId = mediaItem?.mediaId
+            val isSongCached = mediaId != null && (
+                downloadCache.isCached(mediaId, 0, 1) ||
+                playerCache.isCached(mediaId, 0, 1) ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, Long.MAX_VALUE) } ?: 0L) > 0L
+            )
+            if (mediaId != null && !isSongCached) {
+                Log.i(TAG, "Song $mediaId is uncached while offline with SkipUncachedPart enabled. Skipping.")
+                scope.launch(Dispatchers.Main) {
+                    skipOnError()
+                }
+                return
+            }
+        }
 
         // Resetear errores consecutivos cuando hay transición exitosa
         consecutivePlaybackErr = 0
@@ -1342,6 +1363,18 @@ class MusicService :
     override fun onPlaybackStateChanged(
         @Player.State playbackState: Int,
     ) {
+        offlineBufferingJob?.cancel()
+        if (playbackState == Player.STATE_BUFFERING) {
+            if (!isNetworkConnected.value && dataStore.get(SkipUncachedPartKey, false)) {
+                offlineBufferingJob = scope.launch {
+                    delay(1200)
+                    if (player.playbackState == Player.STATE_BUFFERING && !isNetworkConnected.value) {
+                        Log.i(TAG, "Playback stalled buffering offline with SkipUncachedPart enabled. Skipping song.")
+                        skipOnError()
+                    }
+                }
+            }
+        }
         // Guardar estado cuando cambia el estado de reproducción
         if (dataStore.get(PersistentQueueKey, true) && playbackState != Player.STATE_BUFFERING) {
             scope.launch {
@@ -1488,6 +1521,11 @@ class MusicService :
                 (error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
 
         if (!isNetworkConnected.value || isConnectionError) {
+            if (dataStore.get(SkipUncachedPartKey, false)) {
+                Log.i(TAG, "Player network error while offline with SkipUncachedPart enabled. Skipping to next song.")
+                skipOnError()
+                return
+            }
             waitOnNetworkError()
             return
         }
@@ -1554,13 +1592,14 @@ class MusicService :
             
             val mediaId = dataSpec.key ?: error("No media id")
 
-            if (downloadCache.isCached(
-                    mediaId,
-                    dataSpec.position,
-                    if (dataSpec.length >= 0) dataSpec.length else 1
-                ) ||
-                playerCache.isCached(mediaId, dataSpec.position, CHUNK_LENGTH)
-            ) {
+            val checkLength = if (dataSpec.length > 0) dataSpec.length.coerceAtMost(CHUNK_LENGTH) else 1L
+            val isCached = downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1L) ||
+                playerCache.isCached(mediaId, dataSpec.position, checkLength) ||
+                playerCache.isCached(mediaId, dataSpec.position, 1L) ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+
+            if (isCached) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
                 return@Factory dataSpec
             }

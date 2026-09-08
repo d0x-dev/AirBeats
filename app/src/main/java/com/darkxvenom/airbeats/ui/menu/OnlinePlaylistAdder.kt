@@ -135,22 +135,20 @@ fun OnlinePlaylistAdder(
                                     try {
                                         YouTube.search(query, YouTube.SearchFilter.FILTER_SONG)
                                             .onSuccess { result ->
-                                                viewStateMap[YouTube.SearchFilter.FILTER_SONG.value] =
-                                                    ItemsPage(result.items.distinctBy { it.id }, result.continuation)
-                                                val itemsPage = viewStateMap.entries.first().value!!
-                                                val firstSong = itemsPage.items[0] as SongItem
-                                                val firstSongMedia = firstSong.toMediaMetadata()
-                                                val ids = List(1) {firstSong.id}
-                                                withContext(Dispatchers.IO) {
-                                                    try {
-                                                        database.insert(firstSongMedia)
-                                                    } catch (e: Exception) {
-                                                        Timber.tag("Exception inserting song in database:")
-                                                            .e(e.toString())
+                                                val firstSong = result.items.filterIsInstance<SongItem>().firstOrNull()
+                                                if (firstSong != null) {
+                                                    val firstSongMedia = firstSong.toMediaMetadata()
+                                                    val ids = listOf(firstSong.id)
+                                                    withContext(Dispatchers.IO) {
+                                                        try {
+                                                            database.insert(firstSongMedia)
+                                                        } catch (e: Exception) {
+                                                            Timber.tag("Exception inserting song in database:")
+                                                                .e(e.toString())
+                                                        }
+                                                        database.addSongToPlaylist(playlist, ids)
                                                     }
-                                                    database.addSongToPlaylist(playlist, ids)
                                                 }
-                                                viewStateMap.clear()
                                                 songsIdx += 1
                                             }
                                             .onFailure {
@@ -197,24 +195,22 @@ fun OnlinePlaylistAdder(
                                     try {
                                         YouTube.search(query, YouTube.SearchFilter.FILTER_SONG)
                                             .onSuccess { result ->
-                                                viewStateMap[YouTube.SearchFilter.FILTER_SONG.value] =
-                                                    ItemsPage(result.items.distinctBy { it.id }, result.continuation)
-                                                val itemsPage = viewStateMap.entries.first().value!!
-                                                val firstSong = itemsPage.items[0] as SongItem
-                                                val firstSongMedia = firstSong.toMediaMetadata()
-                                                val firstSongEnt = firstSong.toMediaMetadata().toSongEntity()
-                                                withContext(Dispatchers.IO) {
-                                                    try {
-                                                        database.insert(firstSongMedia)
-                                                        database.query {
-                                                            update(firstSongEnt.toggleLike())
+                                                val firstSong = result.items.filterIsInstance<SongItem>().firstOrNull()
+                                                if (firstSong != null) {
+                                                    val firstSongMedia = firstSong.toMediaMetadata()
+                                                    val firstSongEnt = firstSong.toMediaMetadata().toSongEntity()
+                                                    withContext(Dispatchers.IO) {
+                                                        try {
+                                                            database.insert(firstSongMedia)
+                                                            database.query {
+                                                                update(firstSongEnt.toggleLike())
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            Timber.tag("Exception inserting song in database:")
+                                                                .e(e.toString())
                                                         }
-                                                    } catch (e: Exception) {
-                                                        Timber.tag("Exception inserting song in database:")
-                                                            .e(e.toString())
                                                     }
                                                 }
-                                                viewStateMap.clear()
                                                 songsIdx += 1
                                             }
                                             .onFailure {

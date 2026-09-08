@@ -389,6 +389,8 @@
     <string name="audio_normalization">Audio normalization</string>
     <string name="auto_skip_next_on_error">Auto skip to next song when error occurs</string>
     <string name="auto_skip_next_on_error_desc">Ensure your continuous playback experience</string>
+    <string name="skip_uncached_part">Skip uncached songs offline</string>
+    <string name="skip_uncached_part_desc">Skip to next track instead of pausing when playing uncached or partially cached songs offline</string>
     <string name="stop_music_on_task_clear">Stop music on task clear</string>
     <string name="equalizer">Equalizer</string>
     <string name="equalizer_in_app_description">Shape the current playback inside AirBeats.</string>
@@ -540,6 +542,14 @@
 
     <string name="backup_description">Create a backup file of your current data</string>
     <string name="restore_description">Recover your data from a backup file</string>
+    <string name="backup_cached_songs">Backup cached songs</string>
+    <string name="backup_cached_songs_desc">Export cached songs and offline audio to a backup file</string>
+    <string name="restore_cached_songs">Restore cached songs</string>
+    <string name="restore_cached_songs_desc">Import cached audio archive to restore offline music</string>
+    <string name="backup_cache_success">Cached songs backup created successfully</string>
+    <string name="backup_cache_failed">Failed to backup cached songs</string>
+    <string name="restore_cache_success">Cached songs restored successfully! Restarting...</string>
+    <string name="restore_cache_failed">Failed to restore cached songs</string>
     <string name="link_copied">Link Copied</string>
     <string name="redireccion">Redireccion</string>
     <string name="Version">Version</string>

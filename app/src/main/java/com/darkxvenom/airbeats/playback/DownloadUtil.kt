@@ -19,6 +19,7 @@ import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.FormatEntity
 import com.darkxvenom.airbeats.di.DownloadCache
 import com.darkxvenom.airbeats.di.PlayerCache
+import com.darkxvenom.airbeats.extensions.tryOrNull
 import com.darkxvenom.airbeats.utils.YTPlayerUtils
 import com.darkxvenom.airbeats.utils.enumPreference
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -62,9 +63,13 @@ constructor(
                 ),
         ) { dataSpec ->
             val mediaId = dataSpec.key ?: error("No media id")
-            val length = if (dataSpec.length >= 0) dataSpec.length else 1
+            val length = if (dataSpec.length >= 0) dataSpec.length else 1L
 
-            if (playerCache.isCached(mediaId, dataSpec.position, length)) {
+            if (playerCache.isCached(mediaId, dataSpec.position, length) ||
+                playerCache.isCached(mediaId, dataSpec.position, 1L) ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+            ) {
                 return@Factory dataSpec
             }
 
