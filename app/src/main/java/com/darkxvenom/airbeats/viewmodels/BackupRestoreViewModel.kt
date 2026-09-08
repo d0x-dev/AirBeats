@@ -458,14 +458,14 @@ class BackupRestoreViewModel @Inject constructor(
                         }
 
                         // 4. Backup cached song metadata and formats
-                        val allSongs = runCatching { database.songsByNameAsc().first() }.getOrDefault(emptyList())
+                        val allSongs = runCatching { database.allSongs().first() }.getOrDefault(emptyList())
                         val songJsonArray = JSONArray()
                         for (song in allSongs) {
                             val format = runCatching { database.format(song.id).first() }.getOrNull()
                             val obj = JSONObject().apply {
                                 put("id", song.id)
                                 put("title", song.title)
-                                put("duration", song.duration)
+                                put("duration", song.song.duration)
                                 put("thumbnailUrl", song.thumbnailUrl)
                                 put("artists", JSONArray(song.artists.map { it.name }))
                                 if (format != null) {
@@ -572,7 +572,7 @@ class BackupRestoreViewModel @Inject constructor(
                                                         mimeType = obj.getString("mimeType"),
                                                         codecs = obj.getString("codecs"),
                                                         bitrate = obj.getInt("bitrate"),
-                                                        sampleRate = obj.getInt("sampleRate"),
+                                                        sampleRate = if (obj.has("sampleRate") && !obj.isNull("sampleRate")) obj.getInt("sampleRate") else null,
                                                         contentLength = obj.getLong("contentLength"),
                                                         loudnessDb = if (obj.has("loudnessDb") && !obj.isNull("loudnessDb")) obj.getDouble("loudnessDb") else null,
                                                         playbackUrl = if (obj.has("playbackUrl") && !obj.isNull("playbackUrl")) obj.getString("playbackUrl") else null
