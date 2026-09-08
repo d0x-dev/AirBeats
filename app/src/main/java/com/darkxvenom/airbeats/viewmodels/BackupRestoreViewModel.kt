@@ -607,6 +607,12 @@ class BackupRestoreViewModel @Inject constructor(
                                         target.outputStream().buffered().use { zipIn.copyTo(it) }
                                     }
                                 }
+                                normName.endsWith(".exo") || normName.endsWith(".uid") -> {
+                                    val fileName = normName.substringAfterLast('/')
+                                    val target = exoDir.resolve(fileName)
+                                    target.parentFile?.mkdirs()
+                                    target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                }
                                 normName == "exoplayer_internal.db" || normName.endsWith("/exoplayer_internal.db") -> {
                                     exoDb.parentFile?.mkdirs()
                                     exoDb.outputStream().buffered().use { zipIn.copyTo(it) }
