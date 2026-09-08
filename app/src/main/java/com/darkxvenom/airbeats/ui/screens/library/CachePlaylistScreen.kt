@@ -117,16 +117,22 @@ fun CachePlaylistScreen(
     val isPlaying by playerConnection.isPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val events by viewModel.events.collectAsState()
+    val dbSongs by viewModel.database.allSongs().collectAsState(initial = emptyList())
 
-    val playerCache = LocalPlayerConnection.current?.service?.playerCache
+    val service = LocalPlayerConnection.current?.service
+    val playerCache = service?.playerCache
+    val downloadCache = service?.downloadCache
 
-    val cachedSongIds = remember(playerCache) {
-        playerCache?.keys?.mapNotNull { it.toString() }?.toSet() ?: emptySet()
+    val cachedSongIds = remember(playerCache, downloadCache) {
+        val keys = mutableSetOf<String>()
+        playerCache?.keys?.mapNotNullTo(keys) { it.toString() }
+        downloadCache?.keys?.mapNotNullTo(keys) { it.toString() }
+        keys.toSet()
     }
 
-    val allSongs = remember(events, cachedSongIds) {
-        events.values.flatten()
-            .map { it.song }
+    val allSongs = remember(events, dbSongs, cachedSongIds) {
+        val historySongs = events.values.flatten().map { it.song }
+        (historySongs + dbSongs)
             .distinctBy { it.id }
             .filter { it.id in cachedSongIds }
     }

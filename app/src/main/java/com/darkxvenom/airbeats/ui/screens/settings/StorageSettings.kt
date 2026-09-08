@@ -443,16 +443,17 @@ private fun CachedSongsBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
     val events by viewModel.events.collectAsState()
+    val dbSongs by viewModel.database.allSongs().collectAsState(initial = emptyList())
 
     // Obtener IDs de canciones en caché
     val cachedSongIds = remember(playerCache) {
         playerCache.keys.map { it.toString() }.toSet()
     }
 
-    // Obtener canciones completas desde el historial (similar a CachePlaylistScreen)
-    val cachedSongs = remember(events, cachedSongIds) {
-        events.values.flatten()
-            .map { it.song }
+    // Obtener canciones completas desde el historial y base de datos
+    val cachedSongs = remember(events, dbSongs, cachedSongIds) {
+        val historySongs = events.values.flatten().map { it.song }
+        (historySongs + dbSongs)
             .distinctBy { it.id }
             .filter { it.id in cachedSongIds }
     }

@@ -1,7 +1,10 @@
 package com.darkxvenom.airbeats.viewmodels
 
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -11,10 +14,12 @@ import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.db.InternalDatabase
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.ArtistEntity
+import com.darkxvenom.airbeats.db.entities.Event
 import com.darkxvenom.airbeats.db.entities.FormatEntity
 import com.darkxvenom.airbeats.db.entities.Song
 import com.darkxvenom.airbeats.db.entities.SongEntity
 import com.darkxvenom.airbeats.models.MediaMetadata
+import java.time.LocalDateTime
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -158,10 +163,8 @@ class BackupRestoreViewModel @Inject constructor(
                     }
                 }
             }
-            context.stopService(Intent(context, MusicService::class.java))
             context.filesDir.resolve(PERSISTENT_QUEUE_FILE).delete()
-            context.startActivity(Intent(context, MainActivity::class.java))
-            exitProcess(0)
+            restartApp(context)
         }.onFailure {
             reportException(it)
             Toast.makeText(context, R.string.restore_failed, Toast.LENGTH_SHORT).show()
@@ -415,10 +418,59 @@ class BackupRestoreViewModel @Inject constructor(
         }
     }
 
+    fun restartApp(context: Context) {
+        try {
+            context.stopService(Intent(context, MusicService::class.java))
+        } catch (_: Exception) {}
+
+        val packageManager = context.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+
+        if (intent != null) {
+            try {
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    24601,
+                    intent,
+                    PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager
+                alarmManager?.set(
+                    AlarmManager.RTC,
+                    System.currentTimeMillis() + 400,
+                    pendingIntent
+                )
+            } catch (_: Exception) {}
+            try {
+                context.startActivity(intent)
+            } catch (_: Exception) {}
+        }
+
+        try {
+            Thread.sleep(350)
+        } catch (_: InterruptedException) {}
+
+        android.os.Process.killProcess(android.os.Process.myPid())
+        exitProcess(0)
+    }
+
     fun backupCache(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 database.checkpoint()
+
+                // Checkpoint ExoPlayer internal DB so all cached spans in WAL are flushed to exoplayer_internal.db
+                val exoDbFile = context.getDatabasePath("exoplayer_internal.db")
+                if (exoDbFile.exists()) {
+                    tryOrNull {
+                        SQLiteDatabase.openDatabase(exoDbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+                            db.rawQuery("PRAGMA wal_checkpoint(FULL)", null).use { it.moveToFirst() }
+                        }
+                    }
+                }
+
                 context.applicationContext.contentResolver.openOutputStream(uri)?.use { stream ->
                     stream.buffered().zipOutputStream().use { zipOut ->
                         // 1. Backup exoplayer cache chunks
@@ -429,6 +481,7 @@ class BackupRestoreViewModel @Inject constructor(
                                     val relPath = "exoplayer/" + file.relativeTo(exoDir).path.replace('\\', '/')
                                     zipOut.putNextEntry(ZipEntry(relPath))
                                     file.inputStream().buffered().use { it.copyTo(zipOut) }
+                                    zipOut.closeEntry()
                                 }
                             }
                         }
@@ -441,6 +494,7 @@ class BackupRestoreViewModel @Inject constructor(
                                     val relPath = "download/" + file.relativeTo(dlDir).path.replace('\\', '/')
                                     zipOut.putNextEntry(ZipEntry(relPath))
                                     file.inputStream().buffered().use { it.copyTo(zipOut) }
+                                    zipOut.closeEntry()
                                 }
                             }
                         }
@@ -450,11 +504,13 @@ class BackupRestoreViewModel @Inject constructor(
                         if (exoDb.exists() && exoDb.isFile) {
                             zipOut.putNextEntry(ZipEntry("exoplayer_internal.db"))
                             exoDb.inputStream().buffered().use { it.copyTo(zipOut) }
+                            zipOut.closeEntry()
                         }
                         val exoDbWal = context.getDatabasePath("exoplayer_internal.db-wal")
                         if (exoDbWal.exists() && exoDbWal.isFile) {
                             zipOut.putNextEntry(ZipEntry("exoplayer_internal.db-wal"))
                             exoDbWal.inputStream().buffered().use { it.copyTo(zipOut) }
+                            zipOut.closeEntry()
                         }
 
                         // 4. Backup cached song metadata and formats
@@ -483,6 +539,7 @@ class BackupRestoreViewModel @Inject constructor(
                         }
                         zipOut.putNextEntry(ZipEntry("cached_songs_metadata.json"))
                         zipOut.write(songJsonArray.toString().toByteArray(Charsets.UTF_8))
+                        zipOut.closeEntry()
                     }
                 }
             }.onSuccess {
@@ -501,10 +558,28 @@ class BackupRestoreViewModel @Inject constructor(
     fun restoreCache(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
+                // Stop playback service first so files and databases are released
+                withContext(Dispatchers.Main) {
+                    try {
+                        context.stopService(Intent(context, MusicService::class.java))
+                    } catch (_: Exception) {}
+                }
+
                 val exoDir = context.filesDir.resolve("exoplayer")
                 val dlDir = context.filesDir.resolve("download")
                 exoDir.mkdirs()
                 dlDir.mkdirs()
+
+                // Delete any existing internal exo db and journals to prevent SQLite lock or journal mismatch
+                val exoDb = context.getDatabasePath("exoplayer_internal.db")
+                val exoDbWal = context.getDatabasePath("exoplayer_internal.db-wal")
+                val exoDbShm = context.getDatabasePath("exoplayer_internal.db-shm")
+                val exoDbJournal = context.getDatabasePath("exoplayer_internal.db-journal")
+
+                exoDb.delete()
+                exoDbWal.delete()
+                exoDbShm.delete()
+                exoDbJournal.delete()
 
                 context.applicationContext.contentResolver.openInputStream(uri)?.use { stream ->
                     stream.zipInputStream().use { zipIn ->
@@ -528,17 +603,15 @@ class BackupRestoreViewModel @Inject constructor(
                                         target.outputStream().buffered().use { zipIn.copyTo(it) }
                                     }
                                 }
-                                name == "exoplayer_internal.db" || name == "db/exoplayer_internal.db" -> {
-                                    val target = context.getDatabasePath("exoplayer_internal.db")
-                                    target.parentFile?.mkdirs()
-                                    target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                name == "exoplayer_internal.db" || name.endsWith("/exoplayer_internal.db") -> {
+                                    exoDb.parentFile?.mkdirs()
+                                    exoDb.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
-                                name == "exoplayer_internal.db-wal" || name == "db/exoplayer_internal.db-wal" -> {
-                                    val target = context.getDatabasePath("exoplayer_internal.db-wal")
-                                    target.parentFile?.mkdirs()
-                                    target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                name == "exoplayer_internal.db-wal" || name.endsWith("/exoplayer_internal.db-wal") -> {
+                                    exoDbWal.parentFile?.mkdirs()
+                                    exoDbWal.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
-                                name == "cached_songs_metadata.json" || name == "metadata.json" -> {
+                                name == "cached_songs_metadata.json" || name.endsWith("/cached_songs_metadata.json") || name == "metadata.json" -> {
                                     val jsonStr = zipIn.readBytes().toString(Charsets.UTF_8)
                                     val array = JSONArray(jsonStr)
                                     for (i in 0 until array.length()) {
@@ -561,7 +634,27 @@ class BackupRestoreViewModel @Inject constructor(
                                             duration = duration,
                                             thumbnailUrl = thumbnailUrl
                                         )
-                                        database.insert(mediaMetadata)
+                                        database.query {
+                                            insert(mediaMetadata)
+                                            val existing = getSongById(id)
+                                            if (existing != null) {
+                                                update(existing.song.copy(
+                                                    title = title,
+                                                    duration = if (duration != -1) duration else existing.song.duration,
+                                                    thumbnailUrl = thumbnailUrl ?: existing.song.thumbnailUrl
+                                                ))
+                                            }
+                                            // Also record an Event so HistoryViewModel, CachePlaylistScreen, and StorageSettings immediately recognize it!
+                                            try {
+                                                insert(
+                                                    Event(
+                                                        songId = id,
+                                                        timestamp = LocalDateTime.now(),
+                                                        playTime = (duration.takeIf { it > 0 } ?: 180).toLong() * 1000L
+                                                    )
+                                                )
+                                            } catch (_: Exception) {}
+                                        }
 
                                         if (obj.has("itag")) {
                                             database.query {
@@ -588,13 +681,12 @@ class BackupRestoreViewModel @Inject constructor(
                     }
                 }
 
+                // Checkpoint database to flush restored entries
+                database.checkpoint()
+            }.onSuccess {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, R.string.restore_cache_success, Toast.LENGTH_SHORT).show()
-                    context.stopService(Intent(context, MusicService::class.java))
-                    context.startActivity(
-                        Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                    exitProcess(0)
+                    restartApp(context)
                 }
             }.onFailure {
                 reportException(it)
