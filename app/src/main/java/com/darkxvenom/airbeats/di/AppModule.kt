@@ -191,6 +191,17 @@ object AppModule {
                     )
                 } catch (_: Exception) {}
 
+                // Merge entries from all other ExoPlayerCacheIndex tables into targetTable so all cached songs are indexed!
+                for (tbl in tables) {
+                    if (tbl != targetTable) {
+                        try {
+                            db.execSQL(
+                                "INSERT OR IGNORE INTO $targetTable (id, key, metadata) SELECT id, key, metadata FROM $tbl"
+                            )
+                        } catch (_: Exception) {}
+                    }
+                }
+
                 // If table is missing entries for any of our chunkIds, populate them so ExoPlayer never deletes .exo files!
                 if (chunkIds.isNotEmpty()) {
                     val existingIds = mutableSetOf<Int>()
@@ -216,11 +227,11 @@ object AppModule {
                         } catch (_: Exception) {}
 
                         if (restoredSongs.isEmpty()) {
-                            val airbeatsDb = context.getDatabasePath("airbeats.db")
-                            if (airbeatsDb.exists()) {
+                            val songDb = context.getDatabasePath(com.darkxvenom.airbeats.db.InternalDatabase.DB_NAME)
+                            if (songDb.exists()) {
                                 try {
                                     android.database.sqlite.SQLiteDatabase.openDatabase(
-                                        airbeatsDb.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
+                                        songDb.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
                                     ).use { rdb ->
                                         rdb.rawQuery("SELECT id FROM song", null).use { sc ->
                                             while (sc.moveToNext()) {

@@ -459,17 +459,7 @@ class BackupRestoreViewModel @Inject constructor(
     fun backupCache(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                database.checkpoint()
-
-                // Checkpoint ExoPlayer internal DB so all cached spans in WAL are flushed to exoplayer_internal.db
-                val exoDbFile = context.getDatabasePath("exoplayer_internal.db")
-                if (exoDbFile.exists()) {
-                    tryOrNull {
-                        SQLiteDatabase.openDatabase(exoDbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-                            db.rawQuery("PRAGMA wal_checkpoint(FULL)", null).use { it.moveToFirst() }
-                        }
-                    }
-                }
+                tryOrNull { database.checkpoint() }
 
                 context.applicationContext.contentResolver.openOutputStream(uri)?.use { stream ->
                     stream.buffered().zipOutputStream().use { zipOut ->
@@ -478,10 +468,11 @@ class BackupRestoreViewModel @Inject constructor(
                         if (exoDir.exists() && exoDir.isDirectory) {
                             exoDir.walkTopDown().forEach { file ->
                                 if (file.isFile) {
-                                    val relPath = "exoplayer/" + file.relativeTo(exoDir).path.replace('\\', '/')
-                                    zipOut.putNextEntry(ZipEntry(relPath))
-                                    file.inputStream().buffered().use { it.copyTo(zipOut) }
-                                    zipOut.closeEntry()
+                                    tryOrNull {
+                                        val relPath = "exoplayer/" + file.relativeTo(exoDir).path.replace('\\', '/')
+                                        zipOut.putNextEntry(ZipEntry(relPath))
+                                        file.inputStream().buffered().use { it.copyTo(zipOut) }
+                                    }
                                 }
                             }
                         }
@@ -491,10 +482,11 @@ class BackupRestoreViewModel @Inject constructor(
                         if (dlDir.exists() && dlDir.isDirectory) {
                             dlDir.walkTopDown().forEach { file ->
                                 if (file.isFile) {
-                                    val relPath = "download/" + file.relativeTo(dlDir).path.replace('\\', '/')
-                                    zipOut.putNextEntry(ZipEntry(relPath))
-                                    file.inputStream().buffered().use { it.copyTo(zipOut) }
-                                    zipOut.closeEntry()
+                                    tryOrNull {
+                                        val relPath = "download/" + file.relativeTo(dlDir).path.replace('\\', '/')
+                                        zipOut.putNextEntry(ZipEntry(relPath))
+                                        file.inputStream().buffered().use { it.copyTo(zipOut) }
+                                    }
                                 }
                             }
                         }
@@ -502,44 +494,115 @@ class BackupRestoreViewModel @Inject constructor(
                         // 3. Backup exoplayer internal database
                         val exoDb = context.getDatabasePath("exoplayer_internal.db")
                         if (exoDb.exists() && exoDb.isFile) {
-                            zipOut.putNextEntry(ZipEntry("exoplayer_internal.db"))
-                            exoDb.inputStream().buffered().use { it.copyTo(zipOut) }
-                            zipOut.closeEntry()
+                            tryOrNull {
+                                zipOut.putNextEntry(ZipEntry("exoplayer_internal.db"))
+                                exoDb.inputStream().buffered().use { it.copyTo(zipOut) }
+                            }
                         }
                         val exoDbWal = context.getDatabasePath("exoplayer_internal.db-wal")
                         if (exoDbWal.exists() && exoDbWal.isFile) {
-                            zipOut.putNextEntry(ZipEntry("exoplayer_internal.db-wal"))
-                            exoDbWal.inputStream().buffered().use { it.copyTo(zipOut) }
-                            zipOut.closeEntry()
+                            tryOrNull {
+                                zipOut.putNextEntry(ZipEntry("exoplayer_internal.db-wal"))
+                                exoDbWal.inputStream().buffered().use { it.copyTo(zipOut) }
+                            }
                         }
 
                         // 4. Backup cached song metadata and formats
-                        val allSongs = runCatching { database.allSongs().first() }.getOrDefault(emptyList())
-                        val songJsonArray = JSONArray()
-                        for (song in allSongs) {
-                            val format = runCatching { database.format(song.id).first() }.getOrNull()
-                            val obj = JSONObject().apply {
-                                put("id", song.id)
-                                put("title", song.title)
-                                put("duration", song.song.duration)
-                                put("thumbnailUrl", song.thumbnailUrl)
-                                put("artists", JSONArray(song.artists.map { it.name }))
-                                if (format != null) {
-                                    put("itag", format.itag)
-                                    put("mimeType", format.mimeType)
-                                    put("codecs", format.codecs)
-                                    put("bitrate", format.bitrate)
-                                    put("sampleRate", format.sampleRate)
-                                    put("contentLength", format.contentLength)
-                                    if (format.loudnessDb != null) put("loudnessDb", format.loudnessDb)
-                                    if (format.playbackUrl != null) put("playbackUrl", format.playbackUrl)
+                        tryOrNull {
+                            val formatsMap = mutableMapOf<String, FormatEntity>()
+                            tryOrNull {
+                                database.openHelper.readableDatabase.query(
+                                    "SELECT id, itag, mimeType, codecs, bitrate, sampleRate, contentLength, loudnessDb, playbackUrl FROM format"
+                                ).use { cursor ->
+                                    val idCol = cursor.getColumnIndex("id")
+                                    val itagCol = cursor.getColumnIndex("itag")
+                                    val mimeCol = cursor.getColumnIndex("mimeType")
+                                    val codecsCol = cursor.getColumnIndex("codecs")
+                                    val bitrateCol = cursor.getColumnIndex("bitrate")
+                                    val sampleCol = cursor.getColumnIndex("sampleRate")
+                                    val lenCol = cursor.getColumnIndex("contentLength")
+                                    val loudCol = cursor.getColumnIndex("loudnessDb")
+                                    val urlCol = cursor.getColumnIndex("playbackUrl")
+                                    while (cursor.moveToNext()) {
+                                        val sId = cursor.getString(idCol)
+                                        formatsMap[sId] = FormatEntity(
+                                            id = sId,
+                                            itag = cursor.getInt(itagCol),
+                                            mimeType = cursor.getString(mimeCol),
+                                            codecs = cursor.getString(codecsCol),
+                                            bitrate = cursor.getInt(bitrateCol),
+                                            sampleRate = if (!cursor.isNull(sampleCol)) cursor.getInt(sampleCol) else null,
+                                            contentLength = cursor.getLong(lenCol),
+                                            loudnessDb = if (!cursor.isNull(loudCol)) cursor.getDouble(loudCol) else null,
+                                            playbackUrl = if (!cursor.isNull(urlCol)) cursor.getString(urlCol) else null
+                                        )
+                                    }
                                 }
                             }
-                            songJsonArray.put(obj)
+
+                            val songsList = mutableListOf<SongEntity>()
+                            tryOrNull {
+                                database.openHelper.readableDatabase.query(
+                                    "SELECT id, title, duration, thumbnailUrl FROM song"
+                                ).use { cursor ->
+                                    val idCol = cursor.getColumnIndex("id")
+                                    val titleCol = cursor.getColumnIndex("title")
+                                    val durCol = cursor.getColumnIndex("duration")
+                                    val thumbCol = cursor.getColumnIndex("thumbnailUrl")
+                                    while (cursor.moveToNext()) {
+                                        songsList.add(
+                                            SongEntity(
+                                                id = cursor.getString(idCol),
+                                                title = cursor.getString(titleCol),
+                                                duration = cursor.getInt(durCol),
+                                                thumbnailUrl = if (!cursor.isNull(thumbCol)) cursor.getString(thumbCol) else null
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            val artistMap = mutableMapOf<String, MutableList<String>>()
+                            tryOrNull {
+                                database.openHelper.readableDatabase.query(
+                                    "SELECT song_artist_map.songId, artist.name FROM song_artist_map JOIN artist ON song_artist_map.artistId = artist.id"
+                                ).use { cursor ->
+                                    val songIdCol = cursor.getColumnIndex("songId")
+                                    val nameCol = cursor.getColumnIndex("name")
+                                    while (cursor.moveToNext()) {
+                                        val sId = cursor.getString(songIdCol)
+                                        val name = cursor.getString(nameCol)
+                                        artistMap.getOrPut(sId) { mutableListOf() }.add(name)
+                                    }
+                                }
+                            }
+
+                            val songJsonArray = JSONArray()
+                            for (song in songsList) {
+                                val format = formatsMap[song.id]
+                                val artists = artistMap[song.id] ?: emptyList()
+                                val obj = JSONObject().apply {
+                                    put("id", song.id)
+                                    put("title", song.title)
+                                    put("duration", song.duration)
+                                    put("thumbnailUrl", song.thumbnailUrl)
+                                    put("artists", JSONArray(artists))
+                                    if (format != null) {
+                                        put("itag", format.itag)
+                                        put("mimeType", format.mimeType)
+                                        put("codecs", format.codecs)
+                                        put("bitrate", format.bitrate)
+                                        put("sampleRate", format.sampleRate)
+                                        put("contentLength", format.contentLength)
+                                        if (format.loudnessDb != null) put("loudnessDb", format.loudnessDb)
+                                        if (format.playbackUrl != null) put("playbackUrl", format.playbackUrl)
+                                    }
+                                }
+                                songJsonArray.put(obj)
+                            }
+                            zipOut.putNextEntry(ZipEntry("cached_songs_metadata.json"))
+                            zipOut.write(songJsonArray.toString().toByteArray(Charsets.UTF_8))
                         }
-                        zipOut.putNextEntry(ZipEntry("cached_songs_metadata.json"))
-                        zipOut.write(songJsonArray.toString().toByteArray(Charsets.UTF_8))
-                        zipOut.closeEntry()
                     }
                 }
             }.onSuccess {
@@ -567,21 +630,35 @@ class BackupRestoreViewModel @Inject constructor(
 
                 val exoDir = context.filesDir.resolve("exoplayer")
                 val dlDir = context.filesDir.resolve("download")
-                tryOrNull { exoDir.listFiles()?.forEach { it.deleteRecursively() } }
-                tryOrNull { dlDir.listFiles()?.forEach { it.deleteRecursively() } }
                 exoDir.mkdirs()
                 dlDir.mkdirs()
 
-                // Delete any existing internal exo db and journals to prevent SQLite lock or journal mismatch
+                // Calculate existing ID offset so restored chunk IDs never collide with existing cached songs
+                val maxExistingExoId = exoDir.walkTopDown()
+                    .filter { it.isFile && it.name.endsWith(".exo") }
+                    .mapNotNull { it.name.substringBefore('.').toIntOrNull() }
+                    .maxOrNull() ?: -1
+                val exoIdOffset = if (maxExistingExoId >= 0) maxExistingExoId + 1 else 0
+
+                val maxExistingDlId = dlDir.walkTopDown()
+                    .filter { it.isFile && it.name.endsWith(".exo") }
+                    .mapNotNull { it.name.substringBefore('.').toIntOrNull() }
+                    .maxOrNull() ?: -1
+                val dlIdOffset = if (maxExistingDlId >= 0) maxExistingDlId + 1 else 0
+
+                val hasExistingUid = exoDir.listFiles { _, name -> name.endsWith(".uid") }?.isNotEmpty() == true
+
                 val exoDb = context.getDatabasePath("exoplayer_internal.db")
                 val exoDbWal = context.getDatabasePath("exoplayer_internal.db-wal")
-                val exoDbShm = context.getDatabasePath("exoplayer_internal.db-shm")
-                val exoDbJournal = context.getDatabasePath("exoplayer_internal.db-journal")
+                val tempExoDb = context.cacheDir.resolve("temp_restored_exo.db")
+                val tempExoDbWal = context.cacheDir.resolve("temp_restored_exo.db-wal")
 
-                exoDb.delete()
-                exoDbWal.delete()
-                exoDbShm.delete()
-                exoDbJournal.delete()
+                tempExoDb.delete()
+                tempExoDbWal.delete()
+
+                val shouldMergeDb = exoDb.exists()
+                val targetDbFile = if (shouldMergeDb) tempExoDb else exoDb
+                val targetWalFile = if (shouldMergeDb) tempExoDbWal else exoDbWal
 
                 val restoredSongIds = mutableListOf<String>()
 
@@ -594,32 +671,68 @@ class BackupRestoreViewModel @Inject constructor(
                                 normName.startsWith("exoplayer/") || normName.startsWith("files/exoplayer/") -> {
                                     val rel = normName.removePrefix("files/exoplayer/").removePrefix("exoplayer/")
                                     if (rel.isNotEmpty()) {
-                                        val target = exoDir.resolve(rel)
-                                        target.parentFile?.mkdirs()
-                                        target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                        if (rel.endsWith(".uid") && hasExistingUid) {
+                                            // Do not overwrite existing UID if device already has one
+                                        } else {
+                                            val baseName = rel.substringAfterLast('/')
+                                            val isExo = baseName.endsWith(".exo")
+                                            val chunkId = if (isExo) baseName.substringBefore('.').toIntOrNull() else null
+                                            val targetRel = if (chunkId != null && exoIdOffset > 0) {
+                                                val newBaseName = "${chunkId + exoIdOffset}." + baseName.substringAfter('.')
+                                                if (rel.contains('/')) rel.substringBeforeLast('/') + "/" + newBaseName else newBaseName
+                                            } else {
+                                                rel
+                                            }
+                                            val target = exoDir.resolve(targetRel)
+                                            target.parentFile?.mkdirs()
+                                            target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                        }
                                     }
                                 }
                                 normName.startsWith("download/") || normName.startsWith("files/download/") -> {
                                     val rel = normName.removePrefix("files/download/").removePrefix("download/")
                                     if (rel.isNotEmpty()) {
-                                        val target = dlDir.resolve(rel)
+                                        val baseName = rel.substringAfterLast('/')
+                                        val isExo = baseName.endsWith(".exo")
+                                        val chunkId = if (isExo) baseName.substringBefore('.').toIntOrNull() else null
+                                        val targetRel = if (chunkId != null && dlIdOffset > 0) {
+                                            val newBaseName = "${chunkId + dlIdOffset}." + baseName.substringAfter('.')
+                                            if (rel.contains('/')) rel.substringBeforeLast('/') + "/" + newBaseName else newBaseName
+                                        } else {
+                                            rel
+                                        }
+                                        val target = dlDir.resolve(targetRel)
                                         target.parentFile?.mkdirs()
                                         target.outputStream().buffered().use { zipIn.copyTo(it) }
                                     }
                                 }
-                                normName.endsWith(".exo") || normName.endsWith(".uid") -> {
+                                normName.endsWith(".exo") -> {
                                     val fileName = normName.substringAfterLast('/')
-                                    val target = exoDir.resolve(fileName)
+                                    val chunkId = fileName.substringBefore('.').toIntOrNull()
+                                    val finalName = if (chunkId != null && exoIdOffset > 0) {
+                                        "${chunkId + exoIdOffset}." + fileName.substringAfter('.')
+                                    } else {
+                                        fileName
+                                    }
+                                    val target = exoDir.resolve(finalName)
                                     target.parentFile?.mkdirs()
                                     target.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
+                                normName.endsWith(".uid") -> {
+                                    if (!hasExistingUid) {
+                                        val fileName = normName.substringAfterLast('/')
+                                        val target = exoDir.resolve(fileName)
+                                        target.parentFile?.mkdirs()
+                                        target.outputStream().buffered().use { zipIn.copyTo(it) }
+                                    }
+                                }
                                 normName == "exoplayer_internal.db" || normName.endsWith("/exoplayer_internal.db") -> {
-                                    exoDb.parentFile?.mkdirs()
-                                    exoDb.outputStream().buffered().use { zipIn.copyTo(it) }
+                                    targetDbFile.parentFile?.mkdirs()
+                                    targetDbFile.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
                                 normName == "exoplayer_internal.db-wal" || normName.endsWith("/exoplayer_internal.db-wal") -> {
-                                    exoDbWal.parentFile?.mkdirs()
-                                    exoDbWal.outputStream().buffered().use { zipIn.copyTo(it) }
+                                    targetWalFile.parentFile?.mkdirs()
+                                    targetWalFile.outputStream().buffered().use { zipIn.copyTo(it) }
                                 }
                                 normName == "cached_songs_metadata.json" || normName.endsWith("/cached_songs_metadata.json") || normName.endsWith("/metadata.json") || normName == "metadata.json" -> {
                                     val jsonStr = zipIn.readBytes().toString(Charsets.UTF_8)
@@ -655,7 +768,6 @@ class BackupRestoreViewModel @Inject constructor(
                                                     thumbnailUrl = thumbnailUrl ?: existing.song.thumbnailUrl
                                                 ))
                                             }
-
                                         }
 
                                         if (obj.has("itag")) {
@@ -683,10 +795,26 @@ class BackupRestoreViewModel @Inject constructor(
                     }
                 }
 
+                // If existing DB exists, merge tempExoDb into exoDb with exoIdOffset
+                if (shouldMergeDb && tempExoDb.exists()) {
+                    mergeExoPlayerDatabases(tempExoDb, exoDb, exoIdOffset)
+                }
+
+                // Merge restoredSongIds into restored_cache_ids.json without wiping previously restored ones
                 if (restoredSongIds.isNotEmpty()) {
                     tryOrNull {
                         val restoredFile = context.filesDir.resolve("restored_cache_ids.json")
-                        restoredFile.writeText(JSONArray(restoredSongIds).toString())
+                        val mergedIds = mutableListOf<String>()
+                        if (restoredFile.exists()) {
+                            tryOrNull {
+                                val arr = JSONArray(restoredFile.readText())
+                                for (i in 0 until arr.length()) mergedIds.add(arr.getString(i))
+                            }
+                        }
+                        for (id in restoredSongIds) {
+                            if (!mergedIds.contains(id)) mergedIds.add(id)
+                        }
+                        restoredFile.writeText(JSONArray(mergedIds).toString())
                     }
                 }
 
@@ -695,7 +823,7 @@ class BackupRestoreViewModel @Inject constructor(
                 com.darkxvenom.airbeats.di.AppModule.ensureCacheUidAligned(context, "download")
 
                 // Checkpoint database to flush restored entries
-                database.checkpoint()
+                tryOrNull { database.checkpoint() }
             }.onSuccess {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, R.string.restore_cache_success, Toast.LENGTH_SHORT).show()
@@ -707,6 +835,77 @@ class BackupRestoreViewModel @Inject constructor(
                     Toast.makeText(context, R.string.restore_cache_failed, Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    private fun mergeExoPlayerDatabases(sourceDbFile: java.io.File, targetDbFile: java.io.File, idOffset: Int) {
+        if (!sourceDbFile.exists()) return
+        if (!targetDbFile.exists()) {
+            tryOrNull { sourceDbFile.copyTo(targetDbFile, overwrite = true) }
+            sourceDbFile.delete()
+            java.io.File(sourceDbFile.path + "-wal").delete()
+            java.io.File(sourceDbFile.path + "-shm").delete()
+            return
+        }
+
+        try {
+            if (idOffset > 0) {
+                tryOrNull {
+                    SQLiteDatabase.openDatabase(sourceDbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { sdb ->
+                        val tables = mutableListOf<String>()
+                        sdb.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'ExoPlayerCacheIndex%'", null).use { c ->
+                            while (c.moveToNext()) {
+                                tables.add(c.getString(0))
+                            }
+                        }
+                        for (tbl in tables) {
+                            sdb.execSQL("UPDATE $tbl SET id = id + $idOffset")
+                        }
+                    }
+                }
+            }
+
+            SQLiteDatabase.openDatabase(targetDbFile.path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+                val escapedPath = sourceDbFile.path.replace("'", "''")
+                db.execSQL("ATTACH DATABASE '$escapedPath' AS srcDb")
+
+                tryOrNull {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS ExoPlayerVersions (feature INTEGER NOT NULL, instance_uid TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY (feature, instance_uid))")
+                    db.execSQL("INSERT OR IGNORE INTO ExoPlayerVersions SELECT * FROM srcDb.ExoPlayerVersions")
+                }
+
+                val srcTables = mutableListOf<String>()
+                tryOrNull {
+                    db.rawQuery("SELECT name FROM srcDb.sqlite_master WHERE type='table' AND name LIKE 'ExoPlayerCacheIndex%'", null).use { c ->
+                        while (c.moveToNext()) {
+                            srcTables.add(c.getString(0))
+                        }
+                    }
+                }
+
+                for (srcTable in srcTables) {
+                    tryOrNull {
+                        db.execSQL(
+                            "CREATE TABLE IF NOT EXISTS $srcTable (" +
+                            "id INTEGER PRIMARY KEY NOT NULL, " +
+                            "key TEXT NOT NULL, " +
+                            "metadata BLOB NOT NULL)"
+                        )
+                        db.execSQL("INSERT OR IGNORE INTO $srcTable SELECT * FROM srcDb.$srcTable")
+                    }
+                }
+
+                tryOrNull { db.execSQL("DETACH DATABASE srcDb") }
+                tryOrNull {
+                    db.rawQuery("PRAGMA wal_checkpoint(FULL)", null).use { it.moveToFirst() }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            sourceDbFile.delete()
+            java.io.File(sourceDbFile.path + "-wal").delete()
+            java.io.File(sourceDbFile.path + "-shm").delete()
         }
     }
 
