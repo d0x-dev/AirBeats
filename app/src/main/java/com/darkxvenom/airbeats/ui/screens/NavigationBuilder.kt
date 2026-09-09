@@ -29,6 +29,7 @@ import com.darkxvenom.airbeats.ui.screens.artist.ArtistScreen
 import com.darkxvenom.airbeats.ui.screens.artist.ArtistSongsScreen
 import com.darkxvenom.airbeats.ui.screens.library.CachePlaylistScreen
 import com.darkxvenom.airbeats.ui.screens.library.LibraryScreen
+import com.darkxvenom.airbeats.ui.screens.library.LocalSongsScreen
 import com.darkxvenom.airbeats.ui.screens.library.PlayfulLibraryScreen
 import com.darkxvenom.airbeats.ui.screens.playlist.AutoPlaylistScreen
 import com.darkxvenom.airbeats.ui.screens.playlist.LocalPlaylistScreen
@@ -330,6 +331,9 @@ fun NavGraphBuilder.navigationBuilder(
     ) {
         LocalPlaylistScreen(navController, scrollBehavior)
     }
+    composable(route = "local_songs") {
+        LocalSongsScreen(navController)
+    }
     composable(
         route = "auto_playlist/{playlist}",
         arguments =
@@ -402,6 +406,9 @@ fun NavGraphBuilder.navigationBuilder(
     }
     composable("settings/content") {
         ContentSettings(navController, scrollBehavior)
+    }
+    composable("settings/lyrics") {
+        com.darkxvenom.airbeats.ui.screens.settings.LyricsSettings(navController, scrollBehavior)
     }
     composable("settings/player") {
         PlayerSettings(navController, scrollBehavior)

@@ -14,10 +14,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
+import com.darkxvenom.airbeats.constants.AudioQualityKey
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.MusicService
 import com.darkxvenom.airbeats.playback.PlayerConnection
+import com.darkxvenom.airbeats.utils.dataStore
+import com.darkxvenom.airbeats.utils.get
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -335,7 +338,7 @@ object SaveToStorageUtil {
                 val playbackData = YTPlayerUtils.playerResponseForPlayback(
                     videoId = mediaMetadata.id,
                     playlistId = null,
-                    audioQuality = AudioQuality.HIGH,
+                    audioQuality = appContext.dataStore[AudioQualityKey]?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() } ?: AudioQuality.HIGH,
                     connectivityManager = connectivityManager
                 ).getOrThrow()
 

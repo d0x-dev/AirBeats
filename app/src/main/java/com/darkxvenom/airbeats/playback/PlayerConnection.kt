@@ -14,6 +14,7 @@ import androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM
 import androidx.media3.common.Player.REPEAT_MODE_OFF
 import androidx.media3.common.Player.STATE_READY
 import androidx.media3.common.Timeline
+import androidx.media3.exoplayer.ExoPlayer
 import com.darkxvenom.airbeats.MusicWidget.Companion.ACTION_STATE_CHANGED
 import com.darkxvenom.airbeats.MusicWidget.Companion.ACTION_UPDATE_PROGRESS
 import com.darkxvenom.airbeats.db.MusicDatabase
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
@@ -61,7 +63,8 @@ class PlayerConnection(
     }
 
     val service = binder.service
-    val player = service.player
+    var player: ExoPlayer = service.player
+        private set
 
     // Estados básicos del reproductor
     private val _playbackState = MutableStateFlow(player.playbackState)
@@ -169,6 +172,17 @@ class PlayerConnection(
     private var lastMediaItemIndex: Int = player.currentMediaItemIndex
     private var lastPosition: Long = 0L
 
+    private val widgetPlayerListener = object : Player.Listener {
+        override fun onEvents(player: Player, events: Player.Events) {
+            handlePlayerEvents(player, events)
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            Log.d(TAG, "Playback state changed to: $playbackState")
+            updateConnectionState(playbackState)
+        }
+    }
+
     init {
         Log.d(TAG, "Initializing PlayerConnection")
 
@@ -180,18 +194,31 @@ class PlayerConnection(
         instance = this
 
         // Listener adicional para actualizaciones del widget
-        player.addListener(object : Player.Listener {
-            override fun onEvents(player: Player, events: Player.Events) {
-                handlePlayerEvents(player, events)
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                Log.d(TAG, "Playback state changed to: $playbackState")
-                updateConnectionState(playbackState)
-            }
-        })
+        player.addListener(widgetPlayerListener)
 
         Log.d(TAG, "PlayerConnection initialized successfully")
+    }
+
+    /** Rebind UI state when the service promotes the prepared crossfade decoder. */
+    fun replacePlayer(newPlayer: ExoPlayer) {
+        if (player === newPlayer) return
+        player.removeListener(this)
+        player.removeListener(widgetPlayerListener)
+        player = newPlayer
+        player.addListener(this)
+        player.addListener(widgetPlayerListener)
+        lastPlaybackState = player.playbackState
+        lastPlayWhenReady = player.playWhenReady
+        lastMediaItemIndex = player.currentMediaItemIndex
+        lastPosition = player.currentPosition
+        initializeStates()
+        // The prepared decoder may report an empty timeline for the same main-loop turn
+        // in which it is promoted. Publish again after preparation settles; otherwise the
+        // UI can retain that transient empty queue until the following crossfade.
+        updateScope.launch {
+            delay(150)
+            if (player === newPlayer) initializeStates()
+        }
     }
 
     private fun initializeStates() {

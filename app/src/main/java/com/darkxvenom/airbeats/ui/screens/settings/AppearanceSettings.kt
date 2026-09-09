@@ -113,13 +113,6 @@ fun AppearanceSettings(
         DefaultOpenTabKey,
         defaultValue = NavigationTab.HOME
     )
-    val (lyricsPosition, onLyricsPositionChange) = rememberEnumPreference(
-        LyricsTextPositionKey,
-        defaultValue = LyricsPosition.CENTER
-    )
-    val (lyricsClick, onLyricsClickChange) = rememberPreference(LyricsClickKey, defaultValue = true)
-    val (enableNewLyricsScreen, onEnableNewLyricsScreenChange) = rememberPreference(EnableNewLyricsScreenKey, defaultValue = true)
-    val (enableNewQueueScreen, onEnableNewQueueScreenChange) = rememberPreference(EnableNewQueueScreenKey, defaultValue = true)
     val (sliderStyle, onSliderStyleChange) = rememberEnumPreference(
         SliderStyleKey,
         defaultValue = SliderStyle.SQUIGGLY
@@ -131,10 +124,6 @@ fun AppearanceSettings(
     val (gridItemSize, onGridItemSizeChange) = rememberEnumPreference(
         GridItemsSizeKey,
         defaultValue = GridItemSize.BIG
-    )
-    val (animateLyrics, onAnimateLyricsChange) = rememberPreference(
-        AnimateLyricsKey,
-        defaultValue = true
     )
 
 
@@ -899,50 +888,6 @@ fun AppearanceSettings(
                             },
                         )},
 
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.lyrics_text_position)) },
-                            icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                            selectedValue = lyricsPosition,
-                            onValueSelected = onLyricsPositionChange,
-                            valueText = {
-                                when (it) {
-                                    LyricsPosition.LEFT -> stringResource(R.string.left)
-                                    LyricsPosition.CENTER -> stringResource(R.string.center)
-                                    LyricsPosition.RIGHT -> stringResource(R.string.right)
-                                }
-                            },
-                        )},
-
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.lyrics_click_change)) },
-                            icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                            checked = lyricsClick,
-                            onCheckedChange = onLyricsClickChange,
-                        )},
-
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.animate_lyrics)) },
-                            icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                            description = stringResource(R.string.animate_lyrics_desc),
-                            checked = animateLyrics,
-                            onCheckedChange = onAnimateLyricsChange
-                        )},
-
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.enable_new_lyrics_screen)) },
-                            icon = { Icon(painterResource(R.drawable.lyrics), null) },
-                            description = stringResource(R.string.enable_new_lyrics_screen_desc),
-                            checked = enableNewLyricsScreen,
-                            onCheckedChange = onEnableNewLyricsScreenChange
-                        )},
-
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.new_queue_screen)) },
-                            icon = { Icon(painterResource(R.drawable.music_note), null) },
-                            description = "Use AirBeats's queue screen",
-                            checked = enableNewQueueScreen,
-                            onCheckedChange = onEnableNewQueueScreenChange
-                        )}
                     )
                 )
 

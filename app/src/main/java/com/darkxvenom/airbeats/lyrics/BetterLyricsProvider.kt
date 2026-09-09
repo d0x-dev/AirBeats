@@ -9,6 +9,9 @@ package com.darkxvenom.airbeats.lyrics
 
 import android.content.Context
 import com.darkxvenom.airbeats.betterlyrics.BetterLyrics
+import com.darkxvenom.airbeats.constants.EnableBetterLyricsKey
+import com.darkxvenom.airbeats.utils.dataStore
+import com.darkxvenom.airbeats.utils.get
 import android.util.Log
 
 object BetterLyricsProvider : LyricsProvider {
@@ -20,7 +23,7 @@ object BetterLyricsProvider : LyricsProvider {
 
     override val name = "BetterLyrics"
 
-    override fun isEnabled(context: Context): Boolean = true
+    override fun isEnabled(context: Context): Boolean = context.dataStore[EnableBetterLyricsKey] ?: true
 
     override suspend fun getLyrics(
         id: String,

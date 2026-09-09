@@ -170,7 +170,6 @@ import com.darkxvenom.airbeats.constants.PlayerTextAlignmentKey
 import com.darkxvenom.airbeats.constants.PureBlackKey
 import com.darkxvenom.airbeats.constants.QueuePeekHeight
 import com.darkxvenom.airbeats.constants.ShowLyricsKey
-import com.darkxvenom.airbeats.constants.EnableNewQueueScreenKey
 import com.darkxvenom.airbeats.constants.SliderStyle
 import com.darkxvenom.airbeats.constants.SliderStyleKey
 import com.darkxvenom.airbeats.constants.SmallButtonsShapeKey
@@ -259,7 +258,6 @@ fun BottomSheetPlayer(
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
     val pureBlack by rememberPreference(PureBlackKey, defaultValue = false)
-    val enableNewQueueScreen by rememberPreference(EnableNewQueueScreenKey, defaultValue = true)
     val useDarkTheme = remember(darkTheme, isSystemInDarkTheme) {
         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
     }
@@ -854,8 +852,11 @@ fun BottomSheetPlayer(
 
     val queueSheetState =
         rememberBottomSheetState(
-            dismissedBound = QueuePeekHeight + WindowInsets.systemBars.asPaddingValues()
-                .calculateBottomPadding(),
+            dismissedBound = if (playerScreenStyle == PlayerScreenStyle.CLASSIC) {
+                QueuePeekHeight + WindowInsets.systemBars.asPaddingValues().calculateBottomPadding()
+            } else {
+                0.dp
+            },
             expandedBound = state.expandedBound,
         )
 
@@ -2727,35 +2728,14 @@ fun BottomSheetPlayer(
             }
         }
 
-        if (playerScreenStyle == PlayerScreenStyle.APPLE) {
-            AppleQueue(
-                state = queueSheetState
+        // The collapsed queue affordance (the up arrow) belongs only to Classic.
+        // Other player designs open this same queue from their own queue button.
+        if (playerScreenStyle == PlayerScreenStyle.CLASSIC || !queueSheetState.isCollapsed) {
+            UnifiedQueue(
+                state = queueSheetState,
+                playerBottomSheetState = state,
+                navController = navController,
             )
-        } else if (playerScreenStyle == PlayerScreenStyle.CLASSIC || !queueSheetState.isCollapsed) {
-            val bgCol = if (useBlackBackground) Color.Black else MaterialTheme.colorScheme.surfaceContainer
-            
-            if (enableNewQueueScreen) {
-                AlternateQueue(
-                    state = queueSheetState,
-                    playerBottomSheetState = state,
-                    navController = navController,
-                    backgroundColor = bgCol,
-                    onBackgroundColor = onBackgroundColor,
-                    TextBackgroundColor = TextBackgroundColor,
-                    textButtonColor = textButtonColor,
-                    iconButtonColor = iconButtonColor,
-                    pureBlack = pureBlack,
-                )
-            } else {
-                Queue(
-                    state = queueSheetState,
-                    playerBottomSheetState = state,
-                    navController = navController,
-                    backgroundColor = bgCol,
-                    onBackgroundColor = onBackgroundColor,
-                    textBackgroundColor = TextBackgroundColor,
-                )
-            }
         }
     }
 }
