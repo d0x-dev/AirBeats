@@ -67,8 +67,7 @@ constructor(
 
             if (playerCache.isCached(mediaId, dataSpec.position, length) ||
                 playerCache.isCached(mediaId, dataSpec.position, 1L) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L
             ) {
                 return@Factory dataSpec
             }
