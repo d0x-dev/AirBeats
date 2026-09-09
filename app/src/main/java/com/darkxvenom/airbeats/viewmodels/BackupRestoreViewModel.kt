@@ -655,16 +655,7 @@ class BackupRestoreViewModel @Inject constructor(
                                                     thumbnailUrl = thumbnailUrl ?: existing.song.thumbnailUrl
                                                 ))
                                             }
-                                            // Also record an Event so HistoryViewModel, CachePlaylistScreen, and StorageSettings immediately recognize it!
-                                            try {
-                                                insert(
-                                                    Event(
-                                                        songId = id,
-                                                        timestamp = LocalDateTime.now(),
-                                                        playTime = (duration.takeIf { it > 0 } ?: 180).toLong() * 1000L
-                                                    )
-                                                )
-                                            } catch (_: Exception) {}
+
                                         }
 
                                         if (obj.has("itag")) {
