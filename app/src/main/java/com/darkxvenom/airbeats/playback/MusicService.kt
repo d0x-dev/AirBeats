@@ -12,6 +12,7 @@ import android.media.audiofx.AudioEffect
 import android.media.audiofx.Equalizer
 import android.media.audiofx.LoudnessEnhancer
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Binder
 import android.os.Build
 import android.provider.Settings
@@ -24,6 +25,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -296,7 +298,6 @@ class MusicService :
     private var infiniteQueueLoadJob: Job? = null
 
     private var consecutivePlaybackErr = 0
-    private var offlineBufferingJob: Job? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
@@ -357,9 +358,10 @@ class MusicService :
             toggleLike = ::toggleLike
             toggleLibrary = ::toggleLibrary
         }
+        val sessionPlayer = wrapSessionPlayer(player)
         mediaSession =
             MediaLibrarySession
-                .Builder(this, player, mediaLibrarySessionCallback)
+                .Builder(this, sessionPlayer, mediaLibrarySessionCallback)
                 .setSessionActivity(
                     PendingIntent.getActivity(
                         this,
@@ -383,6 +385,8 @@ class MusicService :
         )
 
         connectivityManager = getSystemService()!!
+        val activeCap = connectivityManager.activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
+        isNetworkConnected.value = activeCap?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
         connectivityObserver = NetworkConnectivityObserver(this)
 
         // Observar conectividad de red
@@ -589,6 +593,21 @@ class MusicService :
                 delay(10.seconds)
                 if (dataStore.get(PersistentQueueKey, true) && player.isPlaying) {
                     saveQueueToDisk()
+                }
+            }
+        }
+    }
+
+    private fun wrapSessionPlayer(basePlayer: Player): Player {
+        return object : ForwardingPlayer(basePlayer) {
+            override fun getBufferedPercentage(): Int {
+                return try {
+                    val d = basePlayer.duration
+                    val p = basePlayer.bufferedPosition
+                    if (d <= 0L || p <= 0L || d == C.TIME_UNSET || p == C.TIME_UNSET) 0
+                    else ((p.coerceAtMost(d) * 100L) / d).toInt().coerceIn(0, 100)
+                } catch (e: Exception) {
+                    0
                 }
             }
         }
@@ -1318,7 +1337,6 @@ class MusicService :
         setupEqualizer()
 
         discordUpdateJob?.cancel()
-        offlineBufferingJob?.cancel()
 
         // If offline and skip uncached is enabled, verify the track is cached
         if (!isNetworkConnected.value && dataStore.get(SkipUncachedPartKey, false)) {
@@ -1326,7 +1344,7 @@ class MusicService :
             val isSongCached = mediaId != null && (
                 downloadCache.isCached(mediaId, 0, 1) ||
                 playerCache.isCached(mediaId, 0, 1) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, Long.MAX_VALUE) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, 1L) } ?: 0L) > 0L
             )
             if (mediaId != null && !isSongCached) {
                 Log.i(TAG, "Song $mediaId is uncached while offline with SkipUncachedPart enabled. Skipping.")
@@ -1373,18 +1391,6 @@ class MusicService :
     override fun onPlaybackStateChanged(
         @Player.State playbackState: Int,
     ) {
-        offlineBufferingJob?.cancel()
-        if (playbackState == Player.STATE_BUFFERING) {
-            if (!isNetworkConnected.value && dataStore.get(SkipUncachedPartKey, false)) {
-                offlineBufferingJob = scope.launch {
-                    delay(1200)
-                    if (player.playbackState == Player.STATE_BUFFERING && !isNetworkConnected.value) {
-                        Log.i(TAG, "Playback stalled buffering offline with SkipUncachedPart enabled. Skipping song.")
-                        skipOnError()
-                    }
-                }
-            }
-        }
         // Guardar estado cuando cambia el estado de reproducción
         if (dataStore.get(PersistentQueueKey, true) && playbackState != Player.STATE_BUFFERING) {
             scope.launch {
@@ -1606,8 +1612,7 @@ class MusicService :
             val isCached = downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1L) ||
                 playerCache.isCached(mediaId, dataSpec.position, checkLength) ||
                 playerCache.isCached(mediaId, dataSpec.position, 1L) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L
 
             if (isCached) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
@@ -1932,7 +1937,7 @@ class MusicService :
                 incoming.addListener(sleepTimer)
                 player = incoming
                 crossfadePlayer = outgoing
-                mediaSession.setPlayer(incoming)
+                mediaSession.setPlayer(wrapSessionPlayer(incoming))
                 currentMediaMetadata.value = incoming.currentMetadata
 
                 // The retired player must never auto-advance into a duplicate
