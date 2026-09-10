@@ -67,6 +67,8 @@ fun UnifiedQueue(
     val queueWindows by playerConnection.queueWindows.collectAsState()
     val currentIndex by playerConnection.currentWindowIndex.collectAsState()
     val queueTitle by playerConnection.queueTitle.collectAsState()
+    val shuffleModeEnabled by playerConnection.shuffleModeEnabled.collectAsState()
+    val repeatMode by playerConnection.repeatMode.collectAsState()
     var endlessQueue by rememberPreference(AutoLoadMoreKey, defaultValue = true)
     val listState = rememberLazyListState()
     val currentItem = queueWindows.getOrNull(currentIndex)?.mediaItem
@@ -105,10 +107,18 @@ fun UnifiedQueue(
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled }) {
-                    Icon(painterResource(if (playerConnection.player.shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle), contentDescription = "Shuffle")
+                    Icon(
+                        painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
+                        contentDescription = "Shuffle",
+                        tint = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
                 }
                 IconButton(onClick = playerConnection.player::toggleRepeatMode) {
-                    Icon(painterResource(R.drawable.repeat), contentDescription = "Repeat")
+                    Icon(
+                        painter = painterResource(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat),
+                        contentDescription = "Repeat",
+                        tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
                 }
             }
 

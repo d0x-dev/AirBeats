@@ -342,6 +342,8 @@ class MusicService :
             ExoPlayer.Builder(this)
                 .setMediaSourceFactory(createMediaSourceFactory())
                 .setRenderersFactory(createRenderersFactory())
+                .setHandleAudioBecomingNoisy(true)
+                .setWakeMode(C.WAKE_MODE_NETWORK)
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(C.USAGE_MEDIA)
@@ -758,11 +760,16 @@ class MusicService :
          * To prevent a "runaway diesel engine" scenario, force the user to take action after
          * too many errors come up too quickly. Pause to show player "stopped" state
          */
-        consecutivePlaybackErr += 2
+        consecutivePlaybackErr += 1
         val nextWindowIndex = player.nextMediaItemIndex
 
         if (consecutivePlaybackErr <= MAX_CONSECUTIVE_ERR && nextWindowIndex != C.INDEX_UNSET) {
             player.seekTo(nextWindowIndex, C.TIME_UNSET)
+            player.prepare()
+            player.play()
+            return
+        } else if (consecutivePlaybackErr <= MAX_CONSECUTIVE_ERR && player.repeatMode == REPEAT_MODE_ALL && player.mediaItemCount > 0) {
+            player.seekToDefaultPosition(0)
             player.prepare()
             player.play()
             return
@@ -871,17 +878,43 @@ class MusicService :
         currentQueue = queue
         queueTitle = null
         val isPermanentShuffle = dataStore.get(PermanentShuffleKey, false)
-        player.shuffleModeEnabled = isPermanentShuffle
+        if (isPermanentShuffle) {
+            player.shuffleModeEnabled = true
+        }
         if (queue.preloadItem != null) {
             player.setMediaItem(queue.preloadItem!!.toMediaItem())
             player.prepare()
             player.playWhenReady = playWhenReady
         }
         scope.launch(SilentHandler) {
-            val initialStatus =
+            val initialStatus = runCatching {
                 withContext(Dispatchers.IO) {
                     queue.getInitialStatus().filterExplicit(dataStore.get(HideExplicitKey, false))
                 }
+            }.getOrElse { error ->
+                Timber.tag(TAG).w(error, "Failed to get initial status from queue, falling back to cached songs")
+                val cachedSongs = withContext(Dispatchers.IO) {
+                    tryOrNull {
+                        database.allSongs().first().filter { song ->
+                            val id = song.id
+                            downloadCache.isCached(id, 0, 1) ||
+                            playerCache.isCached(id, 0, 1) ||
+                            (tryOrNull { playerCache.getCachedBytes(id, 0, 1L) } ?: 0L) > 0L ||
+                            (tryOrNull { playerCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
+                            (tryOrNull { downloadCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+                        }.map { it.toMediaItem() }
+                    } ?: emptyList()
+                }
+                val preloadMediaItem = queue.preloadItem?.toMediaItem()
+                val fullItems = if (preloadMediaItem != null) {
+                    listOf(preloadMediaItem) + cachedSongs.filter { it.mediaId != preloadMediaItem.mediaId }
+                } else cachedSongs
+                Queue.Status(
+                    title = "Cached Songs",
+                    items = fullItems,
+                    mediaItemIndex = 0,
+                )
+            }
             if (queue.preloadItem != null && player.playbackState == STATE_IDLE) return@launch
             if (initialStatus.title != null) {
                 queueTitle = initialStatus.title
@@ -1344,7 +1377,9 @@ class MusicService :
             val isSongCached = mediaId != null && (
                 downloadCache.isCached(mediaId, 0, 1) ||
                 playerCache.isCached(mediaId, 0, 1) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, 1L) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, 1L) } ?: 0L) > 0L ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
+                (tryOrNull { downloadCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
             )
             if (mediaId != null && !isSongCached) {
                 Log.i(TAG, "Song $mediaId is uncached while offline with SkipUncachedPart enabled. Skipping.")
@@ -1399,9 +1434,55 @@ class MusicService :
             }
         }
 
-        // Cuando termina la reproducción, ocultar notificación si la cola está vacía
+        // Automatic advance / repeat handling to guarantee playback continuity
         if (playbackState == Player.STATE_ENDED) {
             scope.launch {
+                if (player.repeatMode == Player.REPEAT_MODE_ONE) {
+                    player.seekTo(player.currentMediaItemIndex, 0L)
+                    player.prepare()
+                    player.play()
+                    return@launch
+                }
+                if (player.hasNextMediaItem()) {
+                    player.seekToNextMediaItem()
+                    player.prepare()
+                    player.play()
+                    return@launch
+                }
+                if (player.repeatMode == Player.REPEAT_MODE_ALL && player.mediaItemCount > 0) {
+                    player.seekToDefaultPosition(0)
+                    player.prepare()
+                    player.play()
+                    return@launch
+                }
+                // When queue ends and endless queue is enabled, extend queue
+                if (dataStore.get(AutoLoadMoreKey, true)) {
+                    if (isNetworkConnected.value) {
+                        player.currentMediaItem?.mediaId?.takeIf { it.isNotBlank() }?.let(::extendInfiniteQueue)
+                    } else {
+                        val cachedSongs = withContext(Dispatchers.IO) {
+                            tryOrNull {
+                                database.allSongs().first().filter { song ->
+                                    val id = song.id
+                                    downloadCache.isCached(id, 0, 1) ||
+                                    playerCache.isCached(id, 0, 1) ||
+                                    (tryOrNull { playerCache.getCachedBytes(id, 0, 1L) } ?: 0L) > 0L ||
+                                    (tryOrNull { playerCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
+                                    (tryOrNull { downloadCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+                                }.map { it.toMediaItem() }
+                            } ?: emptyList()
+                        }
+                        val existingIds = player.mediaItems.map(MediaItem::mediaId).toHashSet()
+                        val newItems = cachedSongs.filter { existingIds.add(it.mediaId) }
+                        if (newItems.isNotEmpty()) {
+                            appendQueueItems(newItems)
+                            player.seekToNextMediaItem()
+                            player.prepare()
+                            player.play()
+                            return@launch
+                        }
+                    }
+                }
                 delay(1000)
                 if (!player.isPlaying && player.mediaItemCount == 0) {
                     // Limpiar metadata para forzar actualización de notificación
@@ -1537,8 +1618,8 @@ class MusicService :
                 (error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
 
         if (!isNetworkConnected.value || isConnectionError) {
-            if (dataStore.get(SkipUncachedPartKey, false)) {
-                Log.i(TAG, "Player network error while offline with SkipUncachedPart enabled. Skipping to next song.")
+            if (dataStore.get(SkipUncachedPartKey, false) || player.hasNextMediaItem()) {
+                Log.i(TAG, "Player network error while offline. Skipping to next song.")
                 skipOnError()
                 return
             }
@@ -1546,11 +1627,7 @@ class MusicService :
             return
         }
 
-        if (dataStore.get(AutoSkipNextOnErrorKey, false)) {
-            skipOnError()
-        } else {
-            stopOnError()
-        }
+        skipOnError()
     }
 
     private fun createCacheDataSource(): CacheDataSource.Factory =
@@ -1612,7 +1689,9 @@ class MusicService :
             val isCached = downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1L) ||
                 playerCache.isCached(mediaId, dataSpec.position, checkLength) ||
                 playerCache.isCached(mediaId, dataSpec.position, 1L) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
+                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
+                (tryOrNull { downloadCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
 
             if (isCached) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
@@ -1874,6 +1953,8 @@ class MusicService :
         if (preparedCrossfadeIndex != nextIndex) {
             crossfadePlayer.stop()
             crossfadePlayer.clearMediaItems()
+            crossfadePlayer.repeatMode = player.repeatMode
+            crossfadePlayer.shuffleModeEnabled = player.shuffleModeEnabled
             val queue = (0 until player.mediaItemCount).map(player::getMediaItemAt)
             // The spare player owns the complete queue at the
             // incoming item, fully prepared but silent before the fade starts.
@@ -1927,6 +2008,8 @@ class MusicService :
                 val incoming = crossfadePlayer
                 if (incoming.playbackState != Player.STATE_READY) return@launch
 
+                incoming.repeatMode = outgoing.repeatMode
+                incoming.shuffleModeEnabled = outgoing.shuffleModeEnabled
                 incoming.volume = 0f
                 incoming.playWhenReady = true
                 // Promote the already-playing incoming decoder immediately.
@@ -1939,12 +2022,6 @@ class MusicService :
                 crossfadePlayer = outgoing
                 mediaSession.setPlayer(wrapSessionPlayer(incoming))
                 currentMediaMetadata.value = incoming.currentMetadata
-
-                // The retired player must never auto-advance into a duplicate
-                // copy of the incoming song while it finishes its tail.
-                if (outgoing.mediaItemCount > outgoing.currentMediaItemIndex + 1) {
-                    outgoing.removeMediaItems(outgoing.currentMediaItemIndex + 1, outgoing.mediaItemCount)
-                }
 
                 // Do not point the app UI at the prepared decoder until its timeline has
                 // actually published. Alternating between two decoders otherwise exposes a
