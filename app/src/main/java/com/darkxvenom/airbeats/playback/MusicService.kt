@@ -894,7 +894,7 @@ class MusicService :
             }.getOrElse { error ->
                 Timber.tag(TAG).w(error, "Failed to get initial status from queue, falling back to cached songs")
                 val cachedSongs = withContext(Dispatchers.IO) {
-                    tryOrNull {
+                    try {
                         database.allSongs().first().filter { song ->
                             val id = song.id
                             downloadCache.isCached(id, 0, 1) ||
@@ -903,7 +903,9 @@ class MusicService :
                             (tryOrNull { playerCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
                             (tryOrNull { downloadCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
                         }.map { it.toMediaItem() }
-                    } ?: emptyList()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
                 }
                 val preloadMediaItem = queue.preloadItem?.toMediaItem()
                 val fullItems = if (preloadMediaItem != null) {
@@ -1461,7 +1463,7 @@ class MusicService :
                         player.currentMediaItem?.mediaId?.takeIf { it.isNotBlank() }?.let(::extendInfiniteQueue)
                     } else {
                         val cachedSongs = withContext(Dispatchers.IO) {
-                            tryOrNull {
+                            try {
                                 database.allSongs().first().filter { song ->
                                     val id = song.id
                                     downloadCache.isCached(id, 0, 1) ||
@@ -1470,7 +1472,9 @@ class MusicService :
                                     (tryOrNull { playerCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
                                     (tryOrNull { downloadCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
                                 }.map { it.toMediaItem() }
-                            } ?: emptyList()
+                            } catch (e: Exception) {
+                                emptyList()
+                            }
                         }
                         val existingIds = player.mediaItems.map(MediaItem::mediaId).toHashSet()
                         val newItems = cachedSongs.filter { existingIds.add(it.mediaId) }
