@@ -107,6 +107,7 @@ import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import com.darkxvenom.airbeats.ui.component.AlbumGridItem
 import com.darkxvenom.airbeats.ui.component.DefaultDialog
+import com.darkxvenom.airbeats.ui.component.DownloadQualityDialog
 import com.darkxvenom.airbeats.ui.component.DraggableScrollbar
 import com.darkxvenom.airbeats.ui.component.IconButton
 import com.darkxvenom.airbeats.ui.component.LocalMenuState
@@ -222,6 +223,7 @@ fun AlbumScreen(
 
     val downloadUtil = LocalDownloadUtil.current
     var downloadState by remember { mutableStateOf(Download.STATE_STOPPED) }
+    var showQualityDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(albumWithSongs) {
         val songs = albumWithSongs?.songs?.map { it.id }
@@ -585,19 +587,7 @@ fun AlbumScreen(
                                             }
                                         }
                                         else -> {
-                                            albumWithSongs.songs.forEach { song ->
-                                                val downloadRequest = DownloadRequest
-                                                    .Builder(song.id, song.id.toUri())
-                                                    .setCustomCacheKey(song.id)
-                                                    .setData(song.song.title.toByteArray())
-                                                    .build()
-                                                DownloadService.sendAddDownload(
-                                                    context,
-                                                    ExoDownloadService::class.java,
-                                                    downloadRequest,
-                                                    false,
-                                                )
-                                            }
+                                            showQualityDialog = true
                                         }
                                     }
                                 },
@@ -635,6 +625,27 @@ fun AlbumScreen(
                                         }
                                     }
                                 }
+                            }
+                            if (showQualityDialog) {
+                                DownloadQualityDialog(
+                                    onDismiss = { showQualityDialog = false },
+                                    onQualitySelected = {
+                                        showQualityDialog = false
+                                        albumWithSongs.songs.forEach { song ->
+                                            val downloadRequest = DownloadRequest
+                                                .Builder(song.id, song.id.toUri())
+                                                .setCustomCacheKey(song.id)
+                                                .setData(song.song.title.toByteArray())
+                                                .build()
+                                            DownloadService.sendAddDownload(
+                                                context,
+                                                ExoDownloadService::class.java,
+                                                downloadRequest,
+                                                false,
+                                            )
+                                        }
+                                    },
+                                )
                             }
 
                             Surface(

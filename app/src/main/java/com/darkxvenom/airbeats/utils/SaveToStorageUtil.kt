@@ -14,7 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
-import com.darkxvenom.airbeats.constants.AudioQualityKey
+import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.MusicService
@@ -26,6 +26,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -116,6 +117,16 @@ object SaveToStorageUtil {
             Timber.tag(TAG).e(e, "Error reading cached audio bytes for $mediaId")
         }
         return null
+    }
+
+    /**
+     * Whether the already-cached bytes for [mediaId] were fetched at [desiredQuality]. Falls back
+     * to `true` (trust the cache) if the format record can't be looked up, e.g. the playback
+     * service isn't currently running.
+     */
+    private suspend fun cachedMatchesQuality(mediaId: String, desiredQuality: AudioQuality): Boolean {
+        val cachedFormat = MusicService.instance?.database?.format(mediaId)?.first() ?: return true
+        return YTPlayerUtils.nearestQuality(cachedFormat.bitrate) == desiredQuality
     }
 
     private fun createNotificationChannel(context: Context) {
@@ -325,8 +336,12 @@ object SaveToStorageUtil {
             var audioBytes: ByteArray? = null
             var extension: String = "m4a"
 
-            // 1. Check if song is already cached locally (for 100% offline export)
+            val desiredQuality = appContext.dataStore[DownloadQualityKey]
+                ?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() } ?: AudioQuality.HIGH
+
+            // 1. Check if song is already cached locally at the desired quality (for 100% offline export)
             val cachedData = getCachedAudioBytes(appContext, mediaMetadata.id)
+                ?.takeIf { cachedMatchesQuality(mediaMetadata.id, desiredQuality) }
             if (cachedData != null) {
                 Timber.tag(TAG).d("Extracting song from local cache (offline mode) for: ${mediaMetadata.title}")
                 audioBytes = cachedData.first
@@ -338,7 +353,7 @@ object SaveToStorageUtil {
                 val playbackData = YTPlayerUtils.playerResponseForPlayback(
                     videoId = mediaMetadata.id,
                     playlistId = null,
-                    audioQuality = appContext.dataStore[AudioQualityKey]?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() } ?: AudioQuality.HIGH,
+                    audioQuality = desiredQuality,
                     connectivityManager = connectivityManager
                 ).getOrThrow()
 

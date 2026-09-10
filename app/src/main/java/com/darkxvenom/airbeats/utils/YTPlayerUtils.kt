@@ -489,13 +489,7 @@ object YTPlayerUtils {
                 else -> audioQuality
             }
 
-        val targetBitrateBps =
-            when (effectiveQuality) {
-                AudioQuality.LOW -> 70_000
-                AudioQuality.MEDIUM -> 128_000
-                AudioQuality.HIGH -> 160_000
-                AudioQuality.AUTO -> null
-            }
+        val targetBitrateBps = targetBitrateBps(effectiveQuality)
 
         val preferHigher =
             compareByDescending<PlayerResponse.StreamingData.Format> { it.url != null }
@@ -536,6 +530,20 @@ object YTPlayerUtils {
 
         return candidates
     }
+
+    /** Target bitrate (bps) for a given quality preset, shared by download/export quality matching. */
+    internal fun targetBitrateBps(quality: AudioQuality): Int? =
+        when (quality) {
+            AudioQuality.LOW -> 70_000
+            AudioQuality.MEDIUM -> 128_000
+            AudioQuality.HIGH -> 160_000
+            AudioQuality.AUTO -> null
+        }
+
+    /** Buckets an actual stream bitrate (bps) into the closest quality preset. */
+    internal fun nearestQuality(bitrateBps: Int): AudioQuality =
+        listOf(AudioQuality.LOW, AudioQuality.MEDIUM, AudioQuality.HIGH)
+            .minBy { quality -> kotlin.math.abs(targetBitrateBps(quality)!! - bitrateBps) }
 
     private fun extractCodec(mimeType: String): String? {
         val match = Regex("""codecs="([^"]+)"""").find(mimeType) ?: return null

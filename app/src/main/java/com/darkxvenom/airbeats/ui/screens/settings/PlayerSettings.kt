@@ -23,6 +23,7 @@ import com.darkxvenom.airbeats.constants.AudioNormalizationKey
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.constants.AudioQualityKey
 import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
+import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
 import com.darkxvenom.airbeats.constants.PermanentShuffleKey
 import com.darkxvenom.airbeats.constants.CrossfadeKey
@@ -50,6 +51,10 @@ fun PlayerSettings(
     val (audioQuality, onAudioQualityChange) = rememberEnumPreference(
         AudioQualityKey,
         defaultValue = AudioQuality.AUTO
+    )
+    val (downloadQuality, onDownloadQualityChange) = rememberEnumPreference(
+        DownloadQualityKey,
+        defaultValue = AudioQuality.HIGH
     )
     val (persistentQueue, onPersistentQueueChange) = rememberPreference(
         PersistentQueueKey,
@@ -111,6 +116,22 @@ fun PlayerSettings(
                             AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
                             AudioQuality.MEDIUM -> "Medium"
                             AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                        }
+                    }
+                )},
+
+                {EnumListPreference(
+                    title = { Text("Download quality") },
+                    icon = { Icon(painterResource(R.drawable.download), null) },
+                    selectedValue = downloadQuality,
+                    values = listOf(AudioQuality.LOW, AudioQuality.MEDIUM, AudioQuality.HIGH),
+                    onValueSelected = onDownloadQualityChange,
+                    valueText = {
+                        when (it) {
+                            AudioQuality.HIGH -> stringResource(R.string.audio_quality_high)
+                            AudioQuality.MEDIUM -> "Medium"
+                            AudioQuality.LOW -> stringResource(R.string.audio_quality_low)
+                            AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                         }
                     }
                 )},
