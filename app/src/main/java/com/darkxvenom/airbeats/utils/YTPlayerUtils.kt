@@ -32,6 +32,7 @@ import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.TVHTML5
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.VISIONOS
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.WEB
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient.Companion.WEB_CREATOR
+import kotlinx.coroutines.delay
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import timber.log.Timber
@@ -170,28 +171,33 @@ object YTPlayerUtils {
         networkMetered: Boolean? = null,
         avoidCodecs: Set<String> = emptySet(),
     ): Result<PlaybackData> = runCatching {
-        val attempts =
+        val qualityAttempts =
             when (audioQuality) {
-                
                 AudioQuality.AUTO -> listOf(AudioQuality.AUTO, AudioQuality.HIGH)
                 else -> listOf(audioQuality)
             }.distinct()
 
         var lastError: Throwable? = null
-        for (attempt in attempts) {
-            val attemptResult =
-                runCatching {
-                    playerResponseForPlaybackOnce(
-                        videoId = videoId,
-                        playlistId = playlistId,
-                        audioQuality = attempt,
-                        connectivityManager = connectivityManager,
-                        networkMetered = networkMetered,
-                        avoidCodecs = avoidCodecs,
-                    )
-                }
-            if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
-            lastError = attemptResult.exceptionOrNull()
+        for (quality in qualityAttempts) {
+            // Retry once per quality: a burst of requests (e.g. downloading a whole album)
+            // can transiently exhaust the client fallback chain, which is otherwise
+            // indistinguishable from a real failure.
+            repeat(2) { retry ->
+                if (retry > 0) delay(750L)
+                val attemptResult =
+                    runCatching {
+                        playerResponseForPlaybackOnce(
+                            videoId = videoId,
+                            playlistId = playlistId,
+                            audioQuality = quality,
+                            connectivityManager = connectivityManager,
+                            networkMetered = networkMetered,
+                            avoidCodecs = avoidCodecs,
+                        )
+                    }
+                if (attemptResult.isSuccess) return@runCatching attemptResult.getOrThrow()
+                lastError = attemptResult.exceptionOrNull()
+            }
         }
         throw lastError ?: IllegalStateException("Failed to resolve stream")
     }

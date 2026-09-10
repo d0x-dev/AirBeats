@@ -2,15 +2,19 @@ package com.darkxvenom.airbeats.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.ConnectivityManager
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
@@ -185,6 +189,7 @@ object SaveToStorageUtil {
         title: String,
         success: Boolean,
         message: String,
+        openFileIntent: PendingIntent? = null,
     ) {
         try {
             createNotificationChannel(context)
@@ -199,6 +204,10 @@ object SaveToStorageUtil {
                 .setOngoing(false)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+
+            if (openFileIntent != null) {
+                builder.setContentIntent(openFileIntent)
+            }
 
             notificationManager.notify(notificationId, builder.build())
         } catch (e: Exception) {
@@ -439,6 +448,7 @@ object SaveToStorageUtil {
                     "m4a" -> "audio/mp4"
                     else -> "audio/mpeg"
                 }
+                val savedFileUri: Uri
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     // Android 10+ use MediaStore (scoped storage)
@@ -467,6 +477,7 @@ object SaveToStorageUtil {
                     contentValues.clear()
                     contentValues.put(MediaStore.Audio.Media.IS_PENDING, 0)
                     resolver.update(uri, contentValues, null, null)
+                    savedFileUri = uri
 
                     Timber.tag(TAG).d("Saved via MediaStore: $fileName")
                 } else {
@@ -489,9 +500,24 @@ object SaveToStorageUtil {
                         arrayOf(mimeType),
                         null
                     )
+                    savedFileUri = FileProvider.getUriForFile(
+                        appContext,
+                        "${appContext.packageName}.provider",
+                        outputFile,
+                    )
 
                     Timber.tag(TAG).d("Saved via direct file write: ${outputFile.absolutePath}")
                 }
+
+            val openFileIntent = PendingIntent.getActivity(
+                appContext,
+                notificationId,
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(savedFileUri, mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
             showCompleteNotification(
                 context = appContext,
@@ -499,6 +525,7 @@ object SaveToStorageUtil {
                 title = mediaMetadata.title,
                 success = true,
                 message = "${mediaMetadata.title} saved to Music/$relativeFolder",
+                openFileIntent = openFileIntent,
             )
             fileName
         }.onFailure { e ->
