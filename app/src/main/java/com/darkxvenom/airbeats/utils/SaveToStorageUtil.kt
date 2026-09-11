@@ -2,19 +2,23 @@ package com.darkxvenom.airbeats.utils
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.ConnectivityManager
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
-import com.darkxvenom.airbeats.constants.AudioQualityKey
+import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.MusicService
@@ -26,6 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -118,6 +123,16 @@ object SaveToStorageUtil {
         return null
     }
 
+    /**
+     * Whether the already-cached bytes for [mediaId] were fetched at [desiredQuality]. Falls back
+     * to `true` (trust the cache) if the format record can't be looked up, e.g. the playback
+     * service isn't currently running.
+     */
+    private suspend fun cachedMatchesQuality(mediaId: String, desiredQuality: AudioQuality): Boolean {
+        val cachedFormat = MusicService.instance?.database?.format(mediaId)?.first() ?: return true
+        return YTPlayerUtils.nearestQuality(cachedFormat.bitrate) == desiredQuality
+    }
+
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
@@ -174,6 +189,7 @@ object SaveToStorageUtil {
         title: String,
         success: Boolean,
         message: String,
+        openFileIntent: PendingIntent? = null,
     ) {
         try {
             createNotificationChannel(context)
@@ -188,6 +204,10 @@ object SaveToStorageUtil {
                 .setOngoing(false)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+
+            if (openFileIntent != null) {
+                builder.setContentIntent(openFileIntent)
+            }
 
             notificationManager.notify(notificationId, builder.build())
         } catch (e: Exception) {
@@ -325,8 +345,12 @@ object SaveToStorageUtil {
             var audioBytes: ByteArray? = null
             var extension: String = "m4a"
 
-            // 1. Check if song is already cached locally (for 100% offline export)
+            val desiredQuality = appContext.dataStore[DownloadQualityKey]
+                ?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() } ?: AudioQuality.HIGH
+
+            // 1. Check if song is already cached locally at the desired quality (for 100% offline export)
             val cachedData = getCachedAudioBytes(appContext, mediaMetadata.id)
+                ?.takeIf { cachedMatchesQuality(mediaMetadata.id, desiredQuality) }
             if (cachedData != null) {
                 Timber.tag(TAG).d("Extracting song from local cache (offline mode) for: ${mediaMetadata.title}")
                 audioBytes = cachedData.first
@@ -338,7 +362,7 @@ object SaveToStorageUtil {
                 val playbackData = YTPlayerUtils.playerResponseForPlayback(
                     videoId = mediaMetadata.id,
                     playlistId = null,
-                    audioQuality = appContext.dataStore[AudioQualityKey]?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() } ?: AudioQuality.HIGH,
+                    audioQuality = desiredQuality,
                     connectivityManager = connectivityManager
                 ).getOrThrow()
 
@@ -424,6 +448,7 @@ object SaveToStorageUtil {
                     "m4a" -> "audio/mp4"
                     else -> "audio/mpeg"
                 }
+                val savedFileUri: Uri
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     // Android 10+ use MediaStore (scoped storage)
@@ -452,6 +477,7 @@ object SaveToStorageUtil {
                     contentValues.clear()
                     contentValues.put(MediaStore.Audio.Media.IS_PENDING, 0)
                     resolver.update(uri, contentValues, null, null)
+                    savedFileUri = uri
 
                     Timber.tag(TAG).d("Saved via MediaStore: $fileName")
                 } else {
@@ -474,9 +500,24 @@ object SaveToStorageUtil {
                         arrayOf(mimeType),
                         null
                     )
+                    savedFileUri = FileProvider.getUriForFile(
+                        appContext,
+                        "${appContext.packageName}.provider",
+                        outputFile,
+                    )
 
                     Timber.tag(TAG).d("Saved via direct file write: ${outputFile.absolutePath}")
                 }
+
+            val openFileIntent = PendingIntent.getActivity(
+                appContext,
+                notificationId,
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(savedFileUri, mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
 
             showCompleteNotification(
                 context = appContext,
@@ -484,6 +525,7 @@ object SaveToStorageUtil {
                 title = mediaMetadata.title,
                 success = true,
                 message = "${mediaMetadata.title} saved to Music/$relativeFolder",
+                openFileIntent = openFileIntent,
             )
             fileName
         }.onFailure { e ->

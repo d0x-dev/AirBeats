@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.offline.Download
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AudioQuality
-import com.darkxvenom.airbeats.constants.AudioQualityKey
+import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.utils.dataStore
 import com.darkxvenom.airbeats.utils.dataStoreCache
 import com.darkxvenom.airbeats.utils.get
@@ -206,7 +206,7 @@ fun DownloadQualityDialog(
     val scope = rememberCoroutineScope()
     var selected by remember {
         mutableStateOf(
-            context.dataStore[AudioQualityKey]
+            context.dataStore[DownloadQualityKey]
                 ?.let { runCatching { AudioQuality.valueOf(it) }.getOrNull() }
                 ?: AudioQuality.HIGH,
         )
@@ -233,9 +233,9 @@ fun DownloadQualityDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                dataStoreCache[AudioQualityKey.name] = selected.name
+                dataStoreCache[DownloadQualityKey.name] = selected.name
                 scope.launch {
-                    context.dataStore.edit { it[AudioQualityKey] = selected.name }
+                    context.dataStore.edit { it[DownloadQualityKey] = selected.name }
                     onQualitySelected()
                 }
             }) { Text("Download") }

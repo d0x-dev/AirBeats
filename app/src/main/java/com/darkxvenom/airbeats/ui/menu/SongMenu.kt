@@ -82,6 +82,7 @@ import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.models.toMediaMetadata
 import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.YouTubeQueue
+import com.darkxvenom.airbeats.ui.component.DownloadQualityDialog
 import com.darkxvenom.airbeats.ui.component.ListDialog
 import com.darkxvenom.airbeats.ui.component.LocalBottomSheetPageState
 import com.darkxvenom.airbeats.ui.component.SongListItem
@@ -515,6 +516,7 @@ fun SongMenu(
                 }
 
                 else -> {
+                    var showQualityDialog by remember { mutableStateOf(false) }
                     ListItem(
                         headlineContent = { Text(text = stringResource(R.string.download)) },
                         leadingContent = {
@@ -523,21 +525,28 @@ fun SongMenu(
                                 contentDescription = null,
                             )
                         },
-                        modifier = Modifier.clickable {
-                            val downloadRequest =
-                                DownloadRequest
-                                    .Builder(song.id, song.id.toUri())
-                                    .setCustomCacheKey(song.id)
-                                    .setData(song.song.title.toByteArray())
-                                    .build()
-                            DownloadService.sendAddDownload(
-                                context,
-                                ExoDownloadService::class.java,
-                                downloadRequest,
-                                false,
-                            )
-                        }
+                        modifier = Modifier.clickable { showQualityDialog = true }
                     )
+                    if (showQualityDialog) {
+                        DownloadQualityDialog(
+                            onDismiss = { showQualityDialog = false },
+                            onQualitySelected = {
+                                showQualityDialog = false
+                                val downloadRequest =
+                                    DownloadRequest
+                                        .Builder(song.id, song.id.toUri())
+                                        .setCustomCacheKey(song.id)
+                                        .setData(song.song.title.toByteArray())
+                                        .build()
+                                DownloadService.sendAddDownload(
+                                    context,
+                                    ExoDownloadService::class.java,
+                                    downloadRequest,
+                                    false,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -51,8 +51,13 @@ class ExoDownloadService : DownloadService(
                 this,
                 R.drawable.download,
                 null,
-                if (downloads.size == 1) Util.fromUtf8Bytes(downloads[0].request.data)
-                else resources.getQuantityString(R.plurals.n_song, downloads.size, downloads.size),
+                if (downloads.size == 1) {
+                    val percent = downloads[0].percentDownloaded
+                    val title = Util.fromUtf8Bytes(downloads[0].request.data)
+                    if (!percent.isNaN()) "$title (${percent.toInt()}%)" else title
+                } else {
+                    resources.getQuantityString(R.plurals.n_song, downloads.size, downloads.size)
+                },
                 downloads,
                 notMetRequirements
             )
@@ -86,14 +91,26 @@ class ExoDownloadService : DownloadService(
             download: Download,
             finalException: Exception?,
         ) {
-            if (download.state == Download.STATE_FAILED) {
-                val notification = notificationHelper.buildDownloadFailedNotification(
-                    context,
-                    R.drawable.error,
-                    null,
-                    Util.fromUtf8Bytes(download.request.data)
-                )
-                NotificationUtil.setNotification(context, nextNotificationId++, notification)
+            when (download.state) {
+                Download.STATE_FAILED -> {
+                    val notification = notificationHelper.buildDownloadFailedNotification(
+                        context,
+                        R.drawable.error,
+                        null,
+                        Util.fromUtf8Bytes(download.request.data)
+                    )
+                    NotificationUtil.setNotification(context, nextNotificationId++, notification)
+                }
+
+                Download.STATE_COMPLETED -> {
+                    val notification = notificationHelper.buildDownloadCompletedNotification(
+                        context,
+                        R.drawable.download,
+                        null,
+                        Util.fromUtf8Bytes(download.request.data)
+                    )
+                    NotificationUtil.setNotification(context, nextNotificationId++, notification)
+                }
             }
         }
     }

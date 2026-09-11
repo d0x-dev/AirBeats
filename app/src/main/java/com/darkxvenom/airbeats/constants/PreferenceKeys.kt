@@ -104,6 +104,8 @@ enum class AudioQuality {
     LOW,
 }
 
+val DownloadQualityKey = stringPreferencesKey("downloadQuality")
+
 val PersistentQueueKey = booleanPreferencesKey("persistentQueue")
 val PermanentShuffleKey = booleanPreferencesKey("permanentShuffle")
 val SkipSilenceKey = booleanPreferencesKey("skipSilence")

@@ -80,6 +80,7 @@ import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import com.darkxvenom.airbeats.ui.component.AutoResizeText
 import com.darkxvenom.airbeats.ui.component.DefaultDialog
+import com.darkxvenom.airbeats.ui.component.DownloadQualityDialog
 import com.darkxvenom.airbeats.ui.component.EmptyPlaceholder
 import com.darkxvenom.airbeats.ui.component.FontSizeRange
 import com.darkxvenom.airbeats.ui.component.IconButton
@@ -143,6 +144,7 @@ fun TopPlaylistScreen(
     var downloadState by remember {
         mutableStateOf(Download.STATE_STOPPED)
     }
+    var showQualityDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(songs) {
         mutableSongs.apply {
@@ -315,25 +317,7 @@ fun TopPlaylistScreen(
 
                                                 else -> {
                                                     IconButton(
-                                                        onClick = {
-                                                            songs!!.forEach { song ->
-                                                                val downloadRequest =
-                                                                    DownloadRequest
-                                                                        .Builder(
-                                                                            song.song.id,
-                                                                            song.song.id.toUri(),
-                                                                        )
-                                                                        .setCustomCacheKey(song.song.id)
-                                                                        .setData(song.song.title.toByteArray())
-                                                                        .build()
-                                                                DownloadService.sendAddDownload(
-                                                                    context,
-                                                                    ExoDownloadService::class.java,
-                                                                    downloadRequest,
-                                                                    false,
-                                                                )
-                                                            }
-                                                        },
+                                                        onClick = { showQualityDialog = true },
                                                     ) {
                                                         Icon(
                                                             painter = painterResource(R.drawable.download),
@@ -355,6 +339,31 @@ fun TopPlaylistScreen(
                                                     contentDescription = null,
                                                 )
                                             }
+                                        }
+                                        if (showQualityDialog) {
+                                            DownloadQualityDialog(
+                                                onDismiss = { showQualityDialog = false },
+                                                onQualitySelected = {
+                                                    showQualityDialog = false
+                                                    songs!!.forEach { song ->
+                                                        val downloadRequest =
+                                                            DownloadRequest
+                                                                .Builder(
+                                                                    song.song.id,
+                                                                    song.song.id.toUri(),
+                                                                )
+                                                                .setCustomCacheKey(song.song.id)
+                                                                .setData(song.song.title.toByteArray())
+                                                                .build()
+                                                        DownloadService.sendAddDownload(
+                                                            context,
+                                                            ExoDownloadService::class.java,
+                                                            downloadRequest,
+                                                            false,
+                                                        )
+                                                    }
+                                                },
+                                            )
                                         }
                                     }
                                 }

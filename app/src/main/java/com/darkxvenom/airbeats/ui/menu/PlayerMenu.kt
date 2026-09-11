@@ -112,6 +112,7 @@ import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.ExoDownloadService
 import com.darkxvenom.airbeats.playback.queues.YouTubeQueue
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
+import com.darkxvenom.airbeats.ui.component.DownloadQualityDialog
 import com.darkxvenom.airbeats.ui.component.ListDialog
 import com.darkxvenom.airbeats.ui.component.ListItem
 import com.darkxvenom.airbeats.utils.ListenTogetherClient
@@ -391,6 +392,7 @@ fun PlayerMenu(
 
         }
         item {
+                        var showQualityDialog by remember { mutableStateOf(false) }
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
@@ -429,7 +431,17 @@ fun PlayerMenu(
                                         mediaMetadata.id,
                                         false,
                                     )
+                                    onDismiss()
                                 } else {
+                                    showQualityDialog = true
+                                }
+                            }
+                        }
+                        if (showQualityDialog) {
+                            DownloadQualityDialog(
+                                onDismiss = { showQualityDialog = false },
+                                onQualitySelected = {
+                                    showQualityDialog = false
                                     database.transaction {
                                         insert(mediaMetadata)
                                     }
@@ -445,9 +457,9 @@ fun PlayerMenu(
                                         downloadRequest,
                                         false,
                                     )
-                                }
-                                onDismiss()
-                            }
+                                    onDismiss()
+                                },
+                            )
                         }
                     }
 
