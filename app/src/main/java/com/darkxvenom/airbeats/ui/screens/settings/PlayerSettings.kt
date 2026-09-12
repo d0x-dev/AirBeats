@@ -26,7 +26,6 @@ import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
 import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
 import com.darkxvenom.airbeats.constants.PermanentShuffleKey
-import com.darkxvenom.airbeats.constants.CrossfadeKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
@@ -63,10 +62,6 @@ fun PlayerSettings(
     val (permanentShuffle, onPermanentShuffleChange) = rememberPreference(
         PermanentShuffleKey,
         defaultValue = false
-    )
-    val (crossfade, onCrossfadeChange) = rememberPreference(
-        CrossfadeKey,
-        defaultValue = 0
     )
     val (skipSilence, onSkipSilenceChange) = rememberPreference(
         SkipSilenceKey,
@@ -144,22 +139,7 @@ fun PlayerSettings(
                     onCheckedChange = onPermanentShuffleChange
                 )},
 
-                {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Crossfade", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            "Fade between songs seamlessly (${crossfade}s)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Slider(
-                            value = crossfade.toFloat(),
-                            onValueChange = { onCrossfadeChange(it.toInt()) },
-                            valueRange = 0f..15f,
-                            steps = 14
-                        )
-                    }
-                },
+
 
                 {SwitchPreference(
                     title = { Text(stringResource(R.string.skip_silence)) },

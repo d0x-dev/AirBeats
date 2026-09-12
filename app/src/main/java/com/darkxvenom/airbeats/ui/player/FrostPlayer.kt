@@ -324,6 +324,7 @@ fun FrostPlayerScreen(
                     val repeatActive = repeatMode != Player.REPEAT_MODE_OFF
                     val repeatIcon = when (repeatMode) {
                         Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                        Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
                         else -> R.drawable.repeat
                     }
                     IconButton(onClick = onRepeat) {

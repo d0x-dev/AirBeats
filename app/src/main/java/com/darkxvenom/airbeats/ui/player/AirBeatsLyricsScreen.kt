@@ -367,15 +367,14 @@ fun AirBeatsLyricsScreen(
                             ) {
                                 // Repeat button
                                 IconButton(
-                                    onClick = { playerConnection.player.toggleRepeatMode() },
+                                    onClick = { playerConnection.toggleRepeatMode() },
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Icon(
                                         painter = painterResource(
                                             when (repeatMode) {
-                                                Player.REPEAT_MODE_OFF, 
-                                                Player.REPEAT_MODE_ALL -> R.drawable.repeat
                                                 Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                                Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
                                                 else -> R.drawable.repeat
                                             }
                                         ),
@@ -445,7 +444,7 @@ fun AirBeatsLyricsScreen(
 
                                 // Shuffle button
                                 IconButton(
-                                    onClick = { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled },
+                                    onClick = { playerConnection.toggleShuffle() },
                                     modifier = Modifier.size(40.dp)
                                 ) {
                                     Icon(
@@ -660,15 +659,14 @@ fun AirBeatsLyricsScreen(
                         ) {
                             // Repeat button with clear state indication
                             IconButton(
-                                onClick = { playerConnection.player.toggleRepeatMode() },
+                                onClick = { playerConnection.toggleRepeatMode() },
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Icon(
                                     painter = painterResource(
                                         when (repeatMode) {
-                                            Player.REPEAT_MODE_OFF, 
-                                            Player.REPEAT_MODE_ALL -> R.drawable.repeat
                                             Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                            Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
                                             else -> R.drawable.repeat
                                         }
                                     ),
@@ -740,7 +738,7 @@ fun AirBeatsLyricsScreen(
 
                             // Shuffle button with clear state indication
                             IconButton(
-                                onClick = { playerConnection.player.shuffleModeEnabled = !shuffleModeEnabled },
+                                onClick = { playerConnection.toggleShuffle() },
                                 modifier = Modifier.size(40.dp)
                             ) {
                                 Icon(

@@ -882,7 +882,7 @@ fun Lyrics(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             IconButton(
-                                onClick = { playerConnection.player.toggleRepeatMode() },
+                                onClick = { playerConnection.toggleRepeatMode() },
                                 modifier = Modifier
                                     .size(48.dp)
                                     .alpha(if (repeatMode == Player.REPEAT_MODE_OFF) 0.5f else 1f)
@@ -890,13 +890,13 @@ fun Lyrics(
                                 Icon(
                                     painter = painterResource(
                                         when (repeatMode) {
-                                            Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ALL -> R.drawable.repeat
                                             Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                            Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
                                             else -> R.drawable.repeat
                                         }
                                     ),
                                     contentDescription = "Repeat",
-                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else Color.White,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }

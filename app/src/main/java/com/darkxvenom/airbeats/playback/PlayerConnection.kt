@@ -22,6 +22,7 @@ import com.darkxvenom.airbeats.extensions.currentMetadata
 import com.darkxvenom.airbeats.extensions.getCurrentQueueIndex
 import com.darkxvenom.airbeats.extensions.getQueueWindows
 import com.darkxvenom.airbeats.extensions.metadata
+import com.darkxvenom.airbeats.extensions.toggleRepeatMode
 import com.darkxvenom.airbeats.playback.MusicService.MusicBinder
 import com.darkxvenom.airbeats.playback.queues.Queue
 import com.darkxvenom.airbeats.utils.ListenTogetherSync
@@ -63,8 +64,7 @@ class PlayerConnection(
     }
 
     val service = binder.service
-    var player: ExoPlayer = service.player
-        private set
+    val player = service.player
 
     // Estados básicos del reproductor
     private val _playbackState = MutableStateFlow(player.playbackState)
@@ -199,27 +199,6 @@ class PlayerConnection(
         Log.d(TAG, "PlayerConnection initialized successfully")
     }
 
-    /** Rebind UI state when the service promotes the prepared crossfade decoder. */
-    fun replacePlayer(newPlayer: ExoPlayer) {
-        if (player === newPlayer) return
-        player.removeListener(this)
-        player.removeListener(widgetPlayerListener)
-        player = newPlayer
-        player.addListener(this)
-        player.addListener(widgetPlayerListener)
-        lastPlaybackState = player.playbackState
-        lastPlayWhenReady = player.playWhenReady
-        lastMediaItemIndex = player.currentMediaItemIndex
-        lastPosition = player.currentPosition
-        initializeStates()
-        // The prepared decoder may report an empty timeline for the same main-loop turn
-        // in which it is promoted. Publish again after preparation settles; otherwise the
-        // UI can retain that transient empty queue until the following crossfade.
-        updateScope.launch {
-            delay(150)
-            if (player === newPlayer) initializeStates()
-        }
-    }
 
     private fun initializeStates() {
         try {
@@ -430,6 +409,21 @@ class PlayerConnection(
                 player.seekToNext()
                 player.prepare()
                 player.playWhenReady = true
+            } else if (player.mediaItemCount > 0) {
+                if (player.repeatMode == Player.REPEAT_MODE_ALL || player.shuffleModeEnabled) {
+                    player.seekToDefaultPosition(0)
+                    player.prepare()
+                    player.playWhenReady = true
+                } else if (player.repeatMode == Player.REPEAT_MODE_ONE) {
+                    player.seekTo(0)
+                    player.prepare()
+                    player.playWhenReady = true
+                } else {
+                    val seedId = player.currentMediaItem?.mediaId
+                    if (!seedId.isNullOrBlank()) {
+                        service.extendInfiniteQueue(seedId, autoPlayIfEnded = true)
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error seeking to next", e)
@@ -440,8 +434,16 @@ class PlayerConnection(
     fun seekToPrevious() {
         try {
             Log.d(TAG, "Seeking to previous track")
-            if (player.hasPreviousMediaItem()) {
+            if (player.hasPreviousMediaItem() && player.currentPosition < 3000) {
                 player.seekToPreviousMediaItem()
+                player.prepare()
+                player.playWhenReady = true
+            } else if (player.currentPosition > 3000) {
+                player.seekTo(0)
+                player.prepare()
+                player.playWhenReady = true
+            } else if (player.repeatMode == Player.REPEAT_MODE_ALL && player.mediaItemCount > 0) {
+                player.seekToDefaultPosition(player.mediaItemCount - 1)
                 player.prepare()
                 player.playWhenReady = true
             } else {
@@ -471,8 +473,20 @@ class PlayerConnection(
             val newShuffleMode = !player.shuffleModeEnabled
             Log.d(TAG, "Toggling shuffle to: $newShuffleMode")
             player.shuffleModeEnabled = newShuffleMode
+            _shuffleModeEnabled.value = newShuffleMode
         } catch (e: Exception) {
             Log.e(TAG, "Error toggling shuffle", e)
+            reportException(e)
+        }
+    }
+
+    fun toggleRepeatMode() {
+        try {
+            val newRepeatMode = player.toggleRepeatMode()
+            _repeatMode.value = newRepeatMode
+            Log.d(TAG, "Toggling repeat mode to: $newRepeatMode")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error toggling repeat mode", e)
             reportException(e)
         }
     }
@@ -484,8 +498,9 @@ class PlayerConnection(
             } else {
                 Player.REPEAT_MODE_ONE
             }
-            Log.d(TAG, "Toggling repeat mode to: $newRepeatMode")
+            Log.d(TAG, "Toggling replay mode to: $newRepeatMode")
             player.repeatMode = newRepeatMode
+            _repeatMode.value = newRepeatMode
         } catch (e: Exception) {
             Log.e(TAG, "Error toggling repeat mode", e)
             reportException(e)
