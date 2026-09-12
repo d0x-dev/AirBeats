@@ -1372,25 +1372,6 @@ class MusicService :
 
         discordUpdateJob?.cancel()
 
-        // If offline and skip uncached is enabled, verify the track is cached
-        if (!isNetworkConnected.value && dataStore.get(SkipUncachedPartKey, false)) {
-            val mediaId = mediaItem?.mediaId
-            val isSongCached = mediaId != null && (
-                downloadCache.isCached(mediaId, 0, 1) ||
-                playerCache.isCached(mediaId, 0, 1) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0, 1L) } ?: 0L) > 0L ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
-                (tryOrNull { downloadCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
-            )
-            if (mediaId != null && !isSongCached) {
-                Log.i(TAG, "Song $mediaId is uncached while offline with SkipUncachedPart enabled. Skipping.")
-                scope.launch(Dispatchers.Main) {
-                    skipOnError()
-                }
-                return
-            }
-        }
-
         // Resetear errores consecutivos cuando hay transición exitosa
         consecutivePlaybackErr = 0
 
@@ -1437,58 +1418,48 @@ class MusicService :
 
         // Automatic advance / repeat handling to guarantee playback continuity
         if (playbackState == Player.STATE_ENDED) {
-            scope.launch {
-                if (player.repeatMode == Player.REPEAT_MODE_ONE) {
-                    player.seekTo(player.currentMediaItemIndex, 0L)
-                    player.prepare()
-                    player.play()
-                    return@launch
-                }
-                if (player.hasNextMediaItem()) {
-                    player.seekToNextMediaItem()
-                    player.prepare()
-                    player.play()
-                    return@launch
-                }
-                if (player.repeatMode == Player.REPEAT_MODE_ALL && player.mediaItemCount > 0) {
+            // 1. Si el modo de repetición es REPEAT_MODE_ONE, reiniciar la misma canción
+            if (player.repeatMode == Player.REPEAT_MODE_ONE) {
+                player.seekTo(0)
+                player.prepare()
+                player.play()
+                return
+            }
+
+            // 2. Si el modo de repetición es REPEAT_MODE_ALL, volver al inicio de la cola
+            if (player.repeatMode == Player.REPEAT_MODE_ALL) {
+                if (player.mediaItemCount > 0) {
                     player.seekToDefaultPosition(0)
                     player.prepare()
                     player.play()
-                    return@launch
+                    return
                 }
-                // When queue ends and endless queue is enabled, extend queue
-                if (dataStore.get(AutoLoadMoreKey, true)) {
-                    if (isNetworkConnected.value) {
-                        player.currentMediaItem?.mediaId?.takeIf { it.isNotBlank() }?.let(::extendInfiniteQueue)
-                    } else {
-                        val cachedSongs = withContext(Dispatchers.IO) {
-                            try {
-                                database.allSongs().first().filter { song ->
-                                    val id = song.id
-                                    downloadCache.isCached(id, 0, 1) ||
-                                    playerCache.isCached(id, 0, 1) ||
-                                    (tryOrNull { playerCache.getCachedBytes(id, 0, 1L) } ?: 0L) > 0L ||
-                                    (tryOrNull { playerCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
-                                    (tryOrNull { downloadCache.getCachedBytes(id, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
-                                }.map { it.toMediaItem() }
-                            } catch (e: Exception) {
-                                emptyList()
-                            }
-                        }
-                        val existingIds = player.mediaItems.map(MediaItem::mediaId).toHashSet()
-                        val newItems = cachedSongs.filter { existingIds.add(it.mediaId) }
-                        if (newItems.isNotEmpty()) {
-                            appendQueueItems(newItems)
-                            player.seekToNextMediaItem()
-                            player.prepare()
-                            player.play()
-                            return@launch
-                        }
-                    }
+            }
+
+            // 3. Si el modo aleatorio está activado, mezclar y reiniciar desde el inicio
+            if (player.shuffleModeEnabled && player.mediaItemCount > 0) {
+                val shuffledIndices = IntArray(player.mediaItemCount) { it }
+                shuffledIndices.shuffle()
+                player.setShuffleOrder(DefaultShuffleOrder(shuffledIndices, System.currentTimeMillis()))
+                player.seekToDefaultPosition(0)
+                player.prepare()
+                player.play()
+                return
+            }
+
+            // 4. Si Endless Queue (AutoLoadMore) está activado, cargar más canciones y continuar
+            if (dataStore.get(AutoLoadMoreKey, true)) {
+                val currentSeedId = player.currentMediaItem?.mediaId
+                if (!currentSeedId.isNullOrBlank()) {
+                    extendInfiniteQueue(currentSeedId, autoPlayIfEnded = true)
+                    return
                 }
+            }
+
+            // 5. Ocultar notificación si la cola está vacía
+            scope.launch {
                 delay(1000)
                 if (!player.isPlaying && player.mediaItemCount == 0) {
-                    // Limpiar metadata para forzar actualización de notificación
                     currentMediaMetadata.value = null
                 }
             }
@@ -1628,16 +1599,15 @@ class MusicService :
                 (error.cause?.cause as PlaybackException).errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED
 
         if (!isNetworkConnected.value || isConnectionError) {
-            if (dataStore.get(SkipUncachedPartKey, false) || player.hasNextMediaItem()) {
-                Log.i(TAG, "Player network error while offline. Skipping to next song.")
-                skipOnError()
-                return
-            }
             waitOnNetworkError()
             return
         }
 
-        skipOnError()
+        if (dataStore.get(AutoSkipNextOnErrorKey, false)) {
+            skipOnError()
+        } else {
+            stopOnError()
+        }
     }
 
     private fun createCacheDataSource(): CacheDataSource.Factory =
@@ -1699,9 +1669,7 @@ class MusicService :
             val isCached = downloadCache.isCached(mediaId, dataSpec.position, if (dataSpec.length >= 0) dataSpec.length else 1L) ||
                 playerCache.isCached(mediaId, dataSpec.position, checkLength) ||
                 playerCache.isCached(mediaId, dataSpec.position, 1L) ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L ||
-                (tryOrNull { playerCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L ||
-                (tryOrNull { downloadCache.getCachedBytes(mediaId, 0L, Long.MAX_VALUE) } ?: 0L) > 0L
+                (tryOrNull { playerCache.getCachedBytes(mediaId, dataSpec.position, 1L) } ?: 0L) > 0L
 
             if (isCached) {
                 scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
@@ -1978,20 +1946,76 @@ class MusicService :
         }
     }
 
-    private fun extendInfiniteQueue(seedId: String) {
+    fun extendInfiniteQueue(seedId: String, autoPlayIfEnded: Boolean = false) {
         if (infiniteQueueLoadJob?.isActive == true) return
         infiniteQueueLoadJob = scope.launch(SilentHandler) {
-            val endpoint = YouTube.next(WatchEndpoint(videoId = seedId)).getOrNull()?.relatedEndpoint
-                ?: return@launch
-            val relatedItems = YouTube.related(endpoint).getOrNull()?.songs
-                ?.map(SongItem::toMediaItem)
-                .orEmpty()
-            if (relatedItems.isEmpty()) return@launch
+            var newMediaItems: List<MediaItem> = emptyList()
 
-            val existingIds = player.mediaItems.map(MediaItem::mediaId).toHashSet()
-            val newItems = relatedItems.filter { it.mediaId.isNotBlank() && existingIds.add(it.mediaId) }.take(10)
-            if (newItems.isNotEmpty() && player.playbackState != STATE_IDLE) {
-                appendQueueItems(newItems)
+            // 1. Si hay conexión a internet y no es un archivo local/content, buscar canciones relacionadas en YouTube
+            if (isNetworkConnected.value && !seedId.startsWith("local:") && !seedId.startsWith("content:")) {
+                try {
+                    val endpoint = withContext(Dispatchers.IO) {
+                        YouTube.next(WatchEndpoint(videoId = seedId)).getOrNull()?.relatedEndpoint
+                    }
+                    if (endpoint != null) {
+                        val relatedSongs = withContext(Dispatchers.IO) {
+                            YouTube.related(endpoint).getOrNull()?.songs.orEmpty()
+                        }
+                        val existingIds = player.mediaItems.map { it.mediaId }.toHashSet()
+                        newMediaItems = relatedSongs
+                            .map { it.toMediaItem() }
+                            .filter { it.mediaId.isNotBlank() && existingIds.add(it.mediaId) }
+                            .take(10)
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to load YouTube related songs for $seedId", e)
+                }
+            }
+
+            // 2. Si no se obtuvieron canciones online (modo offline, canción local, o error de red):
+            if (newMediaItems.isEmpty()) {
+                try {
+                    val existingIds = player.mediaItems.map { it.mediaId }.toHashSet()
+                    val allDbSongs = withContext(Dispatchers.IO) {
+                        database.allSongs().first()
+                    }
+                    val cachedKeys = (playerCache.keys.map { it.toString() } + downloadCache.keys.map { it.toString() }).toSet()
+                    val availableSongs = if (cachedKeys.isNotEmpty()) {
+                        val filtered = allDbSongs.filter { it.id in cachedKeys }
+                        if (filtered.isNotEmpty()) filtered else allDbSongs
+                    } else {
+                        allDbSongs
+                    }
+
+                    val unusedSongs = availableSongs.filter { existingIds.add(it.id) }
+                    if (unusedSongs.isNotEmpty()) {
+                        newMediaItems = unusedSongs.shuffled().take(10).map { it.toMediaItem() }
+                    } else if (availableSongs.isNotEmpty()) {
+                        newMediaItems = availableSongs.filter { it.id != seedId }.shuffled().take(10).map { it.toMediaItem() }
+                        if (newMediaItems.isEmpty()) {
+                            newMediaItems = availableSongs.take(1).map { it.toMediaItem() }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to load offline/cached songs for infinite queue", e)
+                }
+            }
+
+            if (newMediaItems.isNotEmpty() && player.playbackState != STATE_IDLE) {
+                val previousCount = player.mediaItemCount
+                appendQueueItems(newMediaItems)
+                if (autoPlayIfEnded || player.playbackState == Player.STATE_ENDED) {
+                    player.seekToDefaultPosition(previousCount)
+                    player.prepare()
+                    player.play()
+                }
+            } else if (player.playbackState == Player.STATE_ENDED) {
+                // Si no hay más canciones disponibles, reiniciar desde el principio
+                if (player.mediaItemCount > 0) {
+                    player.seekToDefaultPosition(0)
+                    player.prepare()
+                    player.play()
+                }
             }
         }
     }

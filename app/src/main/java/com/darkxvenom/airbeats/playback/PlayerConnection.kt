@@ -521,7 +521,13 @@ class PlayerConnection(
     fun seekTo(positionMs: Long) {
         try {
             Log.d(TAG, "Seeking to position: ${positionMs}ms")
-            player.seekTo(positionMs.coerceIn(0, player.duration))
+            val targetPlayer = service.player
+            val duration = targetPlayer.duration
+            val targetPosition = if (duration > 0) positionMs.coerceIn(0, duration) else positionMs.coerceAtLeast(0)
+            targetPlayer.seekTo(targetPosition)
+            if (player !== targetPlayer) {
+                player.seekTo(targetPosition)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error seeking to position", e)
             reportException(e)
