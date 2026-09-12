@@ -420,7 +420,11 @@ fun PaperPlayer(
                 NeumorphicSmallButton(R.drawable.lyrics, paper, paperLow, ink, false, onOpenLyrics)
                 NeumorphicSmallButton(R.drawable.queue_music, paper, paperLow, ink, false, onOpenQueue)
                 NeumorphicSmallButton(
-                    if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+                    when (repeatMode) {
+                        Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                        Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                        else -> R.drawable.repeat
+                    },
                     paper, paperLow, ink, repeatMode != Player.REPEAT_MODE_OFF, onRepeat
                 )
             }

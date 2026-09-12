@@ -1536,7 +1536,7 @@ fun BottomSheetPlayer(
                     modifier = Modifier.size(32.dp).padding(4.dp).scale(shuffleScale),
                     onClick = {
                         shuffleBounce++
-                        playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+                        playerConnection.toggleShuffle()
                     }
                 )
 
@@ -1549,11 +1549,11 @@ fun BottomSheetPlayer(
 
                 ResizableIconButton(
                     icon = when (repeatMode) {
-                        Player.REPEAT_MODE_OFF, Player.REPEAT_MODE_ALL -> R.drawable.repeat
                         Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
-                        else -> throw IllegalStateException()
+                        Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                        else -> R.drawable.repeat
                     },
-                    color = TextBackgroundColor,
+                    color = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else TextBackgroundColor,
                     modifier = Modifier
                         .size(32.dp)
                         .padding(4.dp)
@@ -1561,7 +1561,7 @@ fun BottomSheetPlayer(
                         .alpha(if (repeatMode == Player.REPEAT_MODE_OFF) 0.5f else 1f),
                     onClick = {
                         repeatBounce++
-                        playerConnection.player.toggleRepeatMode()
+                        playerConnection.toggleRepeatMode()
                     },
                 )
             }
@@ -1988,8 +1988,8 @@ fun BottomSheetPlayer(
                 onPlayPause = { playerConnection.player.togglePlayPause() },
                 onPrevious = { playerConnection.player.seekToPrevious() },
                 onNext = playerConnection::seekToNext,
-                onShuffle = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
-                onRepeat = { playerConnection.player.toggleRepeatMode() },
+                onShuffle = { playerConnection.toggleShuffle() },
+                onRepeat = { playerConnection.toggleRepeatMode() },
                 onOpenLyrics = onOpenFullscreenLyrics,
                 onOpenQueue = queueSheetState::expandSoft,
                 onCollapse = state::collapseSoft,
@@ -2025,8 +2025,8 @@ fun BottomSheetPlayer(
                 onPlayPause = { playerConnection.player.togglePlayPause() },
                 onPrevious = { playerConnection.player.seekToPrevious() },
                 onNext = playerConnection::seekToNext,
-                onShuffle = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
-                onRepeat = { playerConnection.player.toggleRepeatMode() },
+                onShuffle = { playerConnection.toggleShuffle() },
+                onRepeat = { playerConnection.toggleRepeatMode() },
                 onOpenLyrics = onOpenFullscreenLyrics,
                 onOpenQueue = queueSheetState::expandSoft,
                 onCollapse = state::collapseSoft,
@@ -2069,8 +2069,8 @@ fun BottomSheetPlayer(
                 onPlayPause = { playerConnection.player.togglePlayPause() },
                 onPrevious = { playerConnection.player.seekToPrevious() },
                 onNext = playerConnection::seekToNext,
-                onShuffle = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
-                onRepeat = { playerConnection.player.toggleRepeatMode() },
+                onShuffle = { playerConnection.toggleShuffle() },
+                onRepeat = { playerConnection.toggleRepeatMode() },
                 onOpenLyrics = onOpenFullscreenLyrics,
                 onOpenQueue = queueSheetState::expandSoft,
                 onCollapse = state::collapseSoft,
@@ -2113,8 +2113,8 @@ fun BottomSheetPlayer(
                 onPlayPause = { playerConnection.player.togglePlayPause() },
                 onPrevious = { playerConnection.player.seekToPrevious() },
                 onNext = playerConnection::seekToNext,
-                onShuffle = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
-                onRepeat = { playerConnection.player.toggleRepeatMode() },
+                onShuffle = { playerConnection.toggleShuffle() },
+                onRepeat = { playerConnection.toggleRepeatMode() },
                 onOpenLyrics = onOpenFullscreenLyrics,
                 onOpenQueue = queueSheetState::expandSoft,
                 onCollapse = state::collapseSoft,
@@ -2166,9 +2166,9 @@ fun BottomSheetPlayer(
                 onNext = { playerConnection.player.seekToNext() },
                 onCollapse = state::collapseSoft,
                 shuffleModeEnabled = shuffleModeEnabled,
-                onShuffleClick = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
+                onShuffleClick = { playerConnection.toggleShuffle() },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onLyricsClick = onOpenFullscreenLyrics,
                 onQueueClick = { queueSheetState.expandSoft() },
                 onMenuClick = {
@@ -2225,8 +2225,8 @@ fun BottomSheetPlayer(
                             onPlayPause = { playerConnection.player.togglePlayPause() },
                             onPrevious = { playerConnection.player.seekToPrevious() },
                             onNext = playerConnection::seekToNext,
-                            onShuffle = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
-                            onRepeat = { playerConnection.player.toggleRepeatMode() },
+                            onShuffle = { playerConnection.toggleShuffle() },
+                            onRepeat = { playerConnection.toggleRepeatMode() },
                             onOpenLyrics = onOpenFullscreenLyrics,
                             onOpenQueue = queueSheetState::expandSoft,
                             onStartRadio = playerConnection.service::startRadioSeamlessly,
@@ -2307,9 +2307,9 @@ fun BottomSheetPlayer(
                 onNext = { playerConnection.player.seekToNext() },
                 onCollapse = state::collapseSoft,
                 shuffleModeEnabled = shuffleModeEnabled,
-                onShuffleClick = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
+                onShuffleClick = { playerConnection.toggleShuffle() },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onLyricsClick = onOpenFullscreenLyrics,
                 onMenuClick = {
                     menuState.show {
@@ -2359,9 +2359,9 @@ fun BottomSheetPlayer(
                 onLikeClick = playerConnection::toggleLike,
                 onAddToPlaylistClick = { showChoosePlaylistDialog = true },
                 shuffleModeEnabled = shuffleModeEnabled,
-                onShuffleClick = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled },
+                onShuffleClick = { playerConnection.toggleShuffle() },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onLyricsClick = onOpenFullscreenLyrics,
                 onQueueClick = { queueSheetState.expandSoft() }
             )
@@ -2401,7 +2401,7 @@ fun BottomSheetPlayer(
                 isLiked = currentSong?.song?.liked == true,
                 onLikeClick = playerConnection::toggleLike,
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onQueueClick = { queueSheetState.expandSoft() }
             )
         } else if (playerScreenStyle == PlayerScreenStyle.COLOURFULL) {
@@ -2441,7 +2441,7 @@ fun BottomSheetPlayer(
                 isLiked = currentSong?.song?.liked == true,
                 onLikeClick = playerConnection::toggleLike,
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onQueueClick = { queueSheetState.expandSoft() }
             )
         } else if (playerScreenStyle == PlayerScreenStyle.APPLE) {
@@ -2492,10 +2492,10 @@ fun BottomSheetPlayer(
                 },
                 shuffleModeEnabled = shuffleModeEnabled,
                 onShuffleClick = {
-                    playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+                    playerConnection.toggleShuffle()
                 },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onOpenFullscreenLyrics = onOpenFullscreenLyrics,
             )
         } else if (playerScreenStyle == PlayerScreenStyle.IOS_STYLED) {
@@ -2546,10 +2546,10 @@ fun BottomSheetPlayer(
                 },
                 shuffleModeEnabled = shuffleModeEnabled,
                 onShuffleClick = {
-                    playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+                    playerConnection.toggleShuffle()
                 },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onOpenFullscreenLyrics = onOpenFullscreenLyrics,
                 playerConnection = playerConnection,
                 navController = navController,
@@ -2610,10 +2610,10 @@ fun BottomSheetPlayer(
                 },
                 shuffleModeEnabled = shuffleModeEnabled,
                 onShuffleClick = {
-                    playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled
+                    playerConnection.toggleShuffle()
                 },
                 repeatMode = repeatMode,
-                onRepeatClick = { playerConnection.player.toggleRepeatMode() },
+                onRepeatClick = { playerConnection.toggleRepeatMode() },
                 onOpenFullscreenLyrics = onOpenFullscreenLyrics,
                 queueWindows = queueWindows.map { it.mediaItem },
                 currentWindowIndex = currentWindowIndex,
@@ -2959,7 +2959,11 @@ private fun SpotifyPlayerContent(
             if (canSkipNext) Color.White else Color.White.copy(alpha = 0.32f),
         )
         SpotifyPlainIconButton(
-            if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
+            when (repeatMode) {
+                Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                else -> R.drawable.repeat
+            },
             onRepeat,
             if (repeatMode == Player.REPEAT_MODE_OFF) Color.White else Color(0xFF1DB954),
         )

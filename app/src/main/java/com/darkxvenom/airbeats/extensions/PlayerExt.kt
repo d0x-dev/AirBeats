@@ -17,14 +17,15 @@ fun Player.togglePlayPause() {
     playWhenReady = !playWhenReady
 }
 
-fun Player.toggleRepeatMode() {
-    repeatMode =
-        when (repeatMode) {
-            REPEAT_MODE_OFF -> REPEAT_MODE_ALL
-            REPEAT_MODE_ALL -> REPEAT_MODE_ONE
-            REPEAT_MODE_ONE -> REPEAT_MODE_OFF
-            else -> throw IllegalStateException()
-        }
+fun Player.toggleRepeatMode(): Int {
+    val newMode = when (repeatMode) {
+        REPEAT_MODE_OFF -> REPEAT_MODE_ALL
+        REPEAT_MODE_ALL -> REPEAT_MODE_ONE
+        REPEAT_MODE_ONE -> REPEAT_MODE_OFF
+        else -> REPEAT_MODE_OFF
+    }
+    repeatMode = newMode
+    return newMode
 }
 
 fun Player.getQueueWindows(): List<Timeline.Window> {

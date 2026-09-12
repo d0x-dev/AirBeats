@@ -125,7 +125,13 @@ fun FoldPlayer(
                     modifier = Modifier.size(20.dp).clickable(onClick = onShuffleClick)
                 )
                 Icon(
-                    painter = painterResource(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat),
+                    painter = painterResource(
+                        when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                            Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                            else -> R.drawable.repeat
+                        }
+                    ),
                     contentDescription = "Repeat",
                     tint = if (repeatMode != Player.REPEAT_MODE_OFF) Color(0xFFE91E63) else textSecondary,
                     modifier = Modifier.size(20.dp).clickable(onClick = onRepeatClick)

@@ -106,16 +106,22 @@ fun UnifiedQueue(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { playerConnection.player.shuffleModeEnabled = !playerConnection.player.shuffleModeEnabled }) {
+                IconButton(onClick = { playerConnection.toggleShuffle() }) {
                     Icon(
                         painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
                         contentDescription = "Shuffle",
                         tint = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
-                IconButton(onClick = playerConnection.player::toggleRepeatMode) {
+                IconButton(onClick = { playerConnection.toggleRepeatMode() }) {
                     Icon(
-                        painter = painterResource(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat),
+                        painter = painterResource(
+                            when (repeatMode) {
+                                Player.REPEAT_MODE_ONE -> R.drawable.repeat_one
+                                Player.REPEAT_MODE_ALL -> R.drawable.repeat_on
+                                else -> R.drawable.repeat
+                            }
+                        ),
                         contentDescription = "Repeat",
                         tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )

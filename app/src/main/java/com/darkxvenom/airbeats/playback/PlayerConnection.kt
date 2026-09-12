@@ -22,6 +22,7 @@ import com.darkxvenom.airbeats.extensions.currentMetadata
 import com.darkxvenom.airbeats.extensions.getCurrentQueueIndex
 import com.darkxvenom.airbeats.extensions.getQueueWindows
 import com.darkxvenom.airbeats.extensions.metadata
+import com.darkxvenom.airbeats.extensions.toggleRepeatMode
 import com.darkxvenom.airbeats.playback.MusicService.MusicBinder
 import com.darkxvenom.airbeats.playback.queues.Queue
 import com.darkxvenom.airbeats.utils.ListenTogetherSync
@@ -468,24 +469,49 @@ class PlayerConnection(
 
     fun toggleShuffle() {
         try {
-            val newShuffleMode = !player.shuffleModeEnabled
+            val targetPlayer = service.player
+            val newShuffleMode = !targetPlayer.shuffleModeEnabled
             Log.d(TAG, "Toggling shuffle to: $newShuffleMode")
-            player.shuffleModeEnabled = newShuffleMode
+            targetPlayer.shuffleModeEnabled = newShuffleMode
+            if (player !== targetPlayer) {
+                player.shuffleModeEnabled = newShuffleMode
+            }
+            _shuffleModeEnabled.value = newShuffleMode
         } catch (e: Exception) {
             Log.e(TAG, "Error toggling shuffle", e)
             reportException(e)
         }
     }
 
+    fun toggleRepeatMode() {
+        try {
+            val targetPlayer = service.player
+            val newRepeatMode = targetPlayer.toggleRepeatMode()
+            if (player !== targetPlayer) {
+                player.repeatMode = newRepeatMode
+            }
+            _repeatMode.value = newRepeatMode
+            Log.d(TAG, "Toggling repeat mode to: $newRepeatMode")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error toggling repeat mode", e)
+            reportException(e)
+        }
+    }
+
     fun toggleReplayMode() {
         try {
-            val newRepeatMode = if (player.repeatMode == Player.REPEAT_MODE_ONE) {
+            val targetPlayer = service.player
+            val newRepeatMode = if (targetPlayer.repeatMode == Player.REPEAT_MODE_ONE) {
                 REPEAT_MODE_OFF
             } else {
                 Player.REPEAT_MODE_ONE
             }
-            Log.d(TAG, "Toggling repeat mode to: $newRepeatMode")
-            player.repeatMode = newRepeatMode
+            Log.d(TAG, "Toggling replay mode to: $newRepeatMode")
+            targetPlayer.repeatMode = newRepeatMode
+            if (player !== targetPlayer) {
+                player.repeatMode = newRepeatMode
+            }
+            _repeatMode.value = newRepeatMode
         } catch (e: Exception) {
             Log.e(TAG, "Error toggling repeat mode", e)
             reportException(e)

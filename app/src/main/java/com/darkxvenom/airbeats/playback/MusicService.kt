@@ -565,7 +565,6 @@ class MusicService :
                 // Restaurar configuración del reproductor después de cargar la cola
                 scope.launch {
                     delay(1000) // Esperar a que la cola se cargue
-                    player.repeatMode = playerState.repeatMode
                     player.shuffleModeEnabled = playerState.shuffleModeEnabled
                     player.volume = playerState.volume
 
@@ -1597,6 +1596,13 @@ class MusicService :
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
+        if (::crossfadePlayer.isInitialized) {
+            crossfadePlayer.repeatMode = repeatMode
+        }
+        if (repeatMode == REPEAT_MODE_ONE) {
+            crossfadeJob?.cancel()
+            clearPreparedCrossfade()
+        }
         updateNotification()
         scope.launch {
             dataStore.edit { settings ->
