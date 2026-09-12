@@ -13,7 +13,7 @@ import kotlin.time.Duration.Companion.minutes
 
 class SleepTimer(
     private val scope: CoroutineScope,
-    private val stopPlayback: () -> Unit,
+    val player: Player,
 ) : Player.Listener {
     private var sleepTimerJob: Job? = null
     var triggerTime by mutableStateOf(-1L)
@@ -63,7 +63,7 @@ class SleepTimer(
     }
 
     private fun stopAndClear() {
-        stopPlayback()
+        player.pause()
         pauseWhenSongEnd = false
         triggerTime = -1L
         sleepTimerJob?.cancel()
