@@ -8,6 +8,7 @@ import androidx.compose.foundation.combinedClickable
 import com.darkxvenom.airbeats.ui.component.isFrostedGlassUiEnabled
 import com.darkxvenom.airbeats.ui.component.settingsCardContainerColor
 import com.darkxvenom.airbeats.ui.component.settingsCardBorder
+import com.darkxvenom.airbeats.ui.component.AvatarDisplay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -817,7 +818,11 @@ private fun GlobalUserRankRow(
             fontWeight = FontWeight.Black,
             style = MaterialTheme.typography.bodyMedium,
         )
-        ProfileBubble(user.profileUrl, user.name)
+        if (isCurrentUser) {
+            AvatarDisplay(size = 34.dp)
+        } else {
+            ProfileBubble(user.profileUrl, user.name)
+        }
         Spacer(modifier = Modifier.width(10.dp))
         Row(
             modifier = Modifier.weight(1f),
@@ -934,6 +939,12 @@ private fun WeeklyGlobalStatsSheet(
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Black,
                             )
+                            if (isCurrent) {
+                                AvatarDisplay(size = 34.dp)
+                            } else {
+                                ProfileBubble(user.profileUrl, user.name)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
                             Row(
                                 modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically

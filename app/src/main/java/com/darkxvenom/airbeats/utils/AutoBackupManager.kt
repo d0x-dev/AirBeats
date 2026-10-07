@@ -15,6 +15,8 @@ import com.darkxvenom.airbeats.extensions.zipInputStream
 import com.darkxvenom.airbeats.extensions.zipOutputStream
 import com.darkxvenom.airbeats.playback.MusicService
 import com.darkxvenom.airbeats.playback.MusicService.Companion.PERSISTENT_QUEUE_FILE
+import com.darkxvenom.airbeats.ui.component.AvatarPreferenceManager
+import com.darkxvenom.airbeats.ui.component.AvatarSelection
 import com.darkxvenom.airbeats.ui.component.NamePreferenceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +48,23 @@ object AutoBackupManager {
     const val KEY_LAST_BACKUP_TIME = "last_android_os_backup_time"
     private const val KEY_LAST_RESTORED_SIG = "last_restored_sig"
     private const val KEY_RESTART_ATTEMPTS = "restart_attempts"
+    private const val KEY_JUST_RESTORED = "just_restored_from_setup"
+
+    fun setJustRestored(context: Context, value: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_JUST_RESTORED, value)
+            .apply()
+    }
+
+    fun consumeJustRestoredFlag(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val justRestored = prefs.getBoolean(KEY_JUST_RESTORED, false)
+        if (justRestored) {
+            prefs.edit().putBoolean(KEY_JUST_RESTORED, false).apply()
+        }
+        return justRestored
+    }
 
     const val SETTINGS_FILENAME = "settings.preferences_pb"
     const val USER_NAME_PREFS_FILENAME = "user_name_preferences.preferences_pb"
@@ -624,6 +643,13 @@ object AutoBackupManager {
 
     fun restoreFromInputStream(context: Context, rawStream: InputStream, shouldRestart: Boolean = true): Boolean {
         return try {
+            val currentUserName = runBlocking {
+                tryOrNull { NamePreferenceManager(context).userName.first() }
+            }?.trim().orEmpty()
+            val currentAvatar = runBlocking {
+                tryOrNull { AvatarPreferenceManager(context).getAvatarSelection.first() }
+            } ?: AvatarSelection.Default
+
             prepareDatabaseFilesForRestore(context)
             var databaseFilesPrepared = true
             rawStream.zipInputStream().use { inputStream ->
@@ -632,11 +658,19 @@ object AutoBackupManager {
                     when {
                         entry.name.startsWith("datastore/") -> {
                             val relName = entry.name.removePrefix("datastore/")
+                            val isUserNameEntry = relName.contains("user_name_preferences")
+                            val isAvatarEntry = relName.contains("avatar_preferences")
                             if (relName.isNotBlank()) {
-                                val destFile = context.filesDir / "datastore" / relName
-                                destFile.parentFile?.mkdirs()
-                                destFile.outputStream().use { outputStream ->
-                                    inputStream.copyTo(outputStream)
+                                if (isUserNameEntry && currentUserName.isNotBlank()) {
+                                    Timber.d("AutoBackupManager: Preserving universal username '$currentUserName', skipping backup datastore overwrite")
+                                } else if (isAvatarEntry && currentAvatar !is AvatarSelection.Default) {
+                                    Timber.d("AutoBackupManager: Preserving universal avatar, skipping backup datastore overwrite")
+                                } else {
+                                    val destFile = context.filesDir / "datastore" / relName
+                                    destFile.parentFile?.mkdirs()
+                                    destFile.outputStream().use { outputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
                                 }
                             }
                         }
@@ -650,10 +684,14 @@ object AutoBackupManager {
                         }
 
                         entry.name == USER_NAME_PREFS_FILENAME -> {
-                            val destFile = context.filesDir / "datastore" / USER_NAME_PREFS_FILENAME
-                            destFile.parentFile?.mkdirs()
-                            destFile.outputStream().use { outputStream ->
-                                inputStream.copyTo(outputStream)
+                            if (currentUserName.isNotBlank()) {
+                                Timber.d("AutoBackupManager: Preserving username '$currentUserName', skipping $USER_NAME_PREFS_FILENAME overwrite")
+                            } else {
+                                val destFile = context.filesDir / "datastore" / USER_NAME_PREFS_FILENAME
+                                destFile.parentFile?.mkdirs()
+                                destFile.outputStream().use { outputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
                             }
                         }
 
@@ -800,6 +838,19 @@ object AutoBackupManager {
                 .commit()
 
             Timber.i("AutoBackupManager: Restore completed successfully with signature $currentSig")
+
+            // Re-assert newly selected universal username & avatar so they are NEVER lost or overwritten
+            if (currentUserName.isNotBlank()) {
+                runBlocking {
+                    tryOrNull { NamePreferenceManager(context).saveUserName(currentUserName) }
+                }
+            }
+            if (currentAvatar !is AvatarSelection.Default) {
+                runBlocking {
+                    tryOrNull { AvatarPreferenceManager(context).saveAvatarSelection(currentAvatar) }
+                }
+            }
+            setJustRestored(context, true)
 
             if (shouldRestart) {
                 restartApp(context)

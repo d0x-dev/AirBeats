@@ -9,6 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import com.darkxvenom.airbeats.ui.component.AvatarDisplay
 import com.darkxvenom.airbeats.ui.screens.search.airbeatsChartsItems
 import com.darkxvenom.airbeats.ui.screens.search.recentSearchesItems
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -1191,12 +1192,16 @@ fun AppleStatsScreen(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 14.sp
                             )
-                            coil.compose.AsyncImage(
-                                model = user.profileUrl ?: R.drawable.person,
-                                contentDescription = null,
-                                modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.Gray.copy(alpha=0.3f)),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
+                            if (isCurrentUser) {
+                                AvatarDisplay(size = 32.dp)
+                            } else {
+                                coil.compose.AsyncImage(
+                                    model = user.profileUrl ?: R.drawable.person,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp).clip(CircleShape).background(Color.Gray.copy(alpha=0.3f)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            }
                             Spacer(Modifier.width(10.dp))
                             Text(
                                 text = user.name,

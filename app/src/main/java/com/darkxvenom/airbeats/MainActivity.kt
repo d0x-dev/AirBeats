@@ -544,74 +544,16 @@ class MainActivity : FragmentActivity() {
 
             val isNameSet by namePreferenceManager.isNameSet.collectAsState(initial = null)
             var showSplash by remember { mutableStateOf(true) }
-            var splashStatusText by remember { mutableStateOf<String?>(null) }
-            var hasCheckedCloudRestore by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-
-            fun triggerStorageCheckAndRestore() {
-                splashStatusText = "Checking Documents/AirBeats..."
-                lifecycleScope.launch(Dispatchers.IO) {
-                    val storageFile = AutoBackupManager.findStorageBackupFile(this@MainActivity)
-                    if (storageFile != null && storageFile.exists() && storageFile.length() > 0L) {
-                        AutoBackupManager.markInitialStorageRestoreCheckComplete(this@MainActivity)
-                        withContext(Dispatchers.Main) {
-                            splashStatusText = "Restoring backup from storage..."
-                            showSplash = true
-                        }
-                        val restored = AutoBackupManager.restoreFromStorageBackup(this@MainActivity, shouldRestart = true)
-                        if (!restored) {
-                            withContext(Dispatchers.Main) {
-                                splashStatusText = null
-                                showSplash = false
-                            }
-                        }
-                    } else {
-                        // Fall back to cloud check
-                        if (!hasCheckedCloudRestore) {
-                            hasCheckedCloudRestore = true
-                            withContext(Dispatchers.Main) {
-                                splashStatusText = "Checking for cloud backup..."
-                            }
-                            val cloudRestored = AutoBackupManager.checkAndRestoreDeviceCloudBackup(this@MainActivity)
-                            withContext(Dispatchers.Main) {
-                                if (!cloudRestored) {
-                                    AutoBackupManager.markInitialStorageRestoreCheckComplete(this@MainActivity)
-                                    splashStatusText = null
-                                    delay(400)
-                                    showSplash = false
-                                }
-                            }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                AutoBackupManager.markInitialStorageRestoreCheckComplete(this@MainActivity)
-                                splashStatusText = null
-                                delay(400)
-                                showSplash = false
-                            }
-                        }
-                    }
-                }
-            }
 
             LaunchedEffect(Unit) {
-                if (!AutoBackupManager.hasCompletedInitialStorageRestoreCheck(this@MainActivity)) {
-                    triggerStorageCheckAndRestore()
-                } else {
-                    AutoBackupManager.resetRestartAttempts(this@MainActivity)
-                    delay(1200)
-                    showSplash = false
-                }
-            }
-
-            LaunchedEffect(isNameSet) {
-                if (isNameSet != null && AutoBackupManager.hasCompletedInitialStorageRestoreCheck(this@MainActivity)) {
-                    delay(1200)
-                    showSplash = false
-                }
+                AutoBackupManager.resetRestartAttempts(this@MainActivity)
+                delay(1000)
+                showSplash = false
             }
 
             // Fail-safe watchdog: ensure splash screen never hangs permanently
             LaunchedEffect(Unit) {
-                delay(4000)
+                delay(3000)
                 if (showSplash) {
                     timber.log.Timber.w("Splash screen safety watchdog triggered: auto-dismissing splash")
                     showSplash = false
@@ -745,7 +687,7 @@ class MainActivity : FragmentActivity() {
                 val backdrop = rememberBackdrop()
 
                 if (showSplash) {
-                    HeadphoneSplashScreen(statusText = splashStatusText)
+                    HeadphoneSplashScreen(statusText = null)
                 } else {
 
                     NameProvider(
@@ -1698,13 +1640,18 @@ class MainActivity : FragmentActivity() {
                                                 }
                                             )
                                     ) {
+                                    val justRestored = remember { AutoBackupManager.consumeJustRestoredFlag(this@MainActivity) }
                                     NavHost(
                                         navController = navController,
-                                        startDestination = if (isNameSet == false) "onboarding" else when (tabOpenedFromShortcut ?: defaultOpenTab) {
-                                            NavigationTab.HOME -> Screens.Home
-                                            NavigationTab.EXPLORE -> Screens.Explore
-                                            NavigationTab.LIBRARY -> Screens.Library
-                                        }.route,
+                                        startDestination = if (justRestored) {
+                                            when (tabOpenedFromShortcut ?: defaultOpenTab) {
+                                                NavigationTab.HOME -> Screens.Home
+                                                NavigationTab.EXPLORE -> Screens.Explore
+                                                NavigationTab.LIBRARY -> Screens.Library
+                                            }.route
+                                        } else {
+                                            "onboarding"
+                                        },
 
                                         enterTransition = {
                                             if (reduceAnimations) {

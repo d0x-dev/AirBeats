@@ -82,7 +82,7 @@ object AirBeatsStatsCloudSync {
         val profileUrl =
             when (val avatar = AvatarPreferenceManager(context).getAvatarSelection.first()) {
                 is AvatarSelection.DiceBear -> avatar.url
-                is AvatarSelection.Custom -> avatar.cloudUrl
+                is AvatarSelection.Custom -> avatar.cloudUrl ?: avatar.uri
                 else -> null
             }
         return LocalStatsUpload(
