@@ -668,9 +668,9 @@ class MainActivity : FragmentActivity() {
             val (isVoiceAssistantEnabled) = rememberPreference(com.darkxvenom.airbeats.constants.EnableVoiceAssistantKey, defaultValue = false)
             LaunchedEffect(isVoiceAssistantEnabled) {
                 if (isVoiceAssistantEnabled) {
-                    com.darkxvenom.airbeats.voice.VoiceAssistantService.start(this@MainActivity)
+                    runCatching { com.darkxvenom.airbeats.voice.VoiceAssistantService.start(this@MainActivity) }
                 } else {
-                    com.darkxvenom.airbeats.voice.VoiceAssistantService.stop(this@MainActivity)
+                    runCatching { com.darkxvenom.airbeats.voice.VoiceAssistantService.stop(this@MainActivity) }
                 }
             }
             var dynamicColor by rememberSaveable(stateSaver = ColorSaver) {
