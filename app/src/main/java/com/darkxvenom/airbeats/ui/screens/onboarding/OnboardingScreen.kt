@@ -740,11 +740,11 @@ private fun PermissionsStep(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Permission 2: Local Audio
+            // Permission 2: Storage & Backup Access
             PermissionCard(
                 iconRes = R.drawable.library_music,
-                title = "Local Music Storage",
-                description = "Scan and play music stored on your device in your offline library.",
+                title = "Storage & Backup Access",
+                description = "Allows AirBeats to scan offline music and restore backups from Documents or Downloads.",
                 isGranted = hasAudioPermission,
                 onGrant = {
                     val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -969,6 +969,43 @@ private fun BackupScanStep(
                     Toast.makeText(context, "Failed to restore backup", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    val attemptRestore = {
+        isRestoring = true
+        restoreStatusText = "Restoring backup..."
+        coroutineScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                AutoBackupManager.restoreFromStorageBackup(context, shouldRestart = true)
+            }
+            if (!success) {
+                isRestoring = false
+                restoreStatusText = null
+                val fileName = discoveredBackupFile?.name ?: "airbeats_backup.backup"
+                Toast.makeText(
+                    context,
+                    "Please tap '$fileName' to confirm access and restore",
+                    Toast.LENGTH_LONG
+                ).show()
+                manualRestoreLauncher.launch(arrayOf("*/*"))
+            }
+        }
+    }
+
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            attemptRestore()
+        } else {
+            val fileName = discoveredBackupFile?.name ?: "airbeats_backup.backup"
+            Toast.makeText(
+                context,
+                "Please select '$fileName' to confirm access and restore",
+                Toast.LENGTH_LONG
+            ).show()
+            manualRestoreLauncher.launch(arrayOf("*/*"))
         }
     }
 
@@ -1221,17 +1258,12 @@ private fun BackupScanStep(
                 discoveredBackupFile != null -> {
                     Button(
                         onClick = {
-                            isRestoring = true
-                            restoreStatusText = "Restoring backup..."
-                            coroutineScope.launch {
-                                val success = withContext(Dispatchers.IO) {
-                                    AutoBackupManager.restoreFromStorageBackup(context, shouldRestart = true)
-                                }
-                                if (!success) {
-                                    isRestoring = false
-                                    restoreStatusText = null
-                                    Toast.makeText(context, "Failed to restore backup", Toast.LENGTH_SHORT).show()
-                                }
+                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                            } else {
+                                attemptRestore()
                             }
                         },
                         modifier = Modifier

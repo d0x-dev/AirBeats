@@ -2,9 +2,11 @@ package com.darkxvenom.airbeats.utils
 
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.MediaStore
 import android.provider.Settings
 import com.darkxvenom.airbeats.BuildConfig
 import com.darkxvenom.airbeats.db.InternalDatabase
@@ -475,12 +477,88 @@ object AutoBackupManager {
         val file = findStorageBackupFile(context) ?: return false
         Timber.i("AutoBackupManager: Restoring from storage backup file at ${file.absolutePath} (${file.length()} bytes)")
         val targetFile = getAutoBackupFile(context)
-        runCatching { file.copyTo(targetFile, overwrite = true) }
+
+        // 1. Try copying via temporary file to private app storage first
+        val tempRestoreFile = File(context.cacheDir, "temp_restore_${System.currentTimeMillis()}.backup")
+        runCatching {
+            file.inputStream().use { input ->
+                tempRestoreFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        }
+
+        if (tempRestoreFile.exists() && tempRestoreFile.length() > 0L) {
+            runCatching {
+                tempRestoreFile.copyTo(targetFile, overwrite = true)
+                tempRestoreFile.delete()
+            }
+        }
+
         markInitialStorageRestoreCheckComplete(context)
-        return runCatching {
+
+        // 2. If targetFile was successfully copied, restore from it
+        if (targetFile.exists() && targetFile.length() > 0L) {
+            val fromTargetSuccess = runCatching {
+                FileInputStream(targetFile).use { stream ->
+                    restoreFromInputStream(context, stream, shouldRestart)
+                }
+            }.getOrDefault(false)
+            if (fromTargetSuccess) return true
+        }
+
+        // 3. Try reading directly from the discovered file
+        val fromDirectSuccess = runCatching {
             FileInputStream(file).use { stream ->
                 restoreFromInputStream(context, stream, shouldRestart)
             }
+        }.getOrDefault(false)
+        if (fromDirectSuccess) return true
+
+        // 4. Try reading via MediaStore ContentResolver if Scoped Storage blocked raw File access
+        val fromMediaStore = tryRestoreViaMediaStore(context, file.name, shouldRestart)
+        if (fromMediaStore) return true
+
+        Timber.w("AutoBackupManager: All direct storage restore attempts failed for ${file.absolutePath}")
+        return false
+    }
+
+    private fun tryRestoreViaMediaStore(context: Context, filename: String, shouldRestart: Boolean): Boolean {
+        return runCatching {
+            val projection = arrayOf(
+                MediaStore.Files.FileColumns._ID,
+                MediaStore.Files.FileColumns.DISPLAY_NAME
+            )
+            val selection = "${MediaStore.Files.FileColumns.DISPLAY_NAME} = ?"
+            val selectionArgs = arrayOf(filename)
+            val urisToTry = mutableListOf(MediaStore.Files.getContentUri("external"))
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                urisToTry.add(MediaStore.Downloads.EXTERNAL_CONTENT_URI)
+            }
+
+            for (uri in urisToTry) {
+                val restored = runCatching {
+                    context.contentResolver.query(uri, projection, selection, selectionArgs, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                            val contentUri = ContentUris.withAppendedId(uri, id)
+                            val targetFile = getAutoBackupFile(context)
+                            context.contentResolver.openInputStream(contentUri)?.use { stream ->
+                                targetFile.outputStream().use { fos ->
+                                    stream.copyTo(fos)
+                                }
+                            }
+                            if (targetFile.exists() && targetFile.length() > 0L) {
+                                FileInputStream(targetFile).use { stream ->
+                                    restoreFromInputStream(context, stream, shouldRestart)
+                                }
+                            } else false
+                        } else false
+                    } ?: false
+                }.getOrDefault(false)
+                if (restored) return true
+            }
+            false
         }.getOrDefault(false)
     }
 
