@@ -773,6 +773,13 @@ private fun NewClassicHeroSection(
     val heroTextPrimary = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     val heroTextSecondary = if (isDark) Color.White.copy(alpha = 0.72f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val heroImageRequest = remember(heroData.thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(heroData.thumbnailUrl)
+            .crossfade(true)
+            .build()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -782,10 +789,7 @@ private fun NewClassicHeroSection(
     ) {
         // Crisp high-resolution hero image with immersive zoom
         AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(heroData.thumbnailUrl)
-                .crossfade(true)
-                .build(),
+            model = heroImageRequest,
             contentDescription = heroData.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier
