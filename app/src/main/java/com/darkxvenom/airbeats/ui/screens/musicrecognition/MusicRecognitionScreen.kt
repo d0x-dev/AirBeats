@@ -1140,22 +1140,17 @@ private fun CoverArt(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val coverImageRequest = remember(coverUrl) {
-        coverUrl?.takeIf { it.isNotBlank() }?.let {
-            ImageRequest.Builder(context)
-                .data(it)
-                .build()
-        }
-    }
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 2.dp,
     ) {
-        if (coverImageRequest != null) {
+        if (!coverUrl.isNullOrBlank()) {
             AsyncImage(
-                model = coverImageRequest,
+                model = ImageRequest.Builder(context)
+                    .data(coverUrl)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
