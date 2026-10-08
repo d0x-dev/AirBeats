@@ -47,6 +47,10 @@ import com.darkxvenom.airbeats.ui.screens.settings.DiscordLoginScreen
 import com.darkxvenom.airbeats.ui.screens.settings.DiscordSettings
 import com.darkxvenom.airbeats.ui.screens.settings.PlayerSettings
 import com.darkxvenom.airbeats.ui.screens.settings.PrivacySettings
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.ui.Modifier
 import com.darkxvenom.airbeats.ui.screens.settings.SettingsScreen
 import com.darkxvenom.airbeats.ui.screens.settings.StorageSettings
 
@@ -58,25 +62,84 @@ fun NavGraphBuilder.navigationBuilder(
     latestVersionName: String,
     playerBottomSheetState: BottomSheetState,
     onSearchClick: () -> Unit,
+    rootPagerState: PagerState? = null,
+    navigationItems: List<Screens> = emptyList(),
 ) {
     composable(Screens.Home.route) {
-        val (homeScreenStyle, _) = rememberEnumPreference(
-            HomeScreenStyleKey,
-            defaultValue = HomeScreenStyle.CLASSIC
-        )
-
-        if (homeScreenStyle == HomeScreenStyle.PLAYFUL) {
-            PlayfulHomeScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
-        } else if (homeScreenStyle == HomeScreenStyle.SPOTIFY) {
-            SpotifyHomeScreen(navController = navController)
-        } else if (homeScreenStyle == HomeScreenStyle.APPLE) {
-            com.darkxvenom.airbeats.ui.screens.apple.AppleHomeScreen(navController = navController)
-        } else if (homeScreenStyle == HomeScreenStyle.NEW_CLASSIC) {
-            NewClassicHomeScreen(navController = navController, onSearchClick = onSearchClick)
-        } else if (homeScreenStyle == HomeScreenStyle.MATERIAL) {
-            com.darkxvenom.airbeats.ui.screens.material.MaterialHomeScreen(navController = navController, onSearchClick = onSearchClick)
+        if (rootPagerState != null && navigationItems.isNotEmpty()) {
+            HorizontalPager(
+                state = rootPagerState,
+                modifier = Modifier.fillMaxSize(),
+                key = { index -> navigationItems.getOrNull(index)?.route ?: index.toString() }
+            ) { pageIndex ->
+                val screen = navigationItems.getOrNull(pageIndex) ?: Screens.Home
+                val (homeScreenStyle, _) = rememberEnumPreference(
+                    HomeScreenStyleKey,
+                    defaultValue = HomeScreenStyle.CLASSIC
+                )
+                when (screen.route) {
+                    Screens.Home.route -> {
+                        when (homeScreenStyle) {
+                            HomeScreenStyle.PLAYFUL -> PlayfulHomeScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
+                            HomeScreenStyle.SPOTIFY -> SpotifyHomeScreen(navController = navController)
+                            HomeScreenStyle.APPLE -> com.darkxvenom.airbeats.ui.screens.apple.AppleHomeScreen(navController = navController)
+                            HomeScreenStyle.NEW_CLASSIC -> NewClassicHomeScreen(navController = navController, onSearchClick = onSearchClick)
+                            HomeScreenStyle.MATERIAL -> com.darkxvenom.airbeats.ui.screens.material.MaterialHomeScreen(navController = navController, onSearchClick = onSearchClick)
+                            else -> HomeScreen(navController = navController, onSearchClick = onSearchClick)
+                        }
+                    }
+                    Screens.Explore.route -> {
+                        when (homeScreenStyle) {
+                            HomeScreenStyle.PLAYFUL -> PlayfulExploreScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
+                            HomeScreenStyle.SPOTIFY -> SpotifyExploreScreen(navController = navController)
+                            HomeScreenStyle.APPLE -> com.darkxvenom.airbeats.ui.screens.apple.AppleExploreScreen(navController = navController)
+                            HomeScreenStyle.MATERIAL -> com.darkxvenom.airbeats.ui.screens.material.MaterialExploreScreen(navController = navController, scrollBehavior = scrollBehavior)
+                            else -> ExploreScreen(navController, scrollBehavior)
+                        }
+                    }
+                    Screens.Library.route -> {
+                        when (homeScreenStyle) {
+                            HomeScreenStyle.PLAYFUL -> PlayfulLibraryScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
+                            HomeScreenStyle.SPOTIFY -> SpotifyLibraryScreen(navController)
+                            HomeScreenStyle.APPLE -> com.darkxvenom.airbeats.ui.screens.apple.AppleLibraryScreen(navController = navController)
+                            HomeScreenStyle.MATERIAL -> com.darkxvenom.airbeats.ui.screens.material.MaterialLibraryScreen(navController = navController)
+                            else -> LibraryScreen(navController)
+                        }
+                    }
+                    Screens.Search.route -> {
+                        com.darkxvenom.airbeats.ui.screens.material.MaterialSearchScreen(navController = navController)
+                    }
+                    "stats" -> {
+                        if (homeScreenStyle == HomeScreenStyle.APPLE) {
+                            com.darkxvenom.airbeats.ui.screens.apple.AppleStatsScreen(navController = navController)
+                        } else {
+                            StatsScreen(navController)
+                        }
+                    }
+                    else -> {
+                        HomeScreen(navController = navController, onSearchClick = onSearchClick)
+                    }
+                }
+            }
         } else {
-            HomeScreen(navController = navController, onSearchClick = onSearchClick)
+            val (homeScreenStyle, _) = rememberEnumPreference(
+                HomeScreenStyleKey,
+                defaultValue = HomeScreenStyle.CLASSIC
+            )
+
+            if (homeScreenStyle == HomeScreenStyle.PLAYFUL) {
+                PlayfulHomeScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
+            } else if (homeScreenStyle == HomeScreenStyle.SPOTIFY) {
+                SpotifyHomeScreen(navController = navController)
+            } else if (homeScreenStyle == HomeScreenStyle.APPLE) {
+                com.darkxvenom.airbeats.ui.screens.apple.AppleHomeScreen(navController = navController)
+            } else if (homeScreenStyle == HomeScreenStyle.NEW_CLASSIC) {
+                NewClassicHomeScreen(navController = navController, onSearchClick = onSearchClick)
+            } else if (homeScreenStyle == HomeScreenStyle.MATERIAL) {
+                com.darkxvenom.airbeats.ui.screens.material.MaterialHomeScreen(navController = navController, onSearchClick = onSearchClick)
+            } else {
+                HomeScreen(navController = navController, onSearchClick = onSearchClick)
+            }
         }
     }
 

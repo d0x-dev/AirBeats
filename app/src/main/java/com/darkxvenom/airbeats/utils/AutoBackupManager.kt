@@ -356,12 +356,29 @@ object AutoBackupManager {
 
     fun hasStoragePermission(context: Context): Boolean {
         return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            true
+            android.os.Environment.isExternalStorageManager()
         } else {
             androidx.core.content.ContextCompat.checkSelfPermission(
                 context,
                 android.Manifest.permission.READ_EXTERNAL_STORAGE
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    fun requestStoragePermission(context: Context) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
         }
     }
 

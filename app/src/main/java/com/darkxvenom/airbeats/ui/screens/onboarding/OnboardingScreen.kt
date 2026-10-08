@@ -13,7 +13,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,8 +29,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Person
@@ -39,6 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -137,16 +147,13 @@ fun OnboardingScreen(
                 }
             )
 
-            // Pager Content
+            // Pager Content: Swipe gestures strictly disabled in setup so user advances via buttons
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-                userScrollEnabled = when (pagerState.currentPage) {
-                    1 -> isNameValid
-                    else -> true
-                }
+                userScrollEnabled = false
             ) { page ->
                 when (page) {
                     0 -> WelcomeStep(
@@ -380,24 +387,10 @@ private fun WelcomeStep(
                 .fillMaxWidth()
                 .padding(vertical = 20.dp)
         ) {
-            Button(
-                onClick = onNext,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryColor,
-                    contentColor = Color.White
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-            ) {
-                Text(
-                    text = "Get Started",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            ExpressivePrimaryButton(
+                text = "Get Started",
+                onClick = onNext
+            )
         }
     }
 }
@@ -614,30 +607,14 @@ private fun ProfileSetupStep(
                 .fillMaxWidth()
                 .padding(vertical = 20.dp)
         ) {
-            Button(
+            ExpressivePrimaryButton(
+                text = "Continue",
                 onClick = {
                     keyboardController?.hide()
                     onNext()
                 },
-                enabled = isNameValid,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryColor,
-                    contentColor = Color.White,
-                    disabledContainerColor = primaryColor.copy(alpha = 0.35f),
-                    disabledContentColor = Color.White.copy(alpha = 0.6f)
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-            ) {
-                Text(
-                    text = "Next",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+                enabled = isNameValid
+            )
         }
     }
 }
@@ -654,7 +631,7 @@ private fun PermissionsStep(
     val scrollState = rememberScrollState()
 
     var hasNotificationPermission by remember { mutableStateOf(isNotificationPermissionGranted(context)) }
-    var hasAudioPermission by remember { mutableStateOf(isAudioPermissionGranted(context)) }
+    var hasStoragePermission by remember { mutableStateOf(AutoBackupManager.hasStoragePermission(context)) }
     var hasMicPermission by remember { mutableStateOf(isMicPermissionGranted(context)) }
     var hasBluetoothPermission by remember { mutableStateOf(isBluetoothPermissionGranted(context)) }
 
@@ -663,7 +640,7 @@ private fun PermissionsStep(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasNotificationPermission = isNotificationPermissionGranted(context)
-                hasAudioPermission = isAudioPermissionGranted(context)
+                hasStoragePermission = AutoBackupManager.hasStoragePermission(context)
                 hasMicPermission = isMicPermissionGranted(context)
                 hasBluetoothPermission = isBluetoothPermissionGranted(context)
             }
@@ -676,9 +653,9 @@ private fun PermissionsStep(
         ActivityResultContracts.RequestPermission()
     ) { hasNotificationPermission = isNotificationPermissionGranted(context) }
 
-    val audioLauncher = rememberLauncherForActivityResult(
+    val storageLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { hasAudioPermission = isAudioPermissionGranted(context) }
+    ) { hasStoragePermission = AutoBackupManager.hasStoragePermission(context) }
 
     val micLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -740,19 +717,18 @@ private fun PermissionsStep(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Permission 2: Storage & Backup Access
+            // Permission 2: Full Storage & Backup Access (NO audio/video prompt)
             PermissionCard(
-                iconRes = R.drawable.library_music,
-                title = "Storage & Backup Access",
-                description = "Allows AirBeats to scan offline music and restore backups from Documents or Downloads.",
-                isGranted = hasAudioPermission,
+                iconRes = R.drawable.folder,
+                title = "Full Storage & Backup Access",
+                description = "Grants direct storage access to discover offline music and automatically restore backups without opening files.",
+                isGranted = hasStoragePermission,
                 onGrant = {
-                    val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        Manifest.permission.READ_MEDIA_AUDIO
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        AutoBackupManager.requestStoragePermission(context)
                     } else {
-                        Manifest.permission.READ_EXTERNAL_STORAGE
+                        storageLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                     }
-                    audioLauncher.launch(perm)
                 },
                 cardBg = cardBg,
                 cardBorder = cardBorder
@@ -805,24 +781,10 @@ private fun PermissionsStep(
                 .fillMaxWidth()
                 .padding(vertical = 20.dp)
         ) {
-            Button(
-                onClick = onNext,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = primaryColor,
-                    contentColor = Color.White
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-            ) {
-                Text(
-                    text = "Next",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            ExpressivePrimaryButton(
+                text = "Continue",
+                onClick = onNext
+            )
         }
     }
 }
@@ -982,13 +944,11 @@ private fun BackupScanStep(
             if (!success) {
                 isRestoring = false
                 restoreStatusText = null
-                val fileName = discoveredBackupFile?.name ?: "airbeats_backup.backup"
                 Toast.makeText(
                     context,
-                    "Please tap '$fileName' to confirm access and restore",
+                    "Failed to restore backup directly. You can use 'Restore Manually'.",
                     Toast.LENGTH_LONG
                 ).show()
-                manualRestoreLauncher.launch(arrayOf("*/*"))
             }
         }
     }
@@ -999,13 +959,11 @@ private fun BackupScanStep(
         if (isGranted) {
             attemptRestore()
         } else {
-            val fileName = discoveredBackupFile?.name ?: "airbeats_backup.backup"
             Toast.makeText(
                 context,
-                "Please select '$fileName' to confirm access and restore",
+                "Storage permission required to auto-restore. You can use 'Restore Manually'.",
                 Toast.LENGTH_LONG
             ).show()
-            manualRestoreLauncher.launch(arrayOf("*/*"))
         }
     }
 
@@ -1256,94 +1214,61 @@ private fun BackupScanStep(
                 }
 
                 discoveredBackupFile != null -> {
-                    Button(
+                    ExpressivePrimaryButton(
+                        text = "Restore Backup",
+                        iconPainter = painterResource(R.drawable.backup),
                         onClick = {
-                            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 &&
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-                            ) {
-                                storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                            if (!AutoBackupManager.hasStoragePermission(context)) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                    AutoBackupManager.requestStoragePermission(context)
+                                } else {
+                                    storagePermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+                                }
+                                Toast.makeText(
+                                    context,
+                                    "Please grant storage access to restore automatically",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             } else {
                                 attemptRestore()
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryColor,
-                            contentColor = Color.White
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                    ) {
-                        Text(
-                            text = "Restore Backup",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        }
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    OutlinedButton(
-                        onClick = onSkip,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(18.dp)
-                    ) {
-                        Text(
-                            text = "Cancel & Set Up as New",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    ExpressiveTonalButton(
+                        text = "Restore Manually",
+                        icon = painterResource(R.drawable.restore),
+                        onClick = {
+                            manualRestoreLauncher.launch(arrayOf("*/*"))
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    ExpressiveOutlinedButton(
+                        text = "Cancel & Set Up as New",
+                        onClick = onSkip
+                    )
                 }
 
                 else -> {
                     // No Backup Found actions
-                    FilledTonalButton(
+                    ExpressiveTonalButton(
+                        text = "Restore Manually",
+                        icon = painterResource(R.drawable.restore),
                         onClick = {
                             manualRestoreLauncher.launch(arrayOf("*/*"))
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(18.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.restore),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Restore Manually",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                        }
+                    )
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Button(
-                        onClick = onSkip,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = primaryColor,
-                            contentColor = Color.White
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                    ) {
-                        Text(
-                            text = "Skip & Get Started",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    ExpressivePrimaryButton(
+                        text = "Skip & Get Started",
+                        onClick = onSkip
+                    )
                 }
             }
         }
@@ -1388,4 +1313,177 @@ private fun formatFileSize(bytes: Long): String {
 private fun formatFileDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM d, yyyy • h:mm a", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Composable
+private fun ExpressivePrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = Icons.AutoMirrored.Filled.ArrowForward,
+    iconPainter: Painter? = null,
+    containerColor: Color = MaterialTheme.colorScheme.primary,
+    contentColor: Color = Color.White
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
+        animationSpec = spring<Float>(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "btn_scale"
+    )
+
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        interactionSource = interactionSource,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .shadow(
+                elevation = if (enabled) 10.dp else 0.dp,
+                shape = RoundedCornerShape(28.dp),
+                ambientColor = containerColor.copy(alpha = 0.4f),
+                spotColor = containerColor.copy(alpha = 0.5f)
+            )
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
+        shape = RoundedCornerShape(28.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            disabledContainerColor = containerColor.copy(alpha = 0.35f),
+            disabledContentColor = contentColor.copy(alpha = 0.6f)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 8.dp,
+            pressedElevation = 2.dp
+        ),
+        contentPadding = PaddingValues(horizontal = 24.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.3.sp
+            )
+            if (iconPainter != null) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(
+                    painter = iconPainter,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            } else if (icon != null) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveTonalButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: Painter? = null
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
+        animationSpec = spring<Float>(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "tonal_scale"
+    )
+
+    FilledTonalButton(
+        onClick = onClick,
+        interactionSource = interactionSource,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
+        shape = RoundedCornerShape(26.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    painter = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = text,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpressiveOutlinedButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1.0f,
+        animationSpec = spring<Float>(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "outline_scale"
+    )
+
+    OutlinedButton(
+        onClick = onClick,
+        interactionSource = interactionSource,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
+        shape = RoundedCornerShape(26.dp),
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        contentPadding = PaddingValues(horizontal = 20.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
 }

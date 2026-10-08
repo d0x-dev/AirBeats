@@ -48,6 +48,8 @@ import android.view.WindowManager
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -737,6 +739,20 @@ class MainActivity : FragmentActivity() {
                                         else -> null
                                     }
                                 }
+
+                            val initialTab = tabOpenedFromShortcut ?: defaultOpenTab
+                            val initialScreen = when (initialTab) {
+                                NavigationTab.HOME -> Screens.Home
+                                NavigationTab.EXPLORE -> Screens.Explore
+                                NavigationTab.LIBRARY -> Screens.Library
+                            }
+                            val initialPageIndex = remember(navigationItems) {
+                                navigationItems.indexOf(initialScreen).takeIf { it >= 0 } ?: 0
+                            }
+                            val rootPagerState = rememberPagerState(
+                                initialPage = initialPageIndex,
+                                pageCount = { navigationItems.size }
+                            )
 
                             val topLevelScreens =
                                 listOf(
@@ -1459,9 +1475,14 @@ class MainActivity : FragmentActivity() {
                                                         )
                                                     }
 
-                                                    val selectedIndex = navigationItems.indexOfFirst { screen ->
-                                                        navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } == true
-                                                    }.takeIf { it >= 0 } ?: 0
+                                                    val currentDestRoute = navBackStackEntry?.destination?.route
+                                                    val selectedIndex = if (currentDestRoute == Screens.Home.route) {
+                                                        rootPagerState.currentPage.coerceIn(0, navigationItems.lastIndex)
+                                                    } else {
+                                                        navigationItems.indexOfFirst { screen ->
+                                                            navBackStackEntry?.destination?.hierarchy?.any { it.route == screen.route } == true
+                                                        }.takeIf { it >= 0 } ?: 0
+                                                    }
 
                                                     var lastTapTime by remember { mutableLongStateOf(0L) }
                                                     var lastTappedIcon by remember { mutableStateOf<Int?>(null) }
@@ -1470,7 +1491,11 @@ class MainActivity : FragmentActivity() {
                                                     val onItemSelectedAction: (Int) -> Unit = { index ->
                                                          if (index in navigationItems.indices) {
                                                              val screen = navigationItems[index]
-                                                             val isSelected = screen.route == navBackStackEntry?.destination?.route
+                                                             val isSelected = if (currentDestRoute == Screens.Home.route) {
+                                                                 rootPagerState.currentPage == index
+                                                             } else {
+                                                                 screen.route == currentDestRoute
+                                                             }
 
                                                              val currentTapTime = System.currentTimeMillis()
                                                              val timeSinceLastTap = currentTapTime - lastTapTime
@@ -1491,7 +1516,12 @@ class MainActivity : FragmentActivity() {
                                                                      coroutineScope.launch {
                                                                          delay(300L)
                                                                          if (navigateToExplore) {
-                                                                             navigateToScreen(navController, screen)
+                                                                             if (currentDestRoute == Screens.Home.route) {
+                                                                                 rootPagerState.animateScrollToPage(index)
+                                                                             } else {
+                                                                                 navigateToScreen(navController, Screens.Home)
+                                                                                 rootPagerState.scrollToPage(index)
+                                                                             }
                                                                          }
                                                                      }
                                                                  }
@@ -1502,7 +1532,16 @@ class MainActivity : FragmentActivity() {
                                                                          searchBarScrollBehavior.state.resetHeightOffset()
                                                                      }
                                                                  } else {
-                                                                     navigateToScreen(navController, screen)
+                                                                     if (currentDestRoute == Screens.Home.route) {
+                                                                         coroutineScope.launch {
+                                                                             rootPagerState.animateScrollToPage(index)
+                                                                         }
+                                                                     } else {
+                                                                         navigateToScreen(navController, Screens.Home)
+                                                                         coroutineScope.launch {
+                                                                             rootPagerState.scrollToPage(index)
+                                                                         }
+                                                                     }
                                                                  }
                                                              }
                                                          }
@@ -1614,41 +1653,30 @@ class MainActivity : FragmentActivity() {
                                     }
 
                                     val enableSwipeBackGesture by rememberPreference(com.darkxvenom.airbeats.constants.EnableSwipeBackGestureKey, defaultValue = true)
-                                    val enableTabSwipeGesture by rememberPreference(com.darkxvenom.airbeats.constants.EnableTabSwipeGestureKey, defaultValue = true)
                                     val currentDestRoute = navBackStackEntry?.destination?.route
                                     val rootTabRoutes = remember(navigationItems) { navigationItems.map { it.route }.toSet() }
                                     val isRootScreen = currentDestRoute in rootTabRoutes
                                     val canSwipeBack = !isRootScreen && navController.previousBackStackEntry != null
 
+                                    BackHandler(
+                                        enabled = currentDestRoute == Screens.Home.route && rootPagerState.currentPage != 0
+                                    ) {
+                                        coroutineScope.launch {
+                                            rootPagerState.animateScrollToPage(0)
+                                        }
+                                    }
+
                                     SwipeBackContainer(
                                         enabled = enableSwipeBackGesture,
                                         canSwipeBack = canSwipeBack,
                                         onBack = { navController.popBackStack() },
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .tabSwipeGesture(
-                                                enabled = enableTabSwipeGesture && isRootScreen,
-                                                currentRoute = currentDestRoute,
-                                                navigationItems = navigationItems,
-                                                onNavigateToRoute = { targetRoute: String ->
-                                                    val screen = navigationItems.firstOrNull { it.route == targetRoute }
-                                                    if (screen != null) {
-                                                        navigateToScreen(navController, screen)
-                                                    } else {
-                                                        navController.navigate(targetRoute)
-                                                    }
-                                                }
-                                            )
+                                        modifier = Modifier.fillMaxSize()
                                     ) {
                                     val justRestored = remember { AutoBackupManager.consumeJustRestoredFlag(this@MainActivity) }
                                     NavHost(
                                         navController = navController,
-                                        startDestination = if (justRestored) {
-                                            when (tabOpenedFromShortcut ?: defaultOpenTab) {
-                                                NavigationTab.HOME -> Screens.Home
-                                                NavigationTab.EXPLORE -> Screens.Explore
-                                                NavigationTab.LIBRARY -> Screens.Library
-                                            }.route
+                                        startDestination = if (isNameSet != false || justRestored) {
+                                            Screens.Home.route
                                         } else {
                                             "onboarding"
                                         },
@@ -1754,7 +1782,9 @@ class MainActivity : FragmentActivity() {
                                             ) searchBarScrollBehavior else topAppBarScrollBehavior,
                                             latestVersionName = latestVersionName,
                                             playerBottomSheetState = playerBottomSheetState,
-                                            onSearchClick = { onActiveChange(true) }
+                                            onSearchClick = { onActiveChange(true) },
+                                            rootPagerState = rootPagerState,
+                                            navigationItems = navigationItems,
                                         )
                                     }
                                     }
