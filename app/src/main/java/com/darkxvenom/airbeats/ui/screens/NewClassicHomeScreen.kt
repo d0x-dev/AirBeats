@@ -404,12 +404,17 @@ fun NewClassicHomeScreen(
                         title = accountName.ifBlank { stringResource(R.string.your_ytb_playlists) },
                         subtitle = if (accountName.isNotBlank()) stringResource(R.string.your_ytb_playlists) else null,
                         thumbnail = {
-                            if (userAvatarUrl != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data(userAvatarUrl)
+                            val accountAvatarRequest = remember(userAvatarUrl) {
+                                userAvatarUrl?.let {
+                                    ImageRequest.Builder(context)
+                                        .data(it)
                                         .crossfade(true)
-                                        .build(),
+                                        .build()
+                                }
+                            }
+                            if (accountAvatarRequest != null) {
+                                AsyncImage(
+                                    model = accountAvatarRequest,
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
