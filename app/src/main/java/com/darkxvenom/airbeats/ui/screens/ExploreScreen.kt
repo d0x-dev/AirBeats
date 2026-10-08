@@ -5,6 +5,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.darkxvenom.airbeats.ui.component.isFrostedGlassUiEnabled
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +40,8 @@ import com.darkxvenom.airbeats.LocalPlayerConnection
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -164,6 +169,16 @@ fun MoodAndGenresButton(
     val isFrosted = isFrostedGlassUiEnabled()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val shape = RoundedCornerShape(24.dp)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+        ),
+        label = "moodAndGenresPressScale",
+    )
     val containerColor = if (isFrosted) {
         if (isDark) Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
     } else {
@@ -180,13 +195,18 @@ fun MoodAndGenresButton(
         contentAlignment = Alignment.CenterStart,
         modifier =
             modifier
+                .scale(pressScale)
                 .height(MoodAndGenresButtonHeight)
                 .clip(shape)
                 .background(containerColor)
                 .then(
                     if (borderStroke != null) Modifier.border(borderStroke, shape) else Modifier
                 )
-                .clickable(onClick = onClick)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = androidx.compose.foundation.LocalIndication.current,
+                    onClick = onClick,
+                )
                 .padding(horizontal = 16.dp),
     ) {
         Text(
