@@ -759,19 +759,14 @@ fun HomeScreen(
                             label = stringResource(R.string.your_ytb_playlists),
                             title = accountName,
                             thumbnail = {
-                                val accountAvatarRequest = remember(url) {
-                                    url?.let {
-                                        ImageRequest.Builder(LocalContext.current)
-                                            .data(it)
-                                            .diskCachePolicy(CachePolicy.ENABLED)
-                                            .diskCacheKey(it)
-                                            .crossfade(true)
-                                            .build()
-                                    }
-                                }
-                                if (accountAvatarRequest != null) {
+                                if (url != null) {
                                     AsyncImage(
-                                        model = accountAvatarRequest,
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(url)
+                                            .diskCachePolicy(CachePolicy.ENABLED)
+                                            .diskCacheKey(url)
+                                            .crossfade(true)
+                                            .build(),
                                         placeholder = painterResource(id = R.drawable.person),
                                         error = painterResource(id = R.drawable.person),
                                         contentDescription = null,
