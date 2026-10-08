@@ -1106,6 +1106,13 @@ private fun NewClassicSongCard(
     val textPrimary = if (isDark) Color(0xFFFFFFFF) else MaterialTheme.colorScheme.onBackground
     val textSecondary = if (isDark) Color(0xFF909AA8) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val thumbnailRequest = remember(thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(thumbnailUrl)
+            .crossfade(true)
+            .build()
+    }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1135,10 +1142,7 @@ private fun NewClassicSongCard(
                 .background(surfaceColor)
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(thumbnailUrl)
-                    .crossfade(true)
-                    .build(),
+                model = thumbnailRequest,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
