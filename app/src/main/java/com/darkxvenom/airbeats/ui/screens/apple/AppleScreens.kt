@@ -154,6 +154,16 @@ fun AppleHeader(
     onDeveloperNewsClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val profileImageRequest = remember(profileUrl) {
+        profileUrl?.let {
+            coil.request.ImageRequest.Builder(context)
+                .data(it)
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .diskCacheKey(it)
+                .crossfade(true)
+                .build()
+        }
+    }
     val avatarManager = remember { AvatarPreferenceManager(context) }
     val currentSelection by avatarManager
         .getAvatarSelection
@@ -291,12 +301,7 @@ fun AppleHeader(
                         else -> {
                             if (profileUrl != null) {
                                 AsyncImage(
-                                    model = coil.request.ImageRequest.Builder(context)
-                                        .data(profileUrl)
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .diskCacheKey(profileUrl)
-                                        .crossfade(true)
-                                        .build(),
+                                    model = profileImageRequest,
                                     contentDescription = "Profile",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()

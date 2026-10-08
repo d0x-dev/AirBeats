@@ -492,6 +492,14 @@ private fun DeveloperNewsListItemCard(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val listImageRequest = remember(item.imageUrl) {
+        item.imageUrl?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(true)
+                .build()
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -516,10 +524,7 @@ private fun DeveloperNewsListItemCard(
                         .height(200.dp)
                 ) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(item.imageUrl)
-                            .crossfade(true)
-                            .build(),
+                        model = listImageRequest,
                         contentDescription = item.title,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -616,6 +621,14 @@ private fun DeveloperNewsDetailScreen(
 ) {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val detailImageRequest = remember(item.imageUrl) {
+        item.imageUrl?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(true)
+                .build()
+        }
+    }
 
     BackHandler(onBack = onBack)
 
@@ -750,10 +763,7 @@ private fun DeveloperNewsDetailScreen(
             // Featured Image (if available)
             if (!item.imageUrl.isNullOrBlank()) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(item.imageUrl)
-                        .crossfade(true)
-                        .build(),
+                    model = detailImageRequest,
                     contentDescription = item.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

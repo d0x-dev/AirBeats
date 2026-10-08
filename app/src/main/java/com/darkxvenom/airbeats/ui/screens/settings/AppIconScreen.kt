@@ -323,8 +323,9 @@ fun AppIconScreen(
                         }
                     }
                 } else {
-                    items(shortcutIcons.chunked(2).size) { rowIndex ->
-                        val rowIcons = shortcutIcons.chunked(2)[rowIndex]
+                    val shortcutIconRows = shortcutIcons.chunked(2)
+                    items(shortcutIconRows.size) { rowIndex ->
+                        val rowIcons = shortcutIconRows[rowIndex]
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)

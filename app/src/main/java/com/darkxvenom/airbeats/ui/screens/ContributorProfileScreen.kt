@@ -152,12 +152,15 @@ fun ContributorProfileScreen(
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text("Contributions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(8.dp))
+                            val contributionGraphRequest = remember(username) {
+                                ImageRequest.Builder(context)
+                                    .data("https://ghchart.rshah.org/1DB954/$username")
+                                    .crossfade(true)
+                                    .build()
+                            }
                             Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                                 AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data("https://ghchart.rshah.org/1DB954/$username")
-                                        .crossfade(true)
-                                        .build(),
+                                    model = contributionGraphRequest,
                                     imageLoader = svgImageLoader,
                                     contentDescription = "Contribution Graph",
                                     modifier = Modifier.height(100.dp)
