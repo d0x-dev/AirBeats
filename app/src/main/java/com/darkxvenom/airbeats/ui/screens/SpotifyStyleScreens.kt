@@ -1000,11 +1000,7 @@ private fun SpotifySearchPill(text: String, onClick: () -> Unit) {
             .height(52.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(Color.White)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = androidx.compose.foundation.LocalIndication.current,
-                onClick = onClick,
-            )
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
