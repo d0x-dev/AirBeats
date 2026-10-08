@@ -54,6 +54,31 @@ fun AvatarDisplay(
             .clip(CircleShape)
     }
 
+    val customAvatarRequest = remember(
+        (currentSelection as? AvatarSelection.Custom)?.uri
+    ) {
+        (currentSelection as? AvatarSelection.Custom)?.uri?.toUri()?.let { uri ->
+            ImageRequest.Builder(context)
+                .data(uri)
+                .crossfade(true)
+                .error(R.drawable.person)
+                .placeholder(R.drawable.person)
+                .build()
+        }
+    }
+    val diceBearAvatarRequest = remember(
+        (currentSelection as? AvatarSelection.DiceBear)?.url
+    ) {
+        (currentSelection as? AvatarSelection.DiceBear)?.url?.let { url ->
+            ImageRequest.Builder(context)
+                .data(url)
+                .crossfade(true)
+                .error(R.drawable.person)
+                .placeholder(R.drawable.person)
+                .build()
+        }
+    }
+
     Box(
         modifier = displayModifier,
         contentAlignment = Alignment.Center
@@ -61,12 +86,7 @@ fun AvatarDisplay(
         when (currentSelection) {
             is AvatarSelection.Custom -> {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data((currentSelection as AvatarSelection.Custom).uri.toUri())
-                        .crossfade(true)
-                        .error(R.drawable.person)
-                        .placeholder(R.drawable.person)
-                        .build(),
+                    model = customAvatarRequest,
                     contentDescription = contentDescription
                         ?: stringResource(id = R.string.custom_avatar),
                     modifier = Modifier.fillMaxSize(),
@@ -76,12 +96,7 @@ fun AvatarDisplay(
 
             is AvatarSelection.DiceBear -> {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data((currentSelection as AvatarSelection.DiceBear).url)
-                        .crossfade(true)
-                        .error(R.drawable.person)
-                        .placeholder(R.drawable.person)
-                        .build(),
+                    model = diceBearAvatarRequest,
                     contentDescription = contentDescription ?: "Avatar DiceBear",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
