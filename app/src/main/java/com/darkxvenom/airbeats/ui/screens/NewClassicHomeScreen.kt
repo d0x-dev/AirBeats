@@ -773,6 +773,13 @@ private fun NewClassicHeroSection(
     val heroTextPrimary = if (isDark) Color.White else MaterialTheme.colorScheme.onBackground
     val heroTextSecondary = if (isDark) Color.White.copy(alpha = 0.72f) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val heroImageRequest = remember(heroData.thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(heroData.thumbnailUrl)
+            .crossfade(true)
+            .build()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -782,10 +789,7 @@ private fun NewClassicHeroSection(
     ) {
         // Crisp high-resolution hero image with immersive zoom
         AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(heroData.thumbnailUrl)
-                .crossfade(true)
-                .build(),
+            model = heroImageRequest,
             contentDescription = heroData.title,
             contentScale = ContentScale.Crop,
             modifier = Modifier
@@ -1106,6 +1110,13 @@ private fun NewClassicSongCard(
     val textPrimary = if (isDark) Color(0xFFFFFFFF) else MaterialTheme.colorScheme.onBackground
     val textSecondary = if (isDark) Color(0xFF909AA8) else MaterialTheme.colorScheme.onSurfaceVariant
 
+    val thumbnailRequest = remember(thumbnailUrl) {
+        ImageRequest.Builder(context)
+            .data(thumbnailUrl)
+            .crossfade(true)
+            .build()
+    }
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -1135,10 +1146,7 @@ private fun NewClassicSongCard(
                 .background(surfaceColor)
         ) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(thumbnailUrl)
-                    .crossfade(true)
-                    .build(),
+                model = thumbnailRequest,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
