@@ -812,8 +812,9 @@ class MainActivity : FragmentActivity() {
 
                             val shouldShowNavigationBar =
                                 remember(navBackStackEntry, active) {
-                                    navBackStackEntry?.destination?.route == null ||
-                                            navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route } &&
+                                    val route = navBackStackEntry?.destination?.route
+                                    route != null &&
+                                            navigationItems.fastAny { it.route == route } &&
                                             !active
                                 }
 
@@ -1675,8 +1676,12 @@ class MainActivity : FragmentActivity() {
                                     val justRestored = remember { AutoBackupManager.consumeJustRestoredFlag(this@MainActivity) }
                                     NavHost(
                                         navController = navController,
-                                        startDestination = if (isNameSet != false || justRestored) {
-                                            Screens.Home.route
+                                        startDestination = if (justRestored) {
+                                            when (tabOpenedFromShortcut ?: defaultOpenTab) {
+                                                NavigationTab.HOME -> Screens.Home
+                                                NavigationTab.EXPLORE -> Screens.Explore
+                                                NavigationTab.LIBRARY -> Screens.Library
+                                            }.route
                                         } else {
                                             "onboarding"
                                         },
