@@ -4511,7 +4511,7 @@ class MusicService :
         }
     }
 
-    // ── ArchiveTune Exact Crossfade Engine ──────────────────────────────────────
+    // ── Dual-Player Crossfade Engine ──────────────────────────────────────
 
     private fun currentEffectivePlayerVolume(): Float {
         val vol = playerVolume.value.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 1f

@@ -164,7 +164,7 @@ fun BetterPlayerContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            EditorialCircleButton(
+            BetterCircleButton(
                 onClick = onCollapseClick,
                 accent = accent,
                 field = field,
@@ -211,7 +211,7 @@ fun BetterPlayerContent(
                         }
                     }
                 } else {
-                    EditorialCircleButton(
+                    BetterCircleButton(
                         onClick = onSleepTimerClick,
                         accent = field,
                         field = accent,
@@ -225,7 +225,7 @@ fun BetterPlayerContent(
                     }
                 }
 
-                EditorialCircleButton(
+                BetterCircleButton(
                     onClick = onLyricsClick,
                     accent = accent,
                     field = field,
@@ -238,7 +238,7 @@ fun BetterPlayerContent(
                     )
                 }
 
-                EditorialCircleButton(
+                BetterCircleButton(
                     onClick = onMenuClick,
                     accent = accent,
                     field = field,
@@ -260,7 +260,7 @@ fun BetterPlayerContent(
                 .weight(1.0f),
             contentAlignment = Alignment.Center
         ) {
-            EditorialDieCutArt(
+            BetterDieCutArt(
                 artworkUrl = artworkUrl,
                 mediaMetadataId = mediaMetadata.id,
                 isPlaying = isPlaying,
@@ -394,7 +394,7 @@ fun BetterPlayerContent(
                     }
                 }
 
-                EditorialCircleButton(
+                BetterCircleButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         playerConnection.seekToNext()
@@ -419,7 +419,7 @@ fun BetterPlayerContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                EditorialCircleButton(
+                BetterCircleButton(
                     onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         playerConnection.seekToPrevious()
@@ -488,12 +488,12 @@ fun BetterPlayerContent(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = formatEditorialTime(displayedProgress.coerceAtLeast(0L)),
+                            text = formatBetterTime(displayedProgress.coerceAtLeast(0L)),
                             style = MaterialTheme.typography.labelMedium,
                             color = accent.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = formatEditorialTime(duration.coerceAtLeast(0L)),
+                            text = formatBetterTime(duration.coerceAtLeast(0L)),
                             style = MaterialTheme.typography.labelMedium,
                             color = accent.copy(alpha = 0.8f)
                         )
@@ -628,7 +628,7 @@ fun BetterPlayerContent(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun EditorialDieCutArt(
+private fun BetterDieCutArt(
     artworkUrl: String?,
     mediaMetadataId: String,
     isPlaying: Boolean,
@@ -667,7 +667,7 @@ private fun EditorialDieCutArt(
     }
     val morph = remember(morphFrom, morphTo) { Morph(morphFrom, morphTo) }
     val dieCutShape = remember(morph, morphProgress.value) {
-        EditorialMorphShape(morph, morphProgress.value)
+        BetterMorphShape(morph, morphProgress.value)
     }
 
     val artScale by animateFloatAsState(
@@ -717,7 +717,7 @@ private fun EditorialDieCutArt(
 }
 
 @Composable
-internal fun EditorialCircleButton(
+internal fun BetterCircleButton(
     onClick: () -> Unit,
     accent: Color,
     field: Color,
@@ -788,7 +788,7 @@ private fun BetterSquircleButton(
     }
 }
 
-internal class EditorialMorphShape(
+internal class BetterMorphShape(
     private val morph: Morph,
     private val progress: Float
 ) : Shape {
@@ -810,7 +810,7 @@ internal class EditorialMorphShape(
     }
 }
 
-internal fun formatEditorialTime(durationMs: Long): String {
+internal fun formatBetterTime(durationMs: Long): String {
     val totalSeconds = durationMs / 1000
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
