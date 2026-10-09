@@ -93,12 +93,16 @@ import com.darkxvenom.airbeats.playback.DeviceCodecs
 import com.darkxvenom.airbeats.ui.component.PreferenceEntry
 import com.darkxvenom.airbeats.constants.DownloadQualityKey
 import com.darkxvenom.airbeats.constants.CrossfadeKey
+import com.darkxvenom.airbeats.constants.CrossfadeEnabledKey
+import com.darkxvenom.airbeats.constants.CrossfadeDurationKey
+import com.darkxvenom.airbeats.constants.CrossfadeGaplessKey
 import com.darkxvenom.airbeats.constants.PermanentShuffleKey
 import com.darkxvenom.airbeats.constants.PersistentQueueKey
 import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
 import com.darkxvenom.airbeats.constants.SkipUncachedPartKey
 import com.darkxvenom.airbeats.constants.StopMusicOnTaskClearKey
+import com.darkxvenom.airbeats.ui.component.CrossfadeSliderPreference
 import com.darkxvenom.airbeats.ui.component.EnumListPreference
 import com.darkxvenom.airbeats.ui.component.ListPreference
 import com.darkxvenom.airbeats.ui.component.IconButton
@@ -194,9 +198,17 @@ fun PlayerSettings(
         StopMusicOnTaskClearKey,
         defaultValue = false
     )
-    val (crossfadeSeconds, onCrossfadeSecondsChange) = rememberPreference(
-        CrossfadeKey,
-        defaultValue = 0
+    val (crossfadeEnabled, onCrossfadeEnabledChange) = rememberPreference(
+        CrossfadeEnabledKey,
+        defaultValue = false
+    )
+    val (crossfadeDurationSeconds, onCrossfadeDurationSecondsChange) = rememberPreference(
+        CrossfadeDurationKey,
+        defaultValue = 5f
+    )
+    val (crossfadeGapless, onCrossfadeGaplessChange) = rememberPreference(
+        CrossfadeGaplessKey,
+        defaultValue = true
     )
     val (streamingQualityPreset, onStreamingQualityPresetChange) = rememberPreference(
         StreamingQualityPresetKey,
@@ -775,16 +787,32 @@ fun PlayerSettings(
                         }
                     )}
                 } else {
-                    {ListPreference(
-                        title = { Text(stringResource(R.string.crossfade)) },
-                        icon = { Icon(painterResource(R.drawable.sync), null) },
-                        selectedValue = crossfadeSeconds,
-                        values = listOf(0, 2, 4, 6, 8, 10, 12),
-                        onValueSelected = onCrossfadeSecondsChange,
-                        valueText = { seconds ->
-                            if (seconds == 0) "Off" else "$seconds seconds"
+                    {
+                        Column {
+                            SwitchPreference(
+                                title = { Text(stringResource(R.string.audio_crossfade_title)) },
+                                description = stringResource(R.string.audio_crossfade_description),
+                                icon = { Icon(painterResource(R.drawable.sync), null) },
+                                checked = crossfadeEnabled,
+                                onCheckedChange = { enabled ->
+                                    onCrossfadeEnabledChange(enabled)
+                                },
+                            )
+                            CrossfadeSliderPreference(
+                                valueSeconds = crossfadeDurationSeconds,
+                                onValueChange = onCrossfadeDurationSecondsChange,
+                                isEnabled = crossfadeEnabled,
+                            )
+                            SwitchPreference(
+                                title = { Text(stringResource(R.string.crossfade_gapless_title)) },
+                                description = stringResource(R.string.crossfade_gapless_description),
+                                icon = { Icon(painterResource(R.drawable.album), null) },
+                                checked = crossfadeGapless,
+                                onCheckedChange = onCrossfadeGaplessChange,
+                                isEnabled = crossfadeEnabled,
+                            )
                         }
-                    )}
+                    }
                 },
             )
         )

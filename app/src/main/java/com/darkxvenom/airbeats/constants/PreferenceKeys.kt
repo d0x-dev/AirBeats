@@ -107,6 +107,7 @@ enum class PlayerScreenStyle {
     IOS_STYLED,
     MODERN,
     SPOTIFY,
+    BETTER,
     CLASSIC,
     APPLE,
     PAPER,
@@ -180,6 +181,9 @@ val AutoSkipNextOnErrorKey = booleanPreferencesKey("autoSkipNextOnError")
 val SkipUncachedPartKey = booleanPreferencesKey("skipUncachedPart")
 val StopMusicOnTaskClearKey = booleanPreferencesKey("stopMusicOnTaskClear")
 val CrossfadeKey = intPreferencesKey("crossfade")
+val CrossfadeEnabledKey = booleanPreferencesKey("crossfadeEnabled")
+val CrossfadeDurationKey = floatPreferencesKey("crossfadeDuration")
+val CrossfadeGaplessKey = booleanPreferencesKey("crossfadeGapless")
 
 val MaxImageCacheSizeKey = intPreferencesKey("maxImageCacheSize")
 val MaxSongCacheSizeKey = intPreferencesKey("maxSongCacheSize")

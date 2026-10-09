@@ -18,6 +18,7 @@ import android.text.format.Formatter
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -484,6 +485,9 @@ fun BottomSheetPlayer(
     var spotifyColors by remember {
         mutableStateOf<List<Color>>(emptyList())
     }
+    var betterArtworkSeeds by remember {
+        mutableStateOf<Pair<Color, Color>?>(null)
+    }
 
     LaunchedEffect(mediaMetadata, fallbackColorArgb) {
         val metadata = mediaMetadata ?: return@LaunchedEffect
@@ -513,8 +517,21 @@ fun BottomSheetPlayer(
                     fallbackColor = fallbackColorArgb
                 )
 
+                val primarySeed = palette.vibrantSwatch
+                    ?: palette.lightVibrantSwatch
+                    ?: palette.darkVibrantSwatch
+                    ?: palette.dominantSwatch
+                val secondarySeed = palette.mutedSwatch
+                    ?: palette.lightMutedSwatch
+                    ?: palette.darkMutedSwatch
+                    ?: primarySeed
+                val seeds = if (primarySeed != null && secondarySeed != null) {
+                    Pair(Color(primarySeed.rgb), Color(secondarySeed.rgb))
+                } else null
+
                 withContext(Dispatchers.Main) {
                     spotifyColors = extractedColors
+                    betterArtworkSeeds = seeds
                 }
             }
         }
@@ -522,6 +539,46 @@ fun BottomSheetPlayer(
 
     val spotifySurfaceColor = spotifyColors.firstOrNull() ?: Color(0xFF311000)
     val spotifyHeaderColor = spotifyColors.getOrNull(1) ?: Color(0xFF260300)
+
+    val targetBetterFieldColor = remember(betterArtworkSeeds, useDarkTheme) {
+        val seeds = betterArtworkSeeds
+        if (seeds == null) {
+            if (useDarkTheme) Color(0xFF261D1E) else Color(0xFFF7EFF0)
+        } else {
+            val hct = com.google.material.color.hct.Hct.fromInt(seeds.first.toArgb())
+            if (useDarkTheme) {
+                Color(com.google.material.color.hct.Hct.from(hct.hue, hct.chroma, 30.0).toInt())
+            } else {
+                Color(com.google.material.color.hct.Hct.from(hct.hue, hct.chroma, 90.0).toInt())
+            }
+        }
+    }
+
+    val dynamicBetterFieldColor by animateColorAsState(
+        targetValue = targetBetterFieldColor,
+        animationSpec = tween(durationMillis = 800),
+        label = "dynamicBetterFieldColor"
+    )
+
+    val targetBetterAccentColor = remember(betterArtworkSeeds, useDarkTheme) {
+        val seeds = betterArtworkSeeds
+        if (seeds == null) {
+            if (useDarkTheme) Color(0xFFFAD7D7) else Color(0xFF381B1C)
+        } else {
+            val hct = com.google.material.color.hct.Hct.fromInt(seeds.first.toArgb())
+            if (useDarkTheme) {
+                Color(com.google.material.color.hct.Hct.from(hct.hue, hct.chroma, 90.0).toInt())
+            } else {
+                Color(com.google.material.color.hct.Hct.from(hct.hue, hct.chroma, 10.0).toInt())
+            }
+        }
+    }
+
+    val dynamicBetterAccentColor by animateColorAsState(
+        targetValue = targetBetterAccentColor,
+        animationSpec = tween(durationMillis = 800),
+        label = "dynamicBetterAccentColor"
+    )
 
     val TextBackgroundColor =
         when (playerBackground) {
@@ -962,8 +1019,9 @@ fun BottomSheetPlayer(
             expandedBound = state.expandedBound,
         )
 
-    val bottomSheetBackgroundColor = when (playerBackground) {
-        PlayerBackgroundStyle.BLUR, PlayerBackgroundStyle.GRADIENT ->
+    val bottomSheetBackgroundColor = when {
+        playerScreenStyle == PlayerScreenStyle.BETTER -> dynamicBetterFieldColor
+        playerBackground == PlayerBackgroundStyle.BLUR || playerBackground == PlayerBackgroundStyle.GRADIENT ->
             MaterialTheme.colorScheme.surfaceContainer
         else ->
             if (useBlackBackground) Color.Black
@@ -987,7 +1045,8 @@ fun BottomSheetPlayer(
                     .fillMaxSize()
                     .background(bottomSheetBackgroundColor)
             ) {
-                when (playerBackground) {
+                if (playerScreenStyle != PlayerScreenStyle.BETTER) {
+                    when (playerBackground) {
                     PlayerBackgroundStyle.BLUR -> {
                         AnimatedContent(
                             targetState = mediaMetadata?.thumbnailUrl,
@@ -1054,6 +1113,7 @@ fun BottomSheetPlayer(
                         PlayerBackgroundStyle.DEFAULT
                     }
                 }
+            }
             }
         },
         onDismiss = {
@@ -1963,9 +2023,10 @@ fun BottomSheetPlayer(
             if (playerScreenStyle == PlayerScreenStyle.MODERN) immersiveControlsContent else controlsContent
 
         // Animated background effects
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        if (playerScreenStyle != PlayerScreenStyle.BETTER) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
             // Background with blurred image
             AnimatedVisibility(
                 visible = playerBackground == PlayerBackgroundStyle.BLUR && backgroundImageUrl != null,
@@ -2050,6 +2111,7 @@ fun BottomSheetPlayer(
                 )
             }
         }
+    }
 
         if (playerScreenStyle == PlayerScreenStyle.PAPER) {
             var volume by remember { mutableFloatStateOf(playerConnection.player.volume) }
@@ -2373,6 +2435,60 @@ fun BottomSheetPlayer(
                         )
                     }
                 }
+            }
+        } else if (playerScreenStyle == PlayerScreenStyle.BETTER) {
+            mediaMetadata?.let { metadata ->
+                BetterPlayerContent(
+                    mediaMetadata = metadata,
+                    playbackState = playbackState,
+                    isPlaying = isPlaying,
+                    isLoading = playbackState != STATE_READY && playbackState != STATE_ENDED,
+                    canSkipPrevious = canSkipPrevious,
+                    canSkipNext = canSkipNext,
+                    sliderPosition = sliderPosition,
+                    position = position,
+                    duration = duration,
+                    playerConnection = playerConnection,
+                    navController = navController,
+                    state = state,
+                    textBackgroundColor = dynamicBetterAccentColor,
+                    textButtonColor = dynamicBetterFieldColor,
+                    onCollapseClick = { state.collapseSoft() },
+                    onQueueClick = queueSheetState::expandSoft,
+                    onLyricsClick = onOpenFullscreenLyrics,
+                    onSliderValueChange = { sliderPosition = it },
+                    onSliderValueChangeFinished = {
+                        sliderPosition?.let { playerConnection.player.seekTo(it) }
+                        sliderPosition = null
+                    },
+                    onSleepTimerClick = {
+                        if (sleepTimerEnabled) {
+                            playerConnection.service.sleepTimer.clear()
+                        } else {
+                            showSleepTimerDialog = true
+                        }
+                    },
+                    sleepTimerEnabled = sleepTimerEnabled,
+                    sleepTimerTimeLeft = sleepTimerTimeLeft,
+                    onMenuClick = {
+                        menuState.show {
+                            PlayerMenu(
+                                mediaMetadata = metadata,
+                                navController = navController,
+                                playerBottomSheetState = state,
+                                onShowDetailsDialog = { showDetailsDialog = true },
+                                onDismiss = menuState::dismiss,
+                            )
+                        }
+                    },
+                    onAddToPlaylistClick = {
+                        showChoosePlaylistDialog = true
+                    },
+                    currentFormat = currentFormat,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(state.preUpPostDownNestedScrollConnection)
+                )
             }
         } else if (playerScreenStyle == PlayerScreenStyle.GROOVE) {
             GroovePlayer(

@@ -86,6 +86,11 @@ import com.darkxvenom.airbeats.constants.AutoLoadMoreKey
 import com.darkxvenom.airbeats.constants.AutoSkipNextOnErrorKey
 import com.darkxvenom.airbeats.constants.EnableJioSaavnKey
 import com.darkxvenom.airbeats.constants.CrossfadeKey
+import com.darkxvenom.airbeats.constants.CrossfadeEnabledKey
+import com.darkxvenom.airbeats.constants.CrossfadeDurationKey
+import com.darkxvenom.airbeats.constants.CrossfadeGaplessKey
+import androidx.media3.exoplayer.DefaultLoadControl
+import kotlin.math.roundToLong
 import com.darkxvenom.airbeats.constants.DisableLoadMoreWhenRepeatAllKey
 import com.darkxvenom.airbeats.constants.DiscordTokenKey
 import com.darkxvenom.airbeats.constants.DiscordUseDetailsKey
@@ -376,9 +381,48 @@ class MusicService :
     val playerVolume = MutableStateFlow(dataStore.get(PlayerVolumeKey, 1f).coerceIn(0f, 1f))
     private val audioFocusVolumeFactor = MutableStateFlow(1f)
     private val playbackFadeFactor = MutableStateFlow(1f)
-    private val crossfadeDurationMs = MutableStateFlow(0)
     private val audioNormalizationEnabled = MutableStateFlow(true)
-    private var crossfadeAudio: CrossfadeAudio? = null
+    private val maxSafeGainFactor = MAX_AUDIO_NORMALIZATION_FACTOR
+    private var crossfadeEnabled = false
+    private var crossfadeDurationMs = 0L
+    private var crossfadeGapless = false
+    private var crossfadeTriggerJob: Job? = null
+    private var crossfadeJob: Job? = null
+    private var secondaryCrossfadePlayer: ExoPlayer? = null
+    private var secondaryCrossfadeTarget: CrossfadeTarget? = null
+    private var isCrossfading = false
+    private var crossfadeHandoffInProgress = false
+    private var crossfadeBaseVolume = 1f
+    private var crossfadeIncomingBaseVolume = 1f
+    private var crossfadeProgress = 0f
+    private var crossfadeHandoffProgress = 0f
+    private var crossfadePlaybackRequested = false
+    private var crossfadeSuppressedMediaId: String? = null
+    private var audiblePlaybackRecoveryJob: Job? = null
+
+    private val localPlayer: ExoPlayer
+        get() = player
+
+    private val secondaryCrossfadeListener =
+        object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                Timber.tag(TAG).w(error, "Secondary crossfade player failed")
+                scope.launch {
+                    abortCrossfadeAndResumePrimary("secondary_player_error")
+                }
+            }
+        }
+
+    private data class CrossfadeConfig(
+        val enabled: Boolean,
+        val durationSeconds: Float,
+        val gapless: Boolean,
+    )
+
+    private data class CrossfadeTarget(
+        val index: Int,
+        val mediaId: String,
+    )
 
     private data class CachedSongUrl(
         val url: String,
@@ -596,7 +640,7 @@ class MusicService :
                 vol * focus * fade
             }
         }.collectLatest(scope) { finalVolume ->
-            player.volume = finalVolume
+            applyEffectiveVolume(finalVolume)
         }
 
         dataStore.data
@@ -630,10 +674,32 @@ class MusicService :
             }
 
         dataStore.data
-            .map { (it[CrossfadeKey] ?: 0) * 1000 }
-            .distinctUntilChanged()
-            .collectLatest(scope) {
-                crossfadeDurationMs.value = it
+            .map { prefs ->
+                val legacyDuration = prefs[CrossfadeKey] ?: 0
+                val enabled = prefs[CrossfadeEnabledKey] ?: (legacyDuration > 0)
+                val durationSeconds = prefs[CrossfadeDurationKey] ?: (if (legacyDuration > 0) legacyDuration.toFloat() else 5f)
+                val gapless = prefs[CrossfadeGaplessKey] ?: true
+                CrossfadeConfig(
+                    enabled = enabled,
+                    durationSeconds = durationSeconds,
+                    gapless = gapless,
+                )
+            }.distinctUntilChanged()
+            .collectLatest(scope) { config ->
+                crossfadeEnabled = config.enabled
+                if (!config.enabled) {
+                    crossfadeSuppressedMediaId = null
+                }
+                crossfadeDurationMs =
+                    (config.durationSeconds.coerceIn(0f, 10f) * 1000f)
+                        .roundToLong()
+                        .coerceAtLeast(0L)
+                crossfadeGapless = config.gapless
+                if (crossfadeEnabled && crossfadeDurationMs > 0L) {
+                    scheduleCrossfade()
+                } else {
+                    cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+                }
             }
 
         dataStore.data
@@ -809,39 +875,6 @@ class MusicService :
                 trackAnalyzer.setPerformanceMode(mode)
             }
 
-        crossfadeAudio =
-            CrossfadeAudio(
-                player = player,
-                database = database,
-                crossfadeDurationMs = crossfadeDurationMs,
-                playbackFadeFactor = playbackFadeFactor,
-                playerVolume = playerVolume,
-                audioFocusVolumeFactor = audioFocusVolumeFactor,
-                audioNormalizationEnabled = audioNormalizationEnabled,
-                automixEnabled = automixEnabled,
-                trackAnalyzer = trackAnalyzer,
-                overlapPlayerFactory = {
-                    ExoPlayer
-                        .Builder(this)
-                        .setMediaSourceFactory(createMediaSourceFactory())
-                        .setRenderersFactory(createRenderersFactory(audioProcessors = emptyArray()))
-                        .setHandleAudioBecomingNoisy(false)
-                        .setWakeMode(C.WAKE_MODE_NETWORK)
-                        .setAudioAttributes(
-                            AudioAttributes
-                                .Builder()
-                                .setUsage(C.USAGE_MEDIA)
-                                .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                                .build(),
-                            false,
-                        ).setSeekBackIncrementMs(5000)
-                        .setSeekForwardIncrementMs(5000)
-                        .build()
-                },
-                onCrossfadeStart = { mediaItem ->
-                    currentMediaMetadata.value = mediaItem.metadata
-                }
-            ).also { it.start(scope) }
 
         playerVolume.debounce(1000).collect(scope) { volume ->
             dataStore.edit { settings ->
@@ -1550,6 +1583,7 @@ class MusicService :
         songLoadingRetryCount = 0
         waitingForNetworkConnection.value = false
         PlayerConnection.instance?.clearError()
+        cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
         currentQueue = queue
         queueTitle = null
         val isPermanentShuffle = dataStore.get(PermanentShuffleKey, false)
@@ -2655,7 +2689,9 @@ class MusicService :
         mediaItem?.mediaId?.let { id ->
             com.darkxvenom.airbeats.lyrics.LyricsTranslationHelper.onSongChanged(id)
         }
-        crossfadeAudio?.onMediaItemTransition(mediaItem, reason)
+        if (!isCrossfading) {
+            scheduleCrossfade()
+        }
         lastPlaybackSpeed = -1.0f // forzar actualización de canción
 
         setupLoudnessEnhancer()
@@ -2748,7 +2784,11 @@ class MusicService :
 
         if (playbackState == Player.STATE_ENDED || playbackState == Player.STATE_IDLE) {
             visualizerManager.isPlaying = false
-            crossfadeAudio?.stop(resetMainFade = true)
+            if (!isCrossfading || playbackState == Player.STATE_IDLE) {
+                cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+            }
+        } else if (playbackState == Player.STATE_READY) {
+            scheduleCrossfade()
         }
 
         // Automatic advance / repeat handling to guarantee playback continuity
@@ -2806,6 +2846,7 @@ class MusicService :
     }
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        super.onIsPlayingChanged(isPlaying)
         visualizerManager.isPlaying = isPlaying
         if (isPlaying) {
             ensureVisualizer()
@@ -2813,9 +2854,60 @@ class MusicService :
         } else {
             simultaneousAudioProcessor.onPause()
         }
+        secondaryCrossfadePlayer?.let { secondaryPlayer ->
+            if (isCrossfading && !crossfadeHandoffInProgress) {
+                val isEndOfOutgoingItemPause =
+                    !isPlaying &&
+                        !player.playWhenReady &&
+                        crossfadePlaybackRequested &&
+                        localPlayer.pauseAtEndOfMediaItems
+                if (isPlaying || isEndOfOutgoingItemPause) {
+                    secondaryPlayer.play()
+                } else {
+                    secondaryPlayer.pause()
+                }
+            }
+        }
+        if (isPlaying && !isCrossfading) {
+            scheduleCrossfade()
+        }
+        updateAudiblePlaybackRecovery()
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        super.onPlayWhenReadyChanged(playWhenReady, reason)
+        secondaryCrossfadePlayer?.let { secondaryPlayer ->
+            if (isCrossfading) {
+                val isEndOfOutgoingItemPause =
+                    !playWhenReady &&
+                        reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM &&
+                        crossfadePlaybackRequested &&
+                        (localPlayer.pauseAtEndOfMediaItems || crossfadeHandoffInProgress)
+                if (!isEndOfOutgoingItemPause) {
+                    crossfadePlaybackRequested = playWhenReady
+                    secondaryPlayer.playWhenReady = crossfadePlaybackRequested
+                    if (crossfadePlaybackRequested) {
+                        secondaryPlayer.play()
+                    } else {
+                        secondaryPlayer.pause()
+                    }
+                } else if (!crossfadeHandoffInProgress) {
+                    secondaryPlayer.playWhenReady = crossfadePlaybackRequested
+                    if (crossfadePlaybackRequested) {
+                        secondaryPlayer.play()
+                    }
+                }
+            }
+        }
+        if (playWhenReady && !isCrossfading) {
+            scheduleCrossfade()
+        } else if (!playWhenReady && !isCrossfading) {
+            crossfadeTriggerJob?.cancel()
+            crossfadeTriggerJob = null
+            localPlayer.pauseAtEndOfMediaItems = false
+            releaseSecondaryCrossfadePlayer()
+        }
+
         if (playWhenReady) {
             setupLoudnessEnhancer()
             setupEqualizer()
@@ -2837,6 +2929,11 @@ class MusicService :
             delay(300)
             updateNotification()
         }
+    }
+
+    override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
+        super.onPlaybackParametersChanged(playbackParameters)
+        secondaryCrossfadePlayer?.playbackParameters = playbackParameters
     }
 
     override fun onEvents(
@@ -2869,10 +2966,7 @@ class MusicService :
         }
 
         if (events.containsAny(EVENT_TIMELINE_CHANGED, EVENT_POSITION_DISCONTINUITY)) {
-            if (events.contains(EVENT_POSITION_DISCONTINUITY)) {
-                crossfadeAudio?.onPositionDiscontinuity(Player.DISCONTINUITY_REASON_SEEK)
-            }
-            if (crossfadeAudio?.isCrossfading() != true) {
+            if (!isCrossfading) {
                 currentMediaMetadata.value = player.currentMetadata
             }
             // Forzar actualización de notificación para asegurar que la imagen se cargue
@@ -2916,7 +3010,16 @@ class MusicService :
         reason: Int,
     ) {
         super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-        crossfadeAudio?.onPositionDiscontinuity(reason)
+        val isSeekDiscontinuity =
+            reason == Player.DISCONTINUITY_REASON_SEEK || reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT
+        if (isSeekDiscontinuity) {
+            if (!crossfadeHandoffInProgress) {
+                cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+            }
+        }
+        if (!isCrossfading && !crossfadeHandoffInProgress) {
+            scheduleCrossfade()
+        }
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -2941,6 +3044,9 @@ class MusicService :
                 saveQueueToDisk()
             }
         }
+        if (!isCrossfading) {
+            scheduleCrossfade()
+        }
     }
 
     override fun onRepeatModeChanged(repeatMode: Int) {
@@ -2957,6 +3063,9 @@ class MusicService :
                 delay(300)
                 saveQueueToDisk()
             }
+        }
+        if (!isCrossfading) {
+            scheduleCrossfade()
         }
     }
 
@@ -4040,10 +4149,9 @@ class MusicService :
         audioDeviceCallback = null
         usbBitPerfectOutput?.clear()
         usbBitPerfectOutput = null
-        try {
-            crossfadeAudio?.release()
-            crossfadeAudio = null
-        } catch (_: Exception) {}
+        cancelCrossfade(resetVolume = false, resetPauseAtEnd = true)
+        audiblePlaybackRecoveryJob?.cancel()
+        audiblePlaybackRecoveryJob = null
         runCatching { trackAnalyzer.release() }
         runCatching { simultaneousAudioProcessor.setEnabled(false) }
         releaseLoudnessEnhancer()
@@ -4403,6 +4511,718 @@ class MusicService :
         }
     }
 
+    // ── ArchiveTune Exact Crossfade Engine ──────────────────────────────────────
+
+    private fun currentEffectivePlayerVolume(): Float {
+        val vol = playerVolume.value.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 1f
+        val focus = audioFocusVolumeFactor.value.takeIf { it.isFinite() }?.coerceIn(0.2f, 1f) ?: 1f
+        val fade = playbackFadeFactor.value.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 1f
+        return if (bitPerfectEnabled.value && isBitPerfectActive.value) {
+            1.0f
+        } else {
+            (vol * focus * fade).coerceIn(0f, maxSafeGainFactor)
+        }
+    }
+
+    private fun currentEffectivePlayerVolumeForMediaId(mediaId: String): Float =
+        currentEffectivePlayerVolume()
+
+    private fun applyEffectiveVolumeImmediately(finalVolume: Float = currentEffectivePlayerVolume()) {
+        applyEffectiveVolume(finalVolume)
+    }
+
+    private fun applyEffectiveVolume(finalVolume: Float = currentEffectivePlayerVolume()) {
+        crossfadeBaseVolume = finalVolume
+        val incomingPlayer = secondaryCrossfadePlayer
+        if (crossfadeHandoffInProgress && incomingPlayer != null) {
+            val handoffBaseVolume =
+                secondaryCrossfadeTarget?.let { currentEffectivePlayerVolumeForMediaId(it.mediaId) }
+                    ?: finalVolume
+            crossfadeIncomingBaseVolume = handoffBaseVolume
+            applyCrossfadeVolumes(
+                crossfadeHandoffProgress,
+                handoffBaseVolume,
+                handoffBaseVolume,
+                incomingPlayer,
+                localPlayer,
+            )
+            return
+        }
+        if (isCrossfading && incomingPlayer != null) {
+            val incomingBaseVolume =
+                secondaryCrossfadeTarget?.let { currentEffectivePlayerVolumeForMediaId(it.mediaId) }
+                    ?: finalVolume
+            crossfadeIncomingBaseVolume = incomingBaseVolume
+            applyCrossfadeVolumes(crossfadeProgress, finalVolume, incomingBaseVolume, localPlayer, incomingPlayer)
+            return
+        }
+        if (::player.isInitialized) {
+            player.volume = finalVolume
+        }
+        incomingPlayer?.volume = 0f
+    }
+
+    private fun ensureAudiblePlaybackVolume(reason: String) {
+        if (!::player.isInitialized) return
+        if (isCrossfading || crossfadeHandoffInProgress) return
+        if (!shouldKeepPlaybackAudible()) return
+        if (playerVolume.value <= 0f) return
+
+        val expectedVolume = currentEffectivePlayerVolume()
+        if (expectedVolume <= MIN_AUDIBLE_EFFECTIVE_VOLUME) return
+        if (player.volume > STUCK_MUTED_VOLUME_EPSILON) return
+
+        Timber.tag(TAG).w(
+            "Restoring muted primary player volume during active playback: reason=%s expected=%s actual=%s",
+            reason,
+            expectedVolume,
+            player.volume,
+        )
+        applyEffectiveVolumeImmediately(expectedVolume)
+    }
+
+    private fun shouldKeepPlaybackAudible(): Boolean {
+        if (!::player.isInitialized) return false
+        if (player.currentMediaItem == null || !player.playWhenReady) return false
+        return player.playbackState != Player.STATE_IDLE && player.playbackState != Player.STATE_ENDED
+    }
+
+    private fun updateAudiblePlaybackRecovery() {
+        if (!::player.isInitialized || !shouldKeepPlaybackAudible()) {
+            audiblePlaybackRecoveryJob?.cancel()
+            audiblePlaybackRecoveryJob = null
+            return
+        }
+
+        if (audiblePlaybackRecoveryJob?.isActive == true) return
+        audiblePlaybackRecoveryJob =
+            scope.launch {
+                while (isActive && shouldKeepPlaybackAudible()) {
+                    ensureAudiblePlaybackVolume("watchdog")
+                    delay(AUDIBLE_PLAYBACK_VOLUME_CHECK_MS)
+                }
+                audiblePlaybackRecoveryJob = null
+            }
+    }
+
+    private fun applyCrossfadeVolumes(
+        progress: Float,
+        outgoingBaseVolume: Float,
+        incomingBaseVolume: Float,
+        outgoingPlayer: ExoPlayer,
+        incomingPlayer: ExoPlayer,
+    ) {
+        val gains = equalPowerGains(progress)
+        outgoingPlayer.volume = (outgoingBaseVolume * gains.outgoing).coerceIn(0f, maxSafeGainFactor)
+        incomingPlayer.volume = (incomingBaseVolume * gains.incoming).coerceIn(0f, maxSafeGainFactor)
+    }
+
+    private fun scheduleCrossfade() {
+        if (!::player.isInitialized) return
+        crossfadeTriggerJob?.cancel()
+        crossfadeTriggerJob = null
+
+        if (isCrossfading) return
+        if (!player.playWhenReady || sleepTimer.pauseWhenSongEnd) {
+            localPlayer.pauseAtEndOfMediaItems = false
+            releaseSecondaryCrossfadePlayer()
+            return
+        }
+
+        val currentMediaId = player.currentMediaItem?.mediaId ?: return
+        if (crossfadeSuppressedMediaId == currentMediaId) {
+            localPlayer.pauseAtEndOfMediaItems = false
+            releaseSecondaryCrossfadePlayer()
+            return
+        }
+        if (crossfadeSuppressedMediaId != null) {
+            crossfadeSuppressedMediaId = null
+        }
+
+        val target = resolveCrossfadeTarget()
+        val duration = player.duration
+        val effectiveDuration = effectiveCrossfadeDuration(duration)
+        if (target == null || effectiveDuration == null) {
+            localPlayer.pauseAtEndOfMediaItems = false
+            releaseSecondaryCrossfadePlayer()
+            return
+        }
+
+        val currentIndex = player.currentMediaItemIndex
+        val triggerAt = duration - effectiveDuration - CROSSFADE_END_GUARD_MS
+
+        crossfadeTriggerJob =
+            scope.launch {
+                var hasPreparedSecondaryPlayer = false
+                while (isActive) {
+                    if (!crossfadeEnabled || isCrossfading) return@launch
+                    if (player.currentMediaItem?.mediaId != currentMediaId || player.currentMediaItemIndex != currentIndex) {
+                        return@launch
+                    }
+                    if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+                        return@launch
+                    }
+
+                    val remainingToTrigger = triggerAt - player.currentPosition
+                    if (!hasPreparedSecondaryPlayer && remainingToTrigger <= CROSSFADE_PREPARE_AHEAD_MS) {
+                        prepareSecondaryCrossfadePlayer(target)
+                        hasPreparedSecondaryPlayer = true
+                    }
+                    if (remainingToTrigger <= 0L) {
+                        val adjustedDuration =
+                            (duration - player.currentPosition - CROSSFADE_END_GUARD_MS)
+                                .coerceAtMost(effectiveDuration)
+                        if (adjustedDuration >= MIN_CROSSFADE_DURATION_MS) {
+                            startCrossfade(target, adjustedDuration)
+                        }
+                        return@launch
+                    }
+
+                    val sleepMs =
+                        when {
+                            remainingToTrigger > 5_000L -> 1_000L
+                            remainingToTrigger > 1_000L -> 250L
+                            else -> 50L
+                        }.coerceAtMost(remainingToTrigger).coerceAtLeast(1L)
+                    delay(sleepMs)
+                }
+            }
+    }
+
+    private fun resolveCrossfadeTarget(): CrossfadeTarget? {
+        if (!crossfadeEnabled || crossfadeDurationMs <= 0L) return null
+        if (player.mediaItemCount == 0 || player.currentTimeline.isEmpty) return null
+        if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) return null
+
+        val currentIndex = player.currentMediaItemIndex
+        if (currentIndex !in 0 until player.mediaItemCount) return null
+
+        val repeatCurrent = player.repeatMode == Player.REPEAT_MODE_ONE
+        val targetIndex = if (repeatCurrent) currentIndex else player.nextMediaItemIndex
+        if (targetIndex == C.INDEX_UNSET || targetIndex !in 0 until player.mediaItemCount) return null
+        if (!repeatCurrent && targetIndex == currentIndex) return null
+
+        val currentItem = player.getMediaItemAt(currentIndex)
+        val targetItem = player.getMediaItemAt(targetIndex)
+        if (!repeatCurrent && crossfadeGapless && isGaplessAlbumTransition(currentItem, targetItem)) return null
+
+        return CrossfadeTarget(
+            index = targetIndex,
+            mediaId = targetItem.mediaId,
+        )
+    }
+
+    private fun effectiveCrossfadeDuration(duration: Long): Long? {
+        if (duration == C.TIME_UNSET || duration <= 0L) return null
+        val maxDuration = duration - CROSSFADE_END_GUARD_MS
+        if (maxDuration < MIN_CROSSFADE_DURATION_MS) return null
+        return crossfadeDurationMs
+            .coerceAtLeast(MIN_CROSSFADE_DURATION_MS)
+            .coerceAtMost(maxDuration)
+    }
+
+    private fun isGaplessAlbumTransition(
+        currentItem: MediaItem,
+        targetItem: MediaItem,
+    ): Boolean {
+        val currentAlbum =
+            currentItem.metadata
+                ?.album
+                ?.id
+                ?.takeIf { it.isNotBlank() }
+                ?: currentItem.metadata
+                    ?.album
+                    ?.title
+                    ?.takeIf { it.isNotBlank() }
+                ?: currentItem.mediaMetadata.albumTitle
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+        val targetAlbum =
+            targetItem.metadata
+                ?.album
+                ?.id
+                ?.takeIf { it.isNotBlank() }
+                ?: targetItem.metadata
+                    ?.album
+                    ?.title
+                    ?.takeIf { it.isNotBlank() }
+                ?: targetItem.mediaMetadata.albumTitle
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+        return currentAlbum != null && currentAlbum == targetAlbum
+    }
+
+    private fun prepareSecondaryCrossfadePlayer(target: CrossfadeTarget): ExoPlayer? {
+        val existingPlayer = secondaryCrossfadePlayer
+        if (existingPlayer != null && secondaryCrossfadeTarget == target) {
+            return existingPlayer
+        }
+
+        releaseSecondaryCrossfadePlayer()
+
+        val targetItem =
+            runCatching { player.getMediaItemAt(target.index) }
+                .getOrNull()
+                ?.takeIf { it.mediaId == target.mediaId }
+                ?: return null
+
+        return runCatching {
+            createSecondaryCrossfadePlayer().also { secondaryPlayer ->
+                secondaryCrossfadePlayer = secondaryPlayer
+                secondaryCrossfadeTarget = target
+                secondaryPlayer.setMediaItem(targetItem)
+                secondaryPlayer.playbackParameters = player.playbackParameters
+                secondaryPlayer.volume = 0f
+                secondaryPlayer.prepare()
+            }
+        }.onFailure { error ->
+            Timber.tag(TAG).w(error, "Failed to prepare crossfade player")
+            releaseSecondaryCrossfadePlayer()
+        }.getOrNull()
+    }
+
+    private fun createCrossfadeLoadControl(): DefaultLoadControl =
+        DefaultLoadControl
+            .Builder()
+            .setBufferDurationsMs(
+                CROSSFADE_MIN_BUFFER_MS,
+                CROSSFADE_MAX_BUFFER_MS,
+                CROSSFADE_MIN_BUFFER_BEFORE_START_MS.toInt(),
+                CROSSFADE_MIN_BUFFER_BEFORE_START_MS.toInt(),
+            ).setPrioritizeTimeOverSizeThresholds(true)
+            .build()
+
+    private fun createSecondaryCrossfadePlayer(): ExoPlayer =
+        ExoPlayer
+            .Builder(this)
+            .setMediaSourceFactory(createMediaSourceFactory())
+            .setRenderersFactory(createRenderersFactory(audioProcessors = emptyArray()))
+            .setLoadControl(createCrossfadeLoadControl())
+            .setHandleAudioBecomingNoisy(false)
+            .setWakeMode(C.WAKE_MODE_NETWORK)
+            .setAudioAttributes(
+                AudioAttributes
+                    .Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(),
+                false,
+            ).setSeekBackIncrementMs(5000)
+            .setSeekForwardIncrementMs(5000)
+            .build()
+            .apply {
+                addListener(secondaryCrossfadeListener)
+            }
+
+    private fun startCrossfade(
+        target: CrossfadeTarget,
+        durationMs: Long,
+    ) {
+        if (isCrossfading || !crossfadeEnabled) return
+
+        val incomingPlayer = prepareSecondaryCrossfadePlayer(target) ?: return
+        val outgoingMediaId = player.currentMediaItem?.mediaId ?: return
+
+        crossfadeTriggerJob?.cancel()
+        crossfadeTriggerJob = null
+        crossfadeJob?.cancel()
+        crossfadeJob =
+            scope.launch {
+                isCrossfading = true
+                crossfadeProgress = 0f
+                crossfadeBaseVolume = currentEffectivePlayerVolume()
+                crossfadeIncomingBaseVolume = currentEffectivePlayerVolumeForMediaId(target.mediaId)
+                crossfadePlaybackRequested = player.playWhenReady
+
+                try {
+                    val requiredBufferedMs = requiredCrossfadeStartBufferMs(durationMs)
+                    if (!awaitCrossfadePlayerReady(incomingPlayer, CROSSFADE_READY_TIMEOUT_MS, requiredBufferedMs)) {
+                        abortCrossfadeAndResumePrimary("secondary_player_not_ready")
+                        return@launch
+                    }
+
+                    val hasMovedToAnotherMediaItem = player.currentMediaItem?.mediaId != outgoingMediaId
+                    if (!crossfadePlaybackRequested) {
+                        cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+                        return@launch
+                    }
+                    if (hasMovedToAnotherMediaItem) {
+                        cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+                        scheduleCrossfade()
+                        return@launch
+                    }
+                    if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+                        abortCrossfadeAndResumePrimary("primary_ended_before_crossfade_start")
+                        return@launch
+                    }
+
+                    val currentDuration = player.duration
+                    val remainingDurationMs =
+                        (
+                            if (currentDuration != C.TIME_UNSET) {
+                                (currentDuration - player.currentPosition).coerceAtLeast(0L)
+                            } else {
+                                durationMs
+                            }
+                        ).coerceAtMost(durationMs)
+                    if (remainingDurationMs < MIN_CROSSFADE_DURATION_MS) {
+                        abortCrossfadeAndResumePrimary("secondary_player_ready_too_late")
+                        return@launch
+                    }
+
+                    localPlayer.pauseAtEndOfMediaItems = true
+
+                    incomingPlayer.playbackParameters = player.playbackParameters
+                    incomingPlayer.playWhenReady = crossfadePlaybackRequested
+                    if (crossfadePlaybackRequested) {
+                        incomingPlayer.play()
+                    }
+
+                    var elapsedMs = 0L
+                    var lastTickMs = android.os.SystemClock.elapsedRealtime()
+                    while (isActive && elapsedMs < remainingDurationMs) {
+                        if (player.currentMediaItem?.mediaId != outgoingMediaId) {
+                            cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+                            scheduleCrossfade()
+                            return@launch
+                        }
+
+                        val nowMs = android.os.SystemClock.elapsedRealtime()
+                        if (crossfadePlaybackRequested) {
+                            incomingPlayer.playWhenReady = true
+                            elapsedMs = (elapsedMs + (nowMs - lastTickMs)).coerceAtMost(remainingDurationMs)
+                            crossfadeProgress =
+                                (elapsedMs.toFloat() / remainingDurationMs.toFloat()).coerceIn(0f, 1f)
+                            applyCrossfadeVolumes(
+                                crossfadeProgress,
+                                crossfadeBaseVolume,
+                                crossfadeIncomingBaseVolume,
+                                localPlayer,
+                                incomingPlayer,
+                            )
+                        } else {
+                            incomingPlayer.pause()
+                        }
+                        lastTickMs = nowMs
+                        delay(CROSSFADE_FRAME_MS)
+                    }
+
+                    finishCrossfade(target, incomingPlayer)
+                } catch (error: kotlinx.coroutines.CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    Timber.tag(TAG).w(error, "Crossfade failed")
+                    abortCrossfadeAndResumePrimary("crossfade_exception")
+                }
+            }
+    }
+
+    private suspend fun awaitCrossfadePlayerReady(
+        crossfadePlayer: ExoPlayer,
+        timeoutMs: Long,
+        minimumBufferedMs: Long,
+    ): Boolean {
+        val deadlineMs = android.os.SystemClock.elapsedRealtime() + timeoutMs
+        while (kotlinx.coroutines.currentCoroutineContext().isActive && android.os.SystemClock.elapsedRealtime() < deadlineMs) {
+            when (crossfadePlayer.playbackState) {
+                Player.STATE_READY -> {
+                    if (hasBufferedForSmoothStart(crossfadePlayer, minimumBufferedMs)) {
+                        return true
+                    }
+                }
+
+                Player.STATE_IDLE -> {
+                    crossfadePlayer.prepare()
+                }
+
+                Player.STATE_ENDED -> {
+                    return false
+                }
+            }
+            delay(50L)
+        }
+        return crossfadePlayer.playbackState == Player.STATE_READY &&
+            hasBufferedForSmoothStart(crossfadePlayer, minimumBufferedMs)
+    }
+
+    private suspend fun finishCrossfade(
+        target: CrossfadeTarget,
+        incomingPlayer: ExoPlayer,
+    ) {
+        val targetIndex = resolveCrossfadeTargetIndex(target)
+        if (targetIndex == C.INDEX_UNSET) {
+            cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+            return
+        }
+
+        val incomingPosition = incomingPlayer.currentPosition.coerceAtLeast(0L)
+        val shouldContinuePlayback = crossfadePlaybackRequested
+
+        var handoffCompleted = false
+        try {
+            crossfadeHandoffInProgress = true
+            crossfadeHandoffProgress = 0f
+            localPlayer.pauseAtEndOfMediaItems = false
+            player.volume = 0f
+            player.seekTo(targetIndex, incomingPosition)
+            player.playWhenReady = shouldContinuePlayback
+            if (shouldContinuePlayback) {
+                if (!awaitPrimaryCrossfadeHandoffReady(incomingPlayer)) {
+                    abortCrossfadeAndResumePrimary("primary_handoff_not_ready")
+                    handoffCompleted = true
+                    return
+                }
+
+                val primaryPosition = player.currentPosition.coerceAtLeast(0L)
+                val secondaryPosition = incomingPlayer.currentPosition.coerceAtLeast(0L)
+                if (needsCorrectiveCrossfadeSeek(
+                        primaryPositionMs = primaryPosition,
+                        secondaryPositionMs = secondaryPosition,
+                        maximumDriftMs = CROSSFADE_HANDOFF_MAX_DRIFT_MS,
+                    )
+                ) {
+                    player.seekTo(targetIndex, secondaryPosition)
+                }
+
+                if (!performCrossfadeHandoff(targetIndex, incomingPlayer)) {
+                    if (crossfadePlaybackRequested && player.currentMediaItemIndex == targetIndex) {
+                        abortCrossfadeAndResumePrimary("primary_handoff_failed")
+                    } else {
+                        cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+                    }
+                    handoffCompleted = true
+                    return
+                }
+            } else {
+                incomingPlayer.pause()
+            }
+            currentMediaMetadata.value = player.getMediaItemAt(targetIndex).metadata
+            handoffCompleted = true
+        } finally {
+            if (!handoffCompleted) {
+                crossfadeHandoffInProgress = false
+                crossfadeHandoffProgress = 0f
+                isCrossfading = false
+                crossfadeProgress = 0f
+                crossfadePlaybackRequested = false
+                releaseSecondaryCrossfadePlayer()
+                applyEffectiveVolumeImmediately()
+            }
+        }
+
+        isCrossfading = false
+        crossfadeHandoffInProgress = false
+        crossfadeHandoffProgress = 0f
+        crossfadeProgress = 0f
+        crossfadeIncomingBaseVolume = 1f
+        crossfadePlaybackRequested = false
+        releaseSecondaryCrossfadePlayer()
+        applyEffectiveVolumeImmediately()
+        updateAudiblePlaybackRecovery()
+        scheduleCrossfade()
+    }
+
+    private suspend fun awaitPrimaryCrossfadeHandoffReady(incomingPlayer: ExoPlayer): Boolean {
+        val deadlineMs = android.os.SystemClock.elapsedRealtime() + CROSSFADE_HANDOFF_READY_TIMEOUT_MS
+        while (kotlinx.coroutines.currentCoroutineContext().isActive && android.os.SystemClock.elapsedRealtime() < deadlineMs) {
+            if (player.playbackState == Player.STATE_READY && canHandoffWithoutRebuffer(incomingPlayer)) {
+                return true
+            }
+            if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) {
+                return false
+            }
+            delay(25L)
+        }
+        return player.playbackState == Player.STATE_READY && canHandoffWithoutRebuffer(incomingPlayer)
+    }
+
+    private suspend fun awaitPrimaryPositionAdvance(
+        targetIndex: Int,
+        positionAfterSeekMs: Long,
+    ): Boolean {
+        val deadlineMs = android.os.SystemClock.elapsedRealtime() + CROSSFADE_HANDOFF_READY_TIMEOUT_MS
+        while (kotlinx.coroutines.currentCoroutineContext().isActive && android.os.SystemClock.elapsedRealtime() < deadlineMs) {
+            if (!crossfadePlaybackRequested || !player.playWhenReady) return false
+            if (player.currentMediaItemIndex != targetIndex) return false
+            if (player.playbackState == Player.STATE_IDLE || player.playbackState == Player.STATE_ENDED) return false
+            if (player.playbackState == Player.STATE_READY &&
+                player.isPlaying &&
+                hasPlaybackPositionAdvanced(positionAfterSeekMs, player.currentPosition)
+            ) {
+                return true
+            }
+            delay(CROSSFADE_HANDOFF_POLL_MS)
+        }
+        return player.currentMediaItemIndex == targetIndex &&
+            player.playbackState == Player.STATE_READY &&
+            player.isPlaying &&
+            hasPlaybackPositionAdvanced(positionAfterSeekMs, player.currentPosition)
+    }
+
+    private suspend fun performCrossfadeHandoff(
+        targetIndex: Int,
+        incomingPlayer: ExoPlayer,
+    ): Boolean {
+        var startedAtMs = android.os.SystemClock.elapsedRealtime()
+        var lastConfirmedPrimaryPositionMs = player.currentPosition.coerceAtLeast(0L)
+        while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+            if (!crossfadePlaybackRequested || !player.playWhenReady) {
+                incomingPlayer.pause()
+                return false
+            }
+            if (player.currentMediaItemIndex != targetIndex) return false
+            if (player.playbackState != Player.STATE_READY || !player.isPlaying) {
+                crossfadeHandoffProgress = 0f
+                applyEffectiveVolume()
+                if (!awaitPrimaryPositionAdvance(targetIndex, lastConfirmedPrimaryPositionMs)) return false
+                lastConfirmedPrimaryPositionMs = player.currentPosition.coerceAtLeast(0L)
+                startedAtMs = android.os.SystemClock.elapsedRealtime()
+                continue
+            }
+
+            val elapsedMs = android.os.SystemClock.elapsedRealtime() - startedAtMs
+            crossfadeHandoffProgress =
+                (elapsedMs.toFloat() / CROSSFADE_HANDOFF_DURATION_MS.toFloat()).coerceIn(0f, 1f)
+            val handoffBaseVolume =
+                secondaryCrossfadeTarget?.let { currentEffectivePlayerVolumeForMediaId(it.mediaId) }
+                    ?: crossfadeIncomingBaseVolume
+            applyCrossfadeVolumes(
+                crossfadeHandoffProgress,
+                handoffBaseVolume,
+                handoffBaseVolume,
+                incomingPlayer,
+                localPlayer,
+            )
+            if (crossfadeHandoffProgress >= 1f) return true
+            delay(CROSSFADE_HANDOFF_FRAME_MS)
+        }
+        return false
+    }
+
+    private fun canHandoffWithoutRebuffer(incomingPlayer: ExoPlayer): Boolean {
+        if (player.currentMediaItem
+                ?.localConfiguration
+                ?.uri
+                ?.shouldBypassPlayerCache() == true
+        ) {
+            return true
+        }
+        if (hasBufferedForSmoothStart(localPlayer, CROSSFADE_HANDOFF_BUFFER_MS)) {
+            val bufferedPosition = localPlayer.bufferedPosition
+            val incomingPosition = incomingPlayer.currentPosition.coerceAtLeast(0L)
+            return bufferedPosition == C.TIME_UNSET ||
+                incomingPosition + CROSSFADE_HANDOFF_SEEK_GUARD_MS <= bufferedPosition
+        }
+        return false
+    }
+
+    private fun requiredCrossfadeStartBufferMs(durationMs: Long): Long =
+        (durationMs + CROSSFADE_HANDOFF_BUFFER_MS)
+            .coerceAtLeast(CROSSFADE_MIN_BUFFER_BEFORE_START_MS)
+            .coerceAtMost(CROSSFADE_MAX_BUFFER_BEFORE_START_MS)
+
+    private fun hasBufferedForSmoothStart(
+        targetPlayer: ExoPlayer,
+        minimumBufferedMs: Long,
+    ): Boolean {
+        if (minimumBufferedMs <= 0L) return true
+        if (targetPlayer.currentMediaItem
+                ?.localConfiguration
+                ?.uri
+                ?.shouldBypassPlayerCache() == true
+        ) {
+            return true
+        }
+
+        val duration = targetPlayer.duration
+        val currentPosition = targetPlayer.currentPosition.coerceAtLeast(0L)
+        val remainingDuration =
+            if (duration != C.TIME_UNSET && duration > currentPosition) {
+                duration - currentPosition
+            } else {
+                Long.MAX_VALUE
+            }
+        val requiredBufferedMs = minimumBufferedMs.coerceAtMost(remainingDuration)
+        if (requiredBufferedMs <= 0L) return true
+
+        val bufferedDuration = targetPlayer.totalBufferedDuration.coerceAtLeast(0L)
+        if (bufferedDuration >= requiredBufferedMs) return true
+
+        return duration != C.TIME_UNSET &&
+            targetPlayer.bufferedPosition >= duration - CROSSFADE_END_GUARD_MS
+    }
+
+    private fun resolveCrossfadeTargetIndex(target: CrossfadeTarget): Int {
+        if (target.index in 0 until player.mediaItemCount &&
+            player.getMediaItemAt(target.index).mediaId == target.mediaId
+        ) {
+            return target.index
+        }
+
+        for (index in 0 until player.mediaItemCount) {
+            if (player.getMediaItemAt(index).mediaId == target.mediaId) {
+                return index
+            }
+        }
+        return C.INDEX_UNSET
+    }
+
+    private fun cancelCrossfade(
+        resetVolume: Boolean,
+        resetPauseAtEnd: Boolean,
+    ) {
+        crossfadeTriggerJob?.cancel()
+        crossfadeTriggerJob = null
+        crossfadeJob?.cancel()
+        crossfadeJob = null
+        isCrossfading = false
+        crossfadeHandoffInProgress = false
+        crossfadeHandoffProgress = 0f
+        crossfadeProgress = 0f
+        crossfadeIncomingBaseVolume = 1f
+        crossfadePlaybackRequested = false
+        if (::player.isInitialized && resetPauseAtEnd) {
+            localPlayer.pauseAtEndOfMediaItems = false
+        }
+        releaseSecondaryCrossfadePlayer()
+        if (resetVolume && ::player.isInitialized) {
+            applyEffectiveVolumeImmediately()
+        }
+    }
+
+    private fun abortCrossfadeAndResumePrimary(reason: String) {
+        if (!::player.isInitialized) return
+
+        val currentMediaId = player.currentMediaItem?.mediaId
+        val targetIndex = secondaryCrossfadeTarget?.let(::resolveCrossfadeTargetIndex) ?: C.INDEX_UNSET
+        val shouldResumePlayback = crossfadePlaybackRequested || player.playWhenReady
+        val primaryAtEnd =
+            player.playbackState == Player.STATE_ENDED ||
+                (player.duration != C.TIME_UNSET && player.currentPosition >= player.duration)
+
+        crossfadeSuppressedMediaId = currentMediaId
+
+        Timber.tag(TAG).w("Falling back to primary playback after crossfade failure: reason=%s", reason)
+        cancelCrossfade(resetVolume = true, resetPauseAtEnd = true)
+
+        if (!shouldResumePlayback || player.currentMediaItem == null) return
+
+        if (primaryAtEnd && targetIndex != C.INDEX_UNSET) {
+            player.seekTo(targetIndex, 0L)
+        }
+        player.play()
+    }
+
+    private fun releaseSecondaryCrossfadePlayer() {
+        val playerToRelease = secondaryCrossfadePlayer ?: return
+        secondaryCrossfadePlayer = null
+        secondaryCrossfadeTarget = null
+        runCatching { playerToRelease.removeListener(secondaryCrossfadeListener) }
+        runCatching { playerToRelease.stop() }
+        runCatching { playerToRelease.clearMediaItems() }
+        runCatching { playerToRelease.release() }
+    }
+
     inner class MusicBinder : Binder() {
         val service: MusicService
             get() = this@MusicService
@@ -4430,6 +5250,27 @@ class MusicService :
         // Constants for audio normalization
         private const val MAX_GAIN_MB = 800 // Maximum gain in millibels (8 dB)
         private const val MIN_GAIN_MB = -800 // Minimum gain in millibels (-8 dB)
+
+        const val MIN_CROSSFADE_DURATION_MS = 500L
+        const val CROSSFADE_END_GUARD_MS = 150L
+        const val CROSSFADE_PREPARE_AHEAD_MS = 30_000L
+        const val CROSSFADE_READY_TIMEOUT_MS = 5_000L
+        const val CROSSFADE_HANDOFF_READY_TIMEOUT_MS = 5_000L
+        const val CROSSFADE_HANDOFF_BUFFER_MS = 5_000L
+        const val CROSSFADE_HANDOFF_SEEK_GUARD_MS = 750L
+        const val CROSSFADE_HANDOFF_MAX_DRIFT_MS = 75L
+        const val CROSSFADE_HANDOFF_DURATION_MS = 96L
+        const val CROSSFADE_HANDOFF_FRAME_MS = 8L
+        const val CROSSFADE_HANDOFF_POLL_MS = 10L
+        const val CROSSFADE_MIN_BUFFER_BEFORE_START_MS = 5_000L
+        const val CROSSFADE_MAX_BUFFER_BEFORE_START_MS = 12_500L
+        const val CROSSFADE_MIN_BUFFER_MS = 15_000
+        const val CROSSFADE_MAX_BUFFER_MS = 45_000
+        const val CROSSFADE_FRAME_MS = 32L
+        const val AUDIBLE_PLAYBACK_VOLUME_CHECK_MS = 2_000L
+        const val MIN_AUDIBLE_EFFECTIVE_VOLUME = 0.01f
+        const val STUCK_MUTED_VOLUME_EPSILON = 0.001f
+        const val MAX_AUDIO_NORMALIZATION_FACTOR = 1.414f
 
         private const val TAG = "MusicService"
     }

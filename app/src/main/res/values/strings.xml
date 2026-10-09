@@ -949,6 +949,12 @@
     <!-- Crossfade Audio -->
     <string name="crossfade">Crossfade</string>
     <string name="crossfade_desc">Overlap and fade smoothly between consecutive songs</string>
+    <string name="audio_crossfade_title">Crossfade</string>
+    <string name="audio_crossfade_description">Overlap the next song while the current song fades out.</string>
+    <string name="audio_crossfade_dialog_title">Crossfade duration</string>
+    <string name="audio_crossfade_seconds">%1$s s</string>
+    <string name="crossfade_gapless_title">Skip gapless albums</string>
+    <string name="crossfade_gapless_description">Do not crossfade consecutive songs from the same album.</string>
 
     <!-- AI Providers & Recommendations -->
     <string name="ai_provider">AI Provider</string>

@@ -344,6 +344,122 @@ fun SliderPreference(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CrossfadeSliderPreference(
+    modifier: Modifier = Modifier,
+    valueSeconds: Float,
+    onValueChange: (Float) -> Unit,
+    isEnabled: Boolean = true,
+) {
+    var showDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var sliderValue by remember {
+        mutableFloatStateOf(valueSeconds.coerceIn(0f, 10f))
+    }
+
+    if (showDialog) {
+        ActionPromptDialog(
+            titleBar = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.audio_crossfade_dialog_title),
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                }
+            },
+            onDismiss = { showDialog = false },
+            onConfirm = {
+                val rounded =
+                    ((sliderValue * 2f).roundToInt().toFloat() / 2f)
+                        .coerceIn(0f, 10f)
+                sliderValue = rounded
+                showDialog = false
+                onValueChange.invoke(rounded)
+            },
+            onCancel = {
+                sliderValue = valueSeconds.coerceIn(0f, 10f)
+                showDialog = false
+            },
+            onReset = {
+                sliderValue = 5f
+            },
+            content = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val rounded =
+                        ((sliderValue * 2f).roundToInt().toFloat() / 2f)
+                            .coerceIn(0f, 10f)
+                    val isWhole =
+                        (rounded - rounded.roundToInt().toFloat()).let { delta ->
+                            kotlin.math.abs(delta) < 0.001f
+                        }
+                    val displayValue =
+                        if (isWhole) rounded.roundToInt().toString() else String.format(java.util.Locale.getDefault(), "%.1f", rounded)
+                    Text(
+                        text =
+                            if (rounded <= 0f) {
+                                stringResource(R.string.dark_theme_off)
+                            } else {
+                                stringResource(R.string.audio_crossfade_seconds, displayValue)
+                            },
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = stringResource(R.string.audio_crossfade_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Slider(
+                        value = sliderValue,
+                        onValueChange = { sliderValue = it.coerceIn(0f, 10f) },
+                        valueRange = 0f..10f,
+                        steps = 19,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+        )
+    }
+
+    val rounded =
+        ((valueSeconds * 2f).roundToInt().toFloat() / 2f)
+            .coerceIn(0f, 10f)
+    val isWhole =
+        (rounded - rounded.roundToInt().toFloat()).let { delta ->
+            kotlin.math.abs(delta) < 0.001f
+        }
+    val displayValue =
+        if (isWhole) rounded.roundToInt().toString() else String.format(java.util.Locale.getDefault(), "%.1f", rounded)
+    val descriptionText =
+        if (rounded <= 0f) {
+            stringResource(R.string.dark_theme_off)
+        } else {
+            stringResource(R.string.audio_crossfade_seconds, displayValue)
+        }
+
+    PreferenceEntry(
+        modifier = modifier,
+        title = { Text(stringResource(R.string.audio_crossfade_title)) },
+        description = descriptionText,
+        icon = { Icon(painterResource(R.drawable.sync), null) },
+        onClick = { if (isEnabled) showDialog = true },
+        isEnabled = isEnabled,
+    )
+}
+
 @Composable
 fun PreferenceGroupTitle(
     title: String,

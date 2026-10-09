@@ -842,6 +842,7 @@ fun AppearanceSettings(
                                 PlayerScreenStyle.IOS_STYLED,
                                 PlayerScreenStyle.MODERN,
                                 PlayerScreenStyle.SPOTIFY,
+                                PlayerScreenStyle.BETTER,
                                 PlayerScreenStyle.CLASSIC,
                                 PlayerScreenStyle.APPLE,
                                 PlayerScreenStyle.PAPER,
@@ -861,6 +862,7 @@ fun AppearanceSettings(
                                     PlayerScreenStyle.IOS_STYLED -> "iOS Styled"
                                     PlayerScreenStyle.MODERN -> stringResource(R.string.modern_player)
                                     PlayerScreenStyle.SPOTIFY -> stringResource(R.string.spotify_player)
+                                    PlayerScreenStyle.BETTER -> "Better"
                                     PlayerScreenStyle.CLASSIC -> stringResource(R.string.classic_player)
                                     PlayerScreenStyle.APPLE -> "Apple"
                                     PlayerScreenStyle.PAPER -> stringResource(R.string.paper_player)
