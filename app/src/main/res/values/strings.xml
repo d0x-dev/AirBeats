@@ -280,6 +280,8 @@
     <string name="dark_theme_follow_system">Follow system</string>
     <string name="player_background_style">Player background style</string>
     <string name="player_screen_style">Player screen style</string>
+    <string name="immersive_player_mode">Immersive player mode</string>
+    <string name="immersive_player_mode_description">Show expanded player in full screen by hiding system bars</string>
     <string name="paper_player">Paper player</string>
     <string name="classic_player">Classic player</string>
     <string name="modern_player">Immersive player</string>

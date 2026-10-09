@@ -1,11 +1,19 @@
 package com.darkxvenom.airbeats.ui.player
 
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -29,6 +37,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -68,6 +77,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -160,7 +170,9 @@ fun BetterPlayerContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
+                .padding(top = 28.dp, bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -355,6 +367,69 @@ fun BetterPlayerContent(
         ) {
             // Row 1: Word pill + Next circle
             val haptic = LocalHapticFeedback.current
+            val context = LocalContext.current
+            val vibrator = remember(context) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    vibratorManager?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+            }
+
+            val triggerHapticAndVibrate = remember(haptic, vibrator) {
+                {
+                    try {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            vibrator?.vibrate(VibrationEffect.createOneShot(40, VibrationEffect.DEFAULT_AMPLITUDE))
+                        } else {
+                            @Suppress("DEPRECATION")
+                            vibrator?.vibrate(40)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+
+            var expandedButton by remember { mutableStateOf<Int?>(null) }
+
+            val playScaleX by animateFloatAsState(
+                targetValue = if (expandedButton == 1) 1.15f else 1.0f,
+                animationSpec = tween(150, easing = LinearEasing),
+                finishedListener = { if (expandedButton == 1) expandedButton = null },
+                label = "playScaleX"
+            )
+            val playScaleY by animateFloatAsState(
+                targetValue = if (expandedButton == 1) 1.06f else 1.0f,
+                animationSpec = tween(150, easing = LinearEasing),
+                label = "playScaleY"
+            )
+
+            val nextAnimatedWidth by animateDpAsState(
+                targetValue = if (expandedButton == 2) 105.dp else 80.dp,
+                animationSpec = tween(150, easing = LinearEasing),
+                finishedListener = { if (expandedButton == 2) expandedButton = null },
+                label = "nextWidth"
+            )
+            val nextScale by animateFloatAsState(
+                targetValue = if (expandedButton == 2) 1.15f else 1.0f,
+                animationSpec = tween(150, easing = LinearEasing),
+                label = "nextScale"
+            )
+
+            val prevAnimatedWidth by animateDpAsState(
+                targetValue = if (expandedButton == 0) 105.dp else 80.dp,
+                animationSpec = tween(150, easing = LinearEasing),
+                finishedListener = { if (expandedButton == 0) expandedButton = null },
+                label = "prevWidth"
+            )
+            val prevScale by animateFloatAsState(
+                targetValue = if (expandedButton == 0) 1.15f else 1.0f,
+                animationSpec = tween(150, easing = LinearEasing),
+                label = "prevScale"
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -365,9 +440,21 @@ fun BetterPlayerContent(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .graphicsLayer {
+                            scaleX = playScaleX
+                            scaleY = playScaleY
+                        }
                         .clip(RoundedCornerShape(50))
                         .background(accent)
-                        .clickable(onClick = onPlayPauseClick),
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(color = field.copy(alpha = 0.2f)),
+                            onClick = {
+                                triggerHapticAndVibrate()
+                                expandedButton = 1
+                                onPlayPauseClick()
+                            }
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     CompositionLocalProvider(LocalContentColor provides field) {
@@ -396,12 +483,15 @@ fun BetterPlayerContent(
 
                 BetterCircleButton(
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        triggerHapticAndVibrate()
+                        expandedButton = 2
                         playerConnection.seekToNext()
                     },
                     accent = accent,
                     field = field,
-                    size = 80.dp
+                    size = 80.dp,
+                    width = nextAnimatedWidth,
+                    scaleFactor = nextScale
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_next),
@@ -421,12 +511,15 @@ fun BetterPlayerContent(
             ) {
                 BetterCircleButton(
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        triggerHapticAndVibrate()
+                        expandedButton = 0
                         playerConnection.seekToPrevious()
                     },
                     accent = accent,
                     field = field,
-                    size = 80.dp
+                    size = 80.dp,
+                    width = prevAnimatedWidth,
+                    scaleFactor = prevScale
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_previous),
@@ -722,11 +815,14 @@ internal fun BetterCircleButton(
     accent: Color,
     field: Color,
     size: Dp,
+    width: Dp = size,
+    height: Dp = size,
+    scaleFactor: Float = 1f,
     content: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
+    val pressScale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
@@ -734,14 +830,16 @@ internal fun BetterCircleButton(
         ),
         label = "CircleButtonScale"
     )
+    val cornerRadius = height / 2
     Box(
         modifier = Modifier
-            .size(size)
+            .width(width)
+            .height(height)
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
+                scaleX = pressScale * scaleFactor
+                scaleY = pressScale * scaleFactor
             }
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(cornerRadius))
             .background(accent)
             .clickable(
                 interactionSource = interactionSource,

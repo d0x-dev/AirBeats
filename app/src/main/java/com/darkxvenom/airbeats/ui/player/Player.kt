@@ -223,6 +223,17 @@ import kotlinx.coroutines.withContext
 import me.saket.squiggles.SquigglySlider
 import kotlin.math.roundToInt
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.darkxvenom.airbeats.ui.screens.findActivity
+import com.darkxvenom.airbeats.constants.ImmersivePlayerModeKey
+
 internal val SpotifyFontFamily = FontFamily(
     Font(R.font.poppins_regular, FontWeight.Normal),
     Font(R.font.poppins_medium, FontWeight.SemiBold),
@@ -262,6 +273,47 @@ fun BottomSheetPlayer(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.DEFAULT
     )
+
+    val (immersivePlayerMode) = rememberPreference(
+        ImmersivePlayerModeKey,
+        defaultValue = false
+    )
+
+    val view = LocalView.current
+    val activity = remember(context) { context.findActivity() }
+    val window = activity?.window
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val isPlayerExpanded = state.isExpanded
+
+    DisposableEffect(lifecycleOwner, immersivePlayerMode, isPlayerExpanded, window) {
+        val shouldHide = immersivePlayerMode && isPlayerExpanded && window != null
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && shouldHide && window != null) {
+                val insetsController = WindowInsetsControllerCompat(window, view)
+                insetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        if (shouldHide && window != null) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            val insetsController = WindowInsetsControllerCompat(window, view)
+            insetsController.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            insetsController.hide(WindowInsetsCompat.Type.systemBars())
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (shouldHide && window != null) {
+                val insetsController = WindowInsetsControllerCompat(window, view)
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
 
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)

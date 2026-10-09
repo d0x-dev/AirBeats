@@ -161,6 +161,10 @@ fun AppearanceSettings(
         key = RotateBackgroundKey,
         defaultValue = false
     )
+    val (immersivePlayerMode, onImmersivePlayerModeChange) = rememberPreference(
+        ImmersivePlayerModeKey,
+        defaultValue = false
+    )
 
     // Estados de formas
     val smallButtonsShapeState = rememberPreference(
@@ -972,6 +976,14 @@ fun AppearanceSettings(
                                 )
                             }
                         ) else emptyArray()),
+
+                        {SwitchPreference(
+                            title = { Text(stringResource(R.string.immersive_player_mode)) },
+                            description = stringResource(R.string.immersive_player_mode_description),
+                            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+                            checked = immersivePlayerMode,
+                            onCheckedChange = onImmersivePlayerModeChange,
+                        )},
 
                         {SwitchPreference(
                             title = { Text(stringResource(R.string.enable_swipe_thumbnail)) },
