@@ -1673,10 +1673,11 @@ class MainActivity : FragmentActivity() {
                                         onBack = { navController.popBackStack() },
                                         modifier = Modifier.fillMaxSize()
                                     ) {
+                                    val hasCompletedSetup = remember { AutoBackupManager.hasCompletedSetup(this@MainActivity) }
                                     val justRestored = remember { AutoBackupManager.consumeJustRestoredFlag(this@MainActivity) }
                                     NavHost(
                                         navController = navController,
-                                        startDestination = if (justRestored) {
+                                        startDestination = if (hasCompletedSetup || justRestored) {
                                             when (tabOpenedFromShortcut ?: defaultOpenTab) {
                                                 NavigationTab.HOME -> Screens.Home
                                                 NavigationTab.EXPLORE -> Screens.Explore
@@ -1828,7 +1829,7 @@ class MainActivity : FragmentActivity() {
                                 }
 
                                 val currentRoute = navBackStackEntry?.destination?.route
-                                val isOnboardingOrAuth = isNameSet != true ||
+                                val isOnboardingOrAuth = (!AutoBackupManager.hasCompletedSetup(this@MainActivity) && isNameSet != true) ||
                                     currentRoute == null ||
                                     currentRoute == "onboarding" ||
                                     currentRoute == "guest_profile_setup" ||

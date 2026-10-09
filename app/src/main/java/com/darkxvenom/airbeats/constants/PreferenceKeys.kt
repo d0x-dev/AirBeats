@@ -811,3 +811,4 @@ val AiTranslationLanguages = linkedMapOf(
     "af" to "Afrikaans",
 )
 
+val HasCompletedSetupKey = booleanPreferencesKey("has_completed_setup")

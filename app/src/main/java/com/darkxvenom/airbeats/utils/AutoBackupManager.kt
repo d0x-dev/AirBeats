@@ -20,6 +20,8 @@ import com.darkxvenom.airbeats.playback.MusicService.Companion.PERSISTENT_QUEUE_
 import com.darkxvenom.airbeats.ui.component.AvatarPreferenceManager
 import com.darkxvenom.airbeats.ui.component.AvatarSelection
 import com.darkxvenom.airbeats.ui.component.NamePreferenceManager
+import androidx.datastore.preferences.core.edit
+import com.darkxvenom.airbeats.constants.HasCompletedSetupKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -51,6 +53,32 @@ object AutoBackupManager {
     private const val KEY_LAST_RESTORED_SIG = "last_restored_sig"
     private const val KEY_RESTART_ATTEMPTS = "restart_attempts"
     private const val KEY_JUST_RESTORED = "just_restored_from_setup"
+    private const val KEY_HAS_COMPLETED_SETUP = "has_completed_initial_setup"
+
+    fun hasCompletedSetup(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_HAS_COMPLETED_SETUP, false)) return true
+        val dataStoreVal = context.dataStore[HasCompletedSetupKey]
+        if (dataStoreVal == true) {
+            prefs.edit().putBoolean(KEY_HAS_COMPLETED_SETUP, true).commit()
+            return true
+        }
+        return false
+    }
+
+    fun markSetupCompleted(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_HAS_COMPLETED_SETUP, true)
+            .commit()
+        runCatching {
+            CoroutineScope(Dispatchers.IO).launch {
+                context.dataStore.edit { prefs ->
+                    prefs[HasCompletedSetupKey] = true
+                }
+            }
+        }
+    }
 
     fun setJustRestored(context: Context, value: Boolean) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -946,6 +974,7 @@ object AutoBackupManager {
                 }
             }
             setJustRestored(context, true)
+            markSetupCompleted(context)
 
             if (shouldRestart) {
                 restartApp(context)

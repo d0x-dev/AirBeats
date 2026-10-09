@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -132,6 +133,12 @@ fun OnboardingScreen(
             .navigationBarsPadding()
             .imePadding()
     ) {
+        BackHandler(enabled = pagerState.currentPage > 0) {
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(pagerState.currentPage - 1)
+            }
+        }
+
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -194,6 +201,7 @@ fun OnboardingScreen(
                     3 -> BackupScanStep(
                         navController = navController,
                         onSkip = {
+                            AutoBackupManager.markSetupCompleted(context)
                             navController.navigate(Screens.Home.route) {
                                 popUpTo("onboarding") { inclusive = true }
                             }
