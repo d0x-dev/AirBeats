@@ -921,6 +921,10 @@ fun AppleSearchScreen(
     val viewState by viewModel.viewState.collectAsState()
     val database = LocalDatabase.current
     val keyboardController = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    val (pauseSearchHistory) = com.darkxvenom.airbeats.utils.rememberPreference(
+        key = com.darkxvenom.airbeats.constants.PauseSearchHistoryKey,
+        defaultValue = false
+    )
     var selectedTab by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(com.darkxvenom.airbeats.ui.component.SearchTab.BROWSE_ALL) }
     val chartsViewModel: com.darkxvenom.airbeats.viewmodels.ChartsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
     val appleTextColor = AppleText
@@ -963,6 +967,11 @@ fun AppleSearchScreen(
                         val encoded = URLEncoder.encode(query, "UTF-8")
                         navController.navigate("search/$encoded")
                         keyboardController?.hide()
+                        if (!pauseSearchHistory && query.isNotBlank()) {
+                            database.query {
+                                insert(com.darkxvenom.airbeats.db.entities.SearchHistory(query = query.trim()))
+                            }
+                        }
                     }
                 ),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
@@ -1014,6 +1023,11 @@ fun AppleSearchScreen(
                         val encoded = URLEncoder.encode(suggestion, "UTF-8")
                         navController.navigate("search/$encoded")
                         keyboardController?.hide()
+                        if (!pauseSearchHistory && suggestion.isNotBlank()) {
+                            database.query {
+                                insert(com.darkxvenom.airbeats.db.entities.SearchHistory(query = suggestion.trim()))
+                            }
+                        }
                     },
                     onFillTextField = {
                         viewModel.query.value = suggestion

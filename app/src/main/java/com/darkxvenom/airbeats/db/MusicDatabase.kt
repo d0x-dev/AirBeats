@@ -40,12 +40,37 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.Date
+import com.darkxvenom.airbeats.constants.PauseSearchHistoryKey
+import com.darkxvenom.airbeats.utils.dataStore
+import kotlinx.coroutines.flow.first
 
 class MusicDatabase(
     private val delegate: InternalDatabase,
+    private val context: Context? = null,
 ) : DatabaseDao by delegate.dao {
     val openHelper: SupportSQLiteOpenHelper
         get() = delegate.openHelper
+
+    override fun insert(searchHistory: SearchHistory) {
+        val isPaused = try {
+            val cached = com.darkxvenom.airbeats.utils.dataStoreCache[PauseSearchHistoryKey.name]
+            if (cached is Boolean) {
+                cached
+            } else {
+                context?.let { ctx ->
+                    kotlinx.coroutines.runBlocking {
+                        ctx.dataStore.data.first()[PauseSearchHistoryKey]
+                    }
+                } ?: false
+            }
+        } catch (_: Exception) {
+            false
+        }
+        if (isPaused) {
+            return
+        }
+        delegate.dao.insert(searchHistory)
+    }
 
     fun query(block: MusicDatabase.() -> Unit) =
         with(delegate) {
@@ -141,6 +166,7 @@ abstract class InternalDatabase : RoomDatabase() {
                         .databaseBuilder(context, InternalDatabase::class.java, DB_NAME)
                         .addMigrations(MIGRATION_1_2)
                         .build(),
+                context = context.applicationContext,
             )
     }
 }

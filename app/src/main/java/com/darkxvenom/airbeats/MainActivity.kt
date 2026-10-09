@@ -786,14 +786,15 @@ class MainActivity : FragmentActivity() {
                             var searchSource by rememberEnumPreference(SearchSourceKey, SearchSource.ONLINE)
 
                             val searchBarFocusRequester = remember { FocusRequester() }
+                            val pauseSearchHistory by rememberPreference(PauseSearchHistoryKey, defaultValue = false)
 
                             val onSearch: (String) -> Unit = {
                                 if (it.isNotEmpty()) {
                                     onActiveChange(false)
                                     navController.navigate("search/${URLEncoder.encode(it, "UTF-8")}")
-                                    if (dataStore[PauseSearchHistoryKey] != true) {
+                                    if (!pauseSearchHistory && it.isNotBlank()) {
                                         database.query {
-                                            insert(SearchHistory(query = it))
+                                            insert(SearchHistory(query = it.trim()))
                                         }
                                     }
                                 }
@@ -1269,9 +1270,9 @@ class MainActivity : FragmentActivity() {
                                                                 try {
                                                                     val encodedQuery = URLEncoder.encode(searchQuery, "UTF-8")
                                                                     navController.navigate("search/$encodedQuery")
-                                                                    if (dataStore[PauseSearchHistoryKey] != true) {
+                                                                    if (!pauseSearchHistory && searchQuery.isNotBlank()) {
                                                                         database.query {
-                                                                            insert(SearchHistory(query = searchQuery))
+                                                                            insert(SearchHistory(query = searchQuery.trim()))
                                                                         }
                                                                     }
                                                                 } catch (e: Exception) {

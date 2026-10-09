@@ -118,12 +118,19 @@ fun MaterialSearchScreen(
     val database = LocalDatabase.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
+    val (pauseSearchHistory) = com.darkxvenom.airbeats.utils.rememberPreference(
+        key = PauseSearchHistoryKey,
+        defaultValue = false
+    )
+
     val onPerformSearch: (String) -> Unit = { text ->
         if (text.isNotBlank()) {
             keyboardController?.hide()
             navController.navigate("search/${URLEncoder.encode(text.trim(), "UTF-8")}")
-            database.query {
-                insert(SearchHistory(query = text.trim()))
+            if (!pauseSearchHistory) {
+                database.query {
+                    insert(SearchHistory(query = text.trim()))
+                }
             }
         }
     }
