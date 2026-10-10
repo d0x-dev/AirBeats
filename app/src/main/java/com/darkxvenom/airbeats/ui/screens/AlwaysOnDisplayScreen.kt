@@ -118,6 +118,7 @@ import com.darkxvenom.airbeats.constants.AodFullscreenKey
 import com.darkxvenom.airbeats.constants.AodShowArtistKey
 import com.darkxvenom.airbeats.constants.AodShowControlsKey
 import com.darkxvenom.airbeats.constants.AodShowProgressKey
+import com.darkxvenom.airbeats.constants.FullScreenModeKey
 import com.darkxvenom.airbeats.constants.AodShowTimeKey
 import com.darkxvenom.airbeats.constants.AodShowTitleKey
 import com.darkxvenom.airbeats.constants.AodStyle
@@ -206,11 +207,12 @@ fun AlwaysOnDisplayScreen(navController: NavController) {
     val window = dialogWindow ?: activity?.window
 
     val (fullscreenMode) = rememberPreference(AodFullscreenKey, true)
+    val (fullScreenMode) = rememberPreference(FullScreenModeKey, false)
 
-    DisposableEffect(Unit, fullscreenMode) {
+    DisposableEffect(Unit, fullscreenMode, fullScreenMode) {
         view.keepScreenOn = true
 
-        if (fullscreenMode && window != null) {
+        if ((fullscreenMode || fullScreenMode) && window != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 window.attributes = window.attributes.apply {
                     layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
@@ -231,7 +233,7 @@ fun AlwaysOnDisplayScreen(navController: NavController) {
 
         onDispose {
             view.keepScreenOn = false
-            if (window != null) {
+            if (window != null && !fullScreenMode) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
             }

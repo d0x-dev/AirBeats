@@ -165,6 +165,9 @@ import androidx.core.util.Consumer
 import com.darkxvenom.airbeats.utils.ExternalPlayerUtil
 import com.darkxvenom.airbeats.utils.ListenTogetherSync
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.darkxvenom.airbeats.constants.FullScreenModeKey
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.lifecycleScope
@@ -617,8 +620,58 @@ class MainActivity : FragmentActivity() {
                         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
                     }
                 }
-            LaunchedEffect(useDarkTheme) {
-                setSystemBarAppearance(useDarkTheme)
+            val fullScreenMode by rememberPreference(FullScreenModeKey, defaultValue = false)
+            val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+            DisposableEffect(lifecycleOwner, fullScreenMode, useDarkTheme) {
+                val applyFullScreen = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        window.attributes = window.attributes.apply {
+                            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                        }
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        window.attributes = window.attributes.apply {
+                            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                        }
+                    }
+                    window.statusBarColor = android.graphics.Color.TRANSPARENT
+                    window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                    WindowCompat.setDecorFitsSystemWindows(window, false)
+                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    insetsController.systemBarsBehavior =
+                        WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                    insetsController.isAppearanceLightStatusBars = !useDarkTheme
+                    insetsController.isAppearanceLightNavigationBars = !useDarkTheme
+                }
+
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        if (fullScreenMode) {
+                            applyFullScreen()
+                        } else {
+                            setSystemBarAppearance(useDarkTheme)
+                        }
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+
+                if (fullScreenMode) {
+                    applyFullScreen()
+                } else {
+                    val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                    insetsController.show(WindowInsetsCompat.Type.systemBars())
+                    setSystemBarAppearance(useDarkTheme)
+                }
+
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                    if (fullScreenMode) {
+                        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                        insetsController.show(WindowInsetsCompat.Type.systemBars())
+                        setSystemBarAppearance(useDarkTheme)
+                    }
+                }
             }
             val (isVoiceAssistantEnabled) = rememberPreference(com.darkxvenom.airbeats.constants.EnableVoiceAssistantKey, defaultValue = false)
             LaunchedEffect(isVoiceAssistantEnabled) {

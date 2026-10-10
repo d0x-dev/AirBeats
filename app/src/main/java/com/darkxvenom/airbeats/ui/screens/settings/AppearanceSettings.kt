@@ -131,6 +131,10 @@ fun AppearanceSettings(
     val isPlayful = homeScreenStyle == HomeScreenStyle.PLAYFUL
 
     val (pureBlack, onPureBlackChange) = rememberPreference(PureBlackKey, defaultValue = false)
+    val (fullScreenMode, onFullScreenModeChange) = rememberPreference(
+        FullScreenModeKey,
+        defaultValue = false
+    )
     val (colourfullPlayerColor, onColourfullPlayerColorChange) = rememberPreference(
         ColourfullPlayerColorKey,
         defaultValue = 0xFF4CAF50.toInt()
@@ -736,6 +740,13 @@ fun AppearanceSettings(
                                 isEnabled = useDarkTheme && !enableLiquidGlass && !frostedGlassCardsButtons
                             )
                         }},
+                        {SwitchPreference(
+                            title = { Text(stringResource(R.string.full_screen_mode)) },
+                            description = stringResource(R.string.full_screen_mode_description),
+                            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+                            checked = fullScreenMode,
+                            onCheckedChange = onFullScreenModeChange,
+                        )},
                         { PreferenceEntry(
                             title = { Text("Fonts") },
                             description = selectedFont.title,

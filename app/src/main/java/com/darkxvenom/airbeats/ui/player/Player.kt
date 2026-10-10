@@ -234,6 +234,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.darkxvenom.airbeats.ui.screens.findActivity
 import com.darkxvenom.airbeats.constants.ImmersivePlayerModeKey
+import com.darkxvenom.airbeats.constants.FullScreenModeKey
 
 internal val SpotifyFontFamily = FontFamily(
     Font(R.font.poppins_regular, FontWeight.Normal),
@@ -279,6 +280,10 @@ fun BottomSheetPlayer(
         ImmersivePlayerModeKey,
         defaultValue = false
     )
+    val (fullScreenMode) = rememberPreference(
+        FullScreenModeKey,
+        defaultValue = false
+    )
 
     val view = LocalView.current
     val activity = remember(context) { context.findActivity() }
@@ -287,8 +292,8 @@ fun BottomSheetPlayer(
 
     val isPlayerExpanded = state.isExpanded
 
-    DisposableEffect(lifecycleOwner, immersivePlayerMode, isPlayerExpanded, window) {
-        val shouldHide = immersivePlayerMode && isPlayerExpanded && window != null
+    DisposableEffect(lifecycleOwner, immersivePlayerMode, fullScreenMode, isPlayerExpanded, window) {
+        val shouldHide = (fullScreenMode || (immersivePlayerMode && isPlayerExpanded)) && window != null
         val applyImmersive = {
             if (window != null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -335,7 +340,7 @@ fun BottomSheetPlayer(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            if (shouldHide && window != null) {
+            if (shouldHide && window != null && !fullScreenMode) {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
             }
