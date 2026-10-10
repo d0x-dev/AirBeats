@@ -1,13 +1,20 @@
 package com.darkxvenom.airbeats.ui.player
 
+import java.io.File
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -43,6 +50,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -56,6 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -99,13 +109,20 @@ import androidx.media3.common.Player.STATE_ENDED
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.constants.AutoTranslateKey
+import com.darkxvenom.airbeats.constants.TranslateLanguageKey
 import com.darkxvenom.airbeats.db.entities.FormatEntity
+import com.darkxvenom.airbeats.db.entities.LyricsEntity
 import com.darkxvenom.airbeats.extensions.togglePlayPause
+import com.darkxvenom.airbeats.lyrics.LyricsTranslationHelper
+import com.darkxvenom.airbeats.lyrics.WordTimestamp
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.playback.PlayerConnection
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.utils.highQualityThumbnail
 import com.darkxvenom.airbeats.utils.makeTimeString
+import com.darkxvenom.airbeats.utils.rememberPreference
+import kotlinx.coroutines.flow.MutableStateFlow
 import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.RoundedPolygon
 import androidx.graphics.shapes.toPath
@@ -139,8 +156,10 @@ fun BetterPlayerContent(
     onMenuClick: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
     currentFormat: FormatEntity? = null,
+    currentLyrics: LyricsEntity? = null,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val artworkUrl = mediaMetadata.thumbnailUrl?.highQualityThumbnail()
     val onPlayPauseClick = {
         if (playbackState == STATE_ENDED) {
@@ -156,6 +175,163 @@ fun BetterPlayerContent(
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val liked = currentSong?.song?.liked == true
     val onToggleLike = playerConnection::toggleLike
+
+    // Translated synchronized lyrics
+    val playerLyrics by playerConnection.currentLyrics.collectAsState(initial = null)
+    val effectiveLyrics = currentLyrics ?: playerLyrics
+
+    val autoTranslate by rememberPreference(AutoTranslateKey, false)
+    val targetLanguage by rememberPreference(TranslateLanguageKey, "hi-Latn")
+    val currentTranslationLang by LyricsTranslationHelper.currentLanguageCode.collectAsState()
+    val translationVersion by LyricsTranslationHelper.translationVersion.collectAsState()
+
+    LaunchedEffect(mediaMetadata.id) {
+        LyricsTranslationHelper.onSongChanged(mediaMetadata.id)
+    }
+
+    val parsedLyrics = remember(effectiveLyrics?.lyrics) {
+        val raw = LyricsTranslationHelper.parseLyricsToEntries(effectiveLyrics?.lyrics)
+        raw.mapIndexed { index, entry ->
+            if (entry.words != null || entry.text.isBlank() || entry.time < 0) {
+                entry
+            } else {
+                val nextEntry = raw.getOrNull(index + 1)
+                val lineDurationMs = if (nextEntry != null && nextEntry.time > entry.time) {
+                    (nextEntry.time - entry.time).coerceIn(800L, 10000L)
+                } else {
+                    4000L
+                }
+                val lineStartSec = entry.time / 1000.0
+                val tokens = entry.text.split(Regex("\\s+")).filter { it.isNotBlank() }
+                if (tokens.isEmpty()) return@mapIndexed entry
+
+                val totalChars = tokens.sumOf { it.length }.coerceAtLeast(1)
+                val words = mutableListOf<WordTimestamp>()
+                var currentOffsetMs = 0.0
+
+                tokens.forEachIndexed { wordIdx, token ->
+                    val weight = token.length.toDouble() / totalChars
+                    val wordDurMs = lineDurationMs * weight
+                    val wordStartSec = lineStartSec + (currentOffsetMs / 1000.0)
+                    val wordEndSec = wordStartSec + (wordDurMs / 1000.0)
+                    val wordText = if (wordIdx < tokens.lastIndex) "$token " else token
+                    words.add(
+                        WordTimestamp(
+                            text = wordText,
+                            startTime = wordStartSec,
+                            endTime = wordEndSec,
+                        )
+                    )
+                    currentOffsetMs += wordDurMs
+                }
+                entry.copy(words = words)
+            }
+        }
+    }
+
+    DisposableEffect(parsedLyrics) {
+        LyricsTranslationHelper.registerLyrics(parsedLyrics)
+        onDispose {
+            LyricsTranslationHelper.unregisterLyrics(parsedLyrics)
+        }
+    }
+
+    LaunchedEffect(parsedLyrics, mediaMetadata.id, targetLanguage, currentTranslationLang, translationVersion, autoTranslate) {
+        val songId = mediaMetadata.id
+        if (parsedLyrics.isEmpty()) return@LaunchedEffect
+
+        if (autoTranslate) {
+            val activeLang = currentTranslationLang.ifBlank { targetLanguage }
+            var loaded = LyricsTranslationHelper.loadTranslationsFromCache(
+                lyrics = parsedLyrics,
+                context = context,
+                songId = songId,
+                targetLanguageCode = activeLang
+            )
+            if (!loaded && activeLang != targetLanguage) {
+                loaded = LyricsTranslationHelper.loadTranslationsFromCache(
+                    lyrics = parsedLyrics,
+                    context = context,
+                    songId = songId,
+                    targetLanguageCode = targetLanguage
+                )
+            }
+            if (!loaded) {
+                val dir = File(context.filesDir, "lyrics_translations")
+                val safeSongId = songId.replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                val cachedFile = dir.listFiles { _, name -> name.startsWith("${safeSongId}_") && name.endsWith(".json") }?.firstOrNull()
+                if (cachedFile != null) {
+                    val foundLang = cachedFile.name.removePrefix("${safeSongId}_").removeSuffix(".json")
+                    if (foundLang.isNotBlank()) {
+                        LyricsTranslationHelper.loadTranslationsFromCache(
+                            lyrics = parsedLyrics,
+                            context = context,
+                            songId = songId,
+                            targetLanguageCode = foundLang
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    val activePosition = sliderPosition ?: position
+
+    val activeEntry = remember(parsedLyrics, activePosition) {
+        if (parsedLyrics.isEmpty()) null
+        else {
+            parsedLyrics.findLast { it.time <= activePosition } ?: parsedLyrics.firstOrNull()
+        }
+    }
+
+    val fallbackFlow = remember { MutableStateFlow<String?>(null) }
+    val activeTranslatedText by (activeEntry?.translatedTextFlow ?: fallbackFlow).collectAsState()
+
+    val currentLyricText = remember(activeEntry, activeTranslatedText) {
+        activeTranslatedText?.takeIf { it.isNotBlank() } ?: activeEntry?.text
+    }
+
+    val activeWords = remember(activeEntry, activeTranslatedText) {
+        if (!activeTranslatedText.isNullOrBlank() && activeEntry != null && activeEntry.time >= 0) {
+            val nextEntry = parsedLyrics.getOrNull(parsedLyrics.indexOf(activeEntry) + 1)
+            val lineDurationMs = if (nextEntry != null && nextEntry.time > activeEntry.time) {
+                (nextEntry.time - activeEntry.time).coerceIn(800L, 10000L)
+            } else {
+                4000L
+            }
+            val lineStartSec = activeEntry.time / 1000.0
+            val tokens = activeTranslatedText!!.split(Regex("\\s+")).filter { it.isNotBlank() }
+            val totalChars = tokens.sumOf { it.length }.coerceAtLeast(1)
+            val words = mutableListOf<WordTimestamp>()
+            var currentOffsetMs = 0.0
+            tokens.forEachIndexed { wordIdx, token ->
+                val weight = token.length.toDouble() / totalChars
+                val wordDurMs = lineDurationMs * weight
+                val wordStartSec = lineStartSec + (currentOffsetMs / 1000.0)
+                val wordEndSec = wordStartSec + (wordDurMs / 1000.0)
+                val wordText = if (wordIdx < tokens.lastIndex) "$token " else token
+                words.add(
+                    WordTimestamp(
+                        text = wordText,
+                        startTime = wordStartSec,
+                        endTime = wordEndSec,
+                    )
+                )
+                currentOffsetMs += wordDurMs
+            }
+            words
+        } else {
+            activeEntry?.words
+        }
+    }
+
+    val lyricLineData = remember(activeEntry, currentLyricText, activeWords) {
+        LyricsLineData(
+            time = activeEntry?.time ?: -1L,
+            text = currentLyricText,
+            words = activeWords,
+        )
+    }
 
     // The two-tone contract: field + accent
     val accent = textBackgroundColor
@@ -292,7 +468,7 @@ fun BetterPlayerContent(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(top = 0.dp, bottom = 2.dp)
         ) {
             Text(
                 text = title,
@@ -322,9 +498,9 @@ fun BetterPlayerContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 4.dp)
+                    .padding(horizontal = 20.dp, vertical = 2.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
             ) {
@@ -355,6 +531,78 @@ fun BetterPlayerContent(
                     )
                 )
             }
+        }
+
+        // ========== SYNCHRONIZED LYRICS ROW ==========
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onLyricsClick)
+                .padding(vertical = 4.dp)
+        ) {
+            AnimatedContent(
+                targetState = lyricLineData,
+                transitionSpec = {
+                    (slideInVertically(animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)) { (it * 0.75f).toInt() } + fadeIn(tween(350)))
+                        .togetherWith(slideOutVertically(animationSpec = tween(300, easing = FastOutSlowInEasing)) { -(it * 0.75f).toInt() } + fadeOut(tween(200)))
+                },
+                contentAlignment = Alignment.CenterStart,
+                label = "lyrics_line_transition",
+                modifier = Modifier.weight(1f, fill = false)
+            ) { state ->
+                if (state.text.isNullOrBlank()) {
+                    Text(
+                        text = "Tap to view lyrics",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        ),
+                        color = accent.copy(alpha = 0.55f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else {
+                    val words = state.words
+                    if (!words.isNullOrEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
+                        ) {
+                            words.forEach { word ->
+                                AnimatedWordPreview(
+                                    word = word,
+                                    currentPositionMs = activePosition,
+                                    activeColor = accent,
+                                    dimColor = accent.copy(alpha = 0.40f),
+                                    fontSize = 14.sp,
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = state.text,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            ),
+                            color = accent,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.width(6.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = "Open lyrics",
+                tint = accent.copy(alpha = 0.55f),
+                modifier = Modifier.size(11.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))

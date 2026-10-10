@@ -1096,14 +1096,14 @@ private fun MaterialPillButton(
     }
 }
 
-private data class LyricsLineData(
+internal data class LyricsLineData(
     val time: Long,
     val text: String?,
     val words: List<WordTimestamp>?,
 )
 
 @Composable
-private fun AnimatedWordPreview(
+internal fun AnimatedWordPreview(
     word: WordTimestamp,
     currentPositionMs: Long,
     activeColor: Color,
