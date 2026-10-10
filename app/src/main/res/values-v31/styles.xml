@@ -14,6 +14,11 @@
         <!-- Disable preview -->
         <item name="android:windowDisablePreview">true</item>
 
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+
     </style>
 
 </resources>

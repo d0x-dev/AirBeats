@@ -14,6 +14,7 @@ import android.media.AudioManager
 import android.media.MediaRouter
 import android.os.Build
 import android.text.format.Formatter
+import android.view.WindowManager
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
@@ -288,28 +289,54 @@ fun BottomSheetPlayer(
 
     DisposableEffect(lifecycleOwner, immersivePlayerMode, isPlayerExpanded, window) {
         val shouldHide = immersivePlayerMode && isPlayerExpanded && window != null
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && shouldHide && window != null) {
-                val insetsController = WindowInsetsControllerCompat(window, view)
+        val applyImmersive = {
+            if (window != null) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window.attributes = window.attributes.apply {
+                        layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    window.attributes = window.attributes.apply {
+                        layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                    }
+                }
+                window.statusBarColor = android.graphics.Color.TRANSPARENT
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                WindowCompat.setDecorFitsSystemWindows(window, false)
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.systemBarsBehavior =
                     WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 insetsController.hide(WindowInsetsCompat.Type.systemBars())
             }
         }
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && shouldHide) {
+                applyImmersive()
+            }
+        }
         lifecycleOwner.lifecycle.addObserver(observer)
 
-        if (shouldHide && window != null) {
+        if (shouldHide) {
+            applyImmersive()
+        } else if (isPlayerExpanded && window != null) {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
             WindowCompat.setDecorFitsSystemWindows(window, false)
-            val insetsController = WindowInsetsControllerCompat(window, view)
-            insetsController.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            insetsController.hide(WindowInsetsCompat.Type.systemBars())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                window.attributes = window.attributes.apply {
+                    layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
         }
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             if (shouldHide && window != null) {
-                val insetsController = WindowInsetsControllerCompat(window, view)
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 insetsController.show(WindowInsetsCompat.Type.systemBars())
             }
         }
@@ -2937,7 +2964,8 @@ fun BottomSheetPlayer(
             Box(modifier = Modifier.fillMaxSize()) {
                 ImmersivePlayerBackdrop(
                     thumbnailUrl = mediaMetadata?.thumbnailUrl,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    fallbackColor = bottomSheetBackgroundColor,
                 )
 
                 Column(
@@ -3784,8 +3812,9 @@ private fun SpotifyPlainIconButton(
 private fun ImmersivePlayerBackdrop(
     thumbnailUrl: String?,
     modifier: Modifier = Modifier,
+    fallbackColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
-    Box(modifier = modifier.background(Color.Black)) {
+    Box(modifier = modifier.background(fallbackColor)) {
         AnimatedContent(
             targetState = thumbnailUrl,
             transitionSpec = { fadeIn(tween(900)) togetherWith fadeOut(tween(900)) },
