@@ -35,8 +35,8 @@ sealed class Screens(
 
     data object Search : Screens(
         titleId = R.string.search,
-        iconIdInactive = R.drawable.search,
-        iconIdActive = R.drawable.search_filled,
+        iconIdInactive = R.drawable.search, // Replace with outlined if available
+        iconIdActive = R.drawable.search, // Replace with filled if available
         route = "search_home"
     )
 
