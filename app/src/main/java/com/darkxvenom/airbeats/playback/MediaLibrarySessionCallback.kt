@@ -48,6 +48,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.plus
@@ -60,6 +61,7 @@ constructor(
     @ApplicationContext val context: Context,
     val database: MusicDatabase,
     val downloadUtil: DownloadUtil,
+    val voiceMediaSearchManager: VoiceMediaSearchManager,
 ) : MediaLibrarySession.Callback {
     private val scope = CoroutineScope(Dispatchers.Main) + Job()
     var toggleLike: () -> Unit = {}
@@ -269,8 +271,20 @@ constructor(
         browser: MediaSession.ControllerInfo,
         query: String,
         params: MediaLibraryService.LibraryParams?,
-    ): ListenableFuture<LibraryResult<Void>> =
-        Futures.immediateFuture(LibraryResult.ofVoid(params))
+    ): ListenableFuture<LibraryResult<Void>> {
+        val q = query.trim()
+        if (q.isNotBlank()) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val count = database.searchSongs(q, previewSize = 50).first().size
+                    session.notifySearchResultChanged(browser, query, count, params)
+                } catch (e: Exception) {
+                    timber.log.Timber.w(e, "Error notifying search result changed")
+                }
+            }
+        }
+        return Futures.immediateFuture(LibraryResult.ofVoid(params))
+    }
 
     override fun onGetSearchResult(
         session: MediaLibrarySession,
@@ -842,28 +856,63 @@ constructor(
                 }
 
                 else -> {
-                    val query = firstItem.requestMetadata.searchQuery?.trim().orEmpty()
-                    if (query.isNotBlank()) {
-                        val matchedSongs = database.searchSongs(query, previewSize = 50).first()
-                        val songId = matchedSongs.firstOrNull()?.id
-                        if (songId != null) {
-                            val allSongs = database.songsByCreateDateAsc().first()
-                            return@future MediaSession.MediaItemsWithStartPosition(
-                                allSongs.map { it.toMediaItem() },
-                                allSongs.indexOfFirst { it.id == songId }.takeIf { it != -1 } ?: 0,
-                                startPositionMs,
-                            )
-                        }
+                    val isSearchRequest = !firstItem.requestMetadata.searchQuery.isNullOrBlank() ||
+                        (firstItem.requestMetadata.extras != null && (
+                            firstItem.requestMetadata.extras!!.containsKey(android.provider.MediaStore.EXTRA_MEDIA_FOCUS) ||
+                            firstItem.requestMetadata.extras!!.containsKey(android.app.SearchManager.QUERY)
+                        ))
+
+                    if (!isSearchRequest && firstItem.mediaMetadata.isPlayable == true && firstItem.mediaId.isNotBlank() && mediaItems.size > 1) {
+                        return@future MediaSession.MediaItemsWithStartPosition(
+                            mediaItems,
+                            startIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0)),
+                            startPositionMs,
+                        )
                     }
 
-                    // Return the media items that were actually passed in by the app/controller
-                    MediaSession.MediaItemsWithStartPosition(
-                        mediaItems,
-                        startIndex.coerceIn(0, (mediaItems.size - 1).coerceAtLeast(0)),
-                        startPositionMs,
+                    // Delegate voice search, Google Assistant commands, or query resolution
+                    voiceMediaSearchManager.resolveSearchToMediaItems(
+                        item = firstItem,
+                        player = mediaSession.player,
+                        defaultResult = defaultResult,
                     )
                 }
             }
+        }
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> =
+        scope.future {
+            voiceMediaSearchManager.resolvePlaybackResumption(mediaSession.player)
+        }
+
+    override fun onAddMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>,
+    ): ListenableFuture<MutableList<MediaItem>> =
+        scope.future {
+            val resolvedList = mutableListOf<MediaItem>()
+            for (item in mediaItems) {
+                val isSearchRequest = !item.requestMetadata.searchQuery.isNullOrBlank() ||
+                    (item.requestMetadata.extras != null && (
+                        item.requestMetadata.extras!!.containsKey(android.provider.MediaStore.EXTRA_MEDIA_FOCUS) ||
+                        item.requestMetadata.extras!!.containsKey(android.app.SearchManager.QUERY)
+                    ))
+                if (isSearchRequest) {
+                    val resolved = voiceMediaSearchManager.resolveSearchToMediaItems(
+                        item = item,
+                        player = mediaSession.player,
+                        defaultResult = MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L)
+                    )
+                    resolvedList.addAll(resolved.mediaItems)
+                } else {
+                    resolvedList.add(item)
+                }
+            }
+            resolvedList
         }
 
     private fun drawableUri(

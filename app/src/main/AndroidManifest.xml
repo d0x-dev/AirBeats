@@ -139,6 +139,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- Google Assistant / Gemini Voice Media Search Intent Filter -->
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
             <!-- Music Recognition Intent Filter -->
             <intent-filter>
                 <action android:name="com.darkxvenom.airbeats.action.MUSIC_RECOGNITION" />
@@ -415,6 +421,7 @@
                 <action android:name="androidx.media3.session.MediaSessionService" />
                 <action android:name="androidx.media3.session.MediaLibraryService" />
                 <action android:name="android.media.browse.MediaBrowserService" />
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
             </intent-filter>
         </service>
 

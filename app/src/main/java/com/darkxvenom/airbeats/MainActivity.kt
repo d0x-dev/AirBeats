@@ -2013,6 +2013,22 @@ class MainActivity : FragmentActivity() {
                                             if (expIndex >= 0) rootPagerState.animateScrollToPage(expIndex)
                                             pendingIntentFlow.value = null
                                         }
+                                        android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH -> {
+                                            val serviceIntent = Intent(this@MainActivity, com.darkxvenom.airbeats.playback.MusicService::class.java).apply {
+                                                action = android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH
+                                                putExtras(targetIntent)
+                                            }
+                                            try {
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                                    startForegroundService(serviceIntent)
+                                                } else {
+                                                    startService(serviceIntent)
+                                                }
+                                            } catch (e: Exception) {
+                                                Timber.e(e, "Failed to start MusicService for voice play intent")
+                                            }
+                                            pendingIntentFlow.value = null
+                                        }
                                     }
                                 }
 

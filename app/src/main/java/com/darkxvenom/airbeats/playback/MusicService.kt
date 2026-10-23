@@ -247,6 +247,9 @@ class MusicService :
     @Inject
     lateinit var scrobbleRepository: com.darkxvenom.airbeats.data.repository.ScrobbleRepository
 
+    @Inject
+    lateinit var voiceMediaSearchManager: VoiceMediaSearchManager
+
     private lateinit var audioManager: AudioManager
     private var audioFocusRequest: Any? = null
     private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
@@ -4600,6 +4603,43 @@ class MusicService :
             pauseAllPlayersAndStopSelf()
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) {
+            handleVoiceSearchIntent(intent)
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    private fun handleVoiceSearchIntent(intent: Intent) {
+        val query = intent.getStringExtra(android.app.SearchManager.QUERY)
+        val extras = intent.extras ?: android.os.Bundle.EMPTY
+        val searchItem = MediaItem.Builder()
+            .setMediaId(query ?: "")
+            .setRequestMetadata(
+                MediaItem.RequestMetadata.Builder()
+                    .setSearchQuery(query)
+                    .setExtras(extras)
+                    .build()
+            )
+            .build()
+
+        scope.launch(Dispatchers.Main) {
+            val result = withContext(Dispatchers.IO) {
+                voiceMediaSearchManager.resolveSearchToMediaItems(
+                    item = searchItem,
+                    player = player,
+                    defaultResult = MediaSession.MediaItemsWithStartPosition(emptyList(), 0, 0L),
+                )
+            }
+            if (result.mediaItems.isNotEmpty()) {
+                player.setMediaItems(result.mediaItems, result.startIndex, result.startPositionMs)
+                player.prepare()
+                player.playWhenReady = true
+                player.play()
+            }
         }
     }
 
