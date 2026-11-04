@@ -201,8 +201,8 @@ fun HistoryScreen(
     if (showClearTodayDialog) {
         AlertDialog(
             onDismissRequest = { showClearTodayDialog = false },
-            title = { Text("Clear Today's History?", fontWeight = FontWeight.Bold) },
-            text = { Text("This will remove listening events from today. Your total play statistics will remain preserved.") },
+            title = { Text(stringResource(R.string.ui_remaining_clear_today_s_history), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.ui_remaining_this_will_remove_listening_events_from_today_your_total_play_stat)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -210,12 +210,12 @@ fun HistoryScreen(
                         showClearTodayDialog = false
                     }
                 ) {
-                    Text("Clear", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.clear), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearTodayDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.visitor_data_reset_cancel))
                 }
             }
         )
@@ -225,8 +225,8 @@ fun HistoryScreen(
     if (showClearAllDialog) {
         AlertDialog(
             onDismissRequest = { showClearAllDialog = false },
-            title = { Text("Clear All History?", fontWeight = FontWeight.Bold) },
-            text = { Text("Are you sure you want to clear your entire listening history? This cannot be undone.") },
+            title = { Text(stringResource(R.string.ui_remaining_clear_all_history), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.ui_remaining_are_you_sure_you_want_to_clear_your_entire_listening_history_this)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -234,12 +234,12 @@ fun HistoryScreen(
                         showClearAllDialog = false
                     }
                 ) {
-                    Text("Clear All", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.ui_text_clear_all), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearAllDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.visitor_data_reset_cancel))
                 }
             }
         )
@@ -583,7 +583,7 @@ fun HistoryScreen(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.search),
-                            contentDescription = "Search"
+                            contentDescription = stringResource(R.string.search)
                         )
                     }
                     Box {
@@ -592,7 +592,7 @@ fun HistoryScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.more_vert),
-                                contentDescription = "More options"
+                                contentDescription = stringResource(R.string.more_options)
                             )
                         }
                         DropdownMenu(
@@ -600,21 +600,21 @@ fun HistoryScreen(
                             onDismissRequest = { showTopMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("View Stats") },
+                                text = { Text(stringResource(R.string.ui_text_view_stats)) },
                                 onClick = {
                                     showTopMenu = false
                                     navController.navigate("stats")
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Clear Today's History") },
+                                text = { Text(stringResource(R.string.ui_remaining_clear_today_s_history)) },
                                 onClick = {
                                     showTopMenu = false
                                     showClearTodayDialog = true
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Clear All History", color = MaterialTheme.colorScheme.error) },
+                                text = { Text(stringResource(R.string.ui_text_clear_all_history), color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showTopMenu = false
                                     showClearAllDialog = true

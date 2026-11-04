@@ -202,7 +202,7 @@ private fun OverlayPermissionPrompt(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Cancel", color = Color.White)
+                    Text(stringResource(R.string.visitor_data_reset_cancel), color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))

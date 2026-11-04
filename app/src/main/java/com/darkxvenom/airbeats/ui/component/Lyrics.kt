@@ -970,7 +970,7 @@ fun Lyrics(
                                             else -> R.drawable.repeat
                                         }
                                     ),
-                                    contentDescription = "Repeat",
+                                    contentDescription = stringResource(R.string.ui_a11y_repeat),
                                     tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else Color.White,
                                     modifier = Modifier.size(24.dp)
                                 )
@@ -983,7 +983,7 @@ fun Lyrics(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.skip_previous),
-                                    contentDescription = "Previous",
+                                    contentDescription = stringResource(R.string.ui_a11y_previous),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -1020,7 +1020,7 @@ fun Lyrics(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.skip_next),
-                                    contentDescription = "Next",
+                                    contentDescription = stringResource(R.string.ui_a11y_next),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(32.dp)
                                 )
@@ -1035,7 +1035,7 @@ fun Lyrics(
                                         if (currentSong?.song?.liked == true) R.drawable.favorite
                                         else R.drawable.favorite_border
                                     ),
-                                    contentDescription = "Like",
+                                    contentDescription = stringResource(R.string.action_like),
                                     tint = if (currentSong?.song?.liked == true)
                                         MaterialTheme.colorScheme.error
                                     else MaterialTheme.colorScheme.onSurface,
@@ -1627,7 +1627,7 @@ fun Lyrics(
                                 )
 
                                 Text(
-                                    text = "Las letras no están disponibles para esta canción",
+                                    text = stringResource(R.string.ui_lyrics_unavailable_spanish),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center

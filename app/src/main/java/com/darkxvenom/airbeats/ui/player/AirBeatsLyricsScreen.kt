@@ -562,7 +562,7 @@ fun AirBeatsLyricsScreen(
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.volume_off),
-                                    contentDescription = "Minimum Volume",
+                                    contentDescription = stringResource(R.string.ui_a11y_minimum_volume),
                                     modifier = Modifier.size(20.dp),
                                     tint = textBackgroundColor
                                 )
@@ -579,7 +579,7 @@ fun AirBeatsLyricsScreen(
 
                                 Icon(
                                     painter = painterResource(R.drawable.volume_up),
-                                    contentDescription = "Maximum Volume",
+                                    contentDescription = stringResource(R.string.ui_a11y_maximum_volume),
                                     modifier = Modifier.size(20.dp),
                                     tint = textBackgroundColor
                                 )
@@ -864,7 +864,7 @@ fun AirBeatsLyricsScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.volume_off),
-                                contentDescription = "Minimum Volume",
+                                contentDescription = stringResource(R.string.ui_a11y_minimum_volume),
                                 modifier = Modifier.size(20.dp),
                                 tint = textBackgroundColor
                             )
@@ -881,7 +881,7 @@ fun AirBeatsLyricsScreen(
 
                             Icon(
                                 painter = painterResource(R.drawable.volume_up),
-                                contentDescription = "Maximum Volume",
+                                contentDescription = stringResource(R.string.ui_a11y_maximum_volume),
                                 modifier = Modifier.size(20.dp),
                                 tint = textBackgroundColor
                             )

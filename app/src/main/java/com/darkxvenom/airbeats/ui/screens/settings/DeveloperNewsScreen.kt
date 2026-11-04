@@ -258,7 +258,7 @@ private fun DeveloperNewsListScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "News From Developers",
+                            text = stringResource(R.string.ui_text_news_from_developers),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.3).sp
@@ -279,7 +279,7 @@ private fun DeveloperNewsListScreen(
                         IconButton(onClick = onSearchToggle) {
                             Icon(
                                 painter = painterResource(R.drawable.search),
-                                contentDescription = "Search",
+                                contentDescription = stringResource(R.string.search),
                                 tint = if (isSearchActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                             )
                         }
@@ -289,7 +289,7 @@ private fun DeveloperNewsListScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.refresh),
-                                contentDescription = "Refresh",
+                                contentDescription = stringResource(R.string.ui_text_refresh),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .size(22.dp)
@@ -341,7 +341,7 @@ private fun DeveloperNewsListScreen(
                                 decorationBox = { innerTextField ->
                                     if (searchQuery.isEmpty()) {
                                         Text(
-                                            text = "Search announcements...",
+                                            text = stringResource(R.string.ui_sweep_search_announcements),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                             fontSize = 15.sp
                                         )
@@ -356,7 +356,7 @@ private fun DeveloperNewsListScreen(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.close),
-                                        contentDescription = "Clear",
+                                        contentDescription = stringResource(R.string.clear),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -389,7 +389,7 @@ private fun DeveloperNewsListScreen(
                     ) {
                         LoadingIndicator()
                         Text(
-                            text = "Loading announcements...",
+                            text = stringResource(R.string.ui_sweep_loading_announcements),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.Medium
                             ),
@@ -465,7 +465,7 @@ private fun AnnouncementsHeroCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "New Announcements",
+                    text = stringResource(R.string.ui_text_new_announcements),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
@@ -600,7 +600,7 @@ private fun DeveloperNewsListItemCard(
                         modifier = Modifier.clickable(onClick = onClick)
                     ) {
                         Text(
-                            text = "more",
+                            text = stringResource(R.string.ui_text_more_2),
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold
                             ),
@@ -668,7 +668,7 @@ private fun DeveloperNewsDetailScreen(
                         }) {
                             Icon(
                                 painter = painterResource(R.drawable.open_in_new),
-                                contentDescription = "Open Link",
+                                contentDescription = stringResource(R.string.ui_a11y_open_link),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

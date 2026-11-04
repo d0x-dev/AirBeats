@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -149,7 +151,7 @@ fun PaperPlayer(
                 ) {
                     Icon(painterResource(R.drawable.arrow_back), null, tint = ink, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Back", color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.back), color = ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 IconButton(onClick = onOpenMenu) {
                     Icon(painterResource(R.drawable.menu), null, tint = ink, modifier = Modifier.size(28.dp))

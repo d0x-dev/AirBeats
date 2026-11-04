@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.menu
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -202,7 +204,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Audio FX & DJ Studio",
+                            text = stringResource(R.string.ui_remaining_audio_fx_dj_studio),
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 21.sp,
@@ -211,7 +213,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "PROFESSIONAL SOUND SCULPTING",
+                            text = stringResource(R.string.ui_text_professional_sound_sculpting),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 10.sp,
@@ -243,7 +245,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = "Reset All",
+                            text = stringResource(R.string.ui_text_reset_all),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp,
@@ -273,7 +275,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Pure Audio Bypass Active",
+                                text = stringResource(R.string.ui_text_pure_audio_bypass_active),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -281,7 +283,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                         }
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = "All DJ effects, audio filters, and equalizers are locked. The audio is playing 100% pure directly from the original source without alteration.",
+                            text = stringResource(R.string.ui_sweep_all_dj_effects_audio_filters_and_equalizers_are_locked_the_audio_),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFFA0A5B5)
                         )
@@ -291,7 +293,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.6f))
                         ) {
-                            Text("Disable Pure Audio Bypass", color = Color(0xFF00E5FF), style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.ui_text_disable_pure_audio_bypass), color = Color(0xFF00E5FF), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
@@ -313,7 +315,7 @@ fun InAppAudioFxSheet(onDismiss: () -> Unit) {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Studio FX Engine",
+                                text = stringResource(R.string.ui_text_studio_fx_engine),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -588,7 +590,7 @@ private fun DjPresetsRow(onSelectPreset: (DjPreset) -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "INSTANT DJ PRESETS",
+                text = stringResource(R.string.ui_text_instant_dj_presets),
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
@@ -597,7 +599,7 @@ private fun DjPresetsRow(onSelectPreset: (DjPreset) -> Unit) {
                 )
             )
             Text(
-                text = "1-Tap Transform",
+                text = stringResource(R.string.ui_sweep_1_tap_transform),
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 11.sp,
                     color = Color(0xFFFF2A6D)
@@ -694,7 +696,7 @@ private fun EchoDelaySection(
         ) {
             Column {
                 Text(
-                    text = "Stereo Echo & Delay",
+                    text = stringResource(R.string.ui_sweep_stereo_echo_delay),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -738,14 +740,14 @@ private fun EchoDelaySection(
                 ) {
                     Column {
                         Text(
-                            text = "3D Ping-Pong Bounce",
+                            text = stringResource(R.string.ui_sweep_3d_ping_pong_bounce),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White
                             )
                         )
                         Text(
-                            text = "Alternates echoes Left ⇄ Right",
+                            text = stringResource(R.string.ui_sweep_alternates_echoes_left_right),
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 11.sp,
                                 color = Color(0xFF7A7E8D)
@@ -773,7 +775,7 @@ private fun EchoDelaySection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Delay Time",
+                        text = stringResource(R.string.ui_text_delay_time),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFD0D3DC)
@@ -805,7 +807,7 @@ private fun EchoDelaySection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Feedback (Repeats)",
+                        text = stringResource(R.string.ui_sweep_feedback_repeats),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFD0D3DC)
@@ -837,7 +839,7 @@ private fun EchoDelaySection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Wet / Dry Mix",
+                        text = stringResource(R.string.ui_sweep_wet_dry_mix),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFD0D3DC)
@@ -932,7 +934,7 @@ private fun DjMixerSection(
         ) {
             Column {
                 Text(
-                    text = "DJ Filter Sweep",
+                    text = stringResource(R.string.ui_text_dj_filter_sweep),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -964,7 +966,7 @@ private fun DjMixerSection(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "Snap Center",
+                    text = stringResource(R.string.ui_text_snap_center),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFD0D3DC)
@@ -980,9 +982,9 @@ private fun DjMixerSection(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = "◀ LOW-PASS (Muffle)", fontSize = 10.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
-            Text(text = "FLAT", fontSize = 10.sp, color = Color(0xFF8B8F9D), fontWeight = FontWeight.Bold)
-            Text(text = "HIGH-PASS (Cut) ▶", fontSize = 10.sp, color = Color(0xFFFF2A6D), fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.ui_remaining_low_pass_muffle), fontSize = 10.sp, color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.ui_text_flat), fontSize = 10.sp, color = Color(0xFF8B8F9D), fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.ui_remaining_high_pass_cut), fontSize = 10.sp, color = Color(0xFFFF2A6D), fontWeight = FontWeight.Bold)
         }
 
         Slider(
@@ -1006,7 +1008,7 @@ private fun DjMixerSection(
         ) {
             Column {
                 Text(
-                    text = "Jet Flanger Swoosh",
+                    text = stringResource(R.string.ui_text_jet_flanger_swoosh),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -1038,8 +1040,8 @@ private fun DjMixerSection(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "LFO Rate: ${String.format("%.1f", flangerRate)} Hz", fontSize = 11.sp, color = Color(0xFFD0D3DC))
-                    Text(text = "Depth: ${(flangerDepth * 100).toInt()}%", fontSize = 11.sp, color = Color(0xFF9D4EDD))
+                    Text(text = stringResource(R.string.ui_dynamic_lfo_rate, flangerRate), fontSize = 11.sp, color = Color(0xFFD0D3DC))
+                    Text(text = stringResource(R.string.ui_dynamic_flanger_depth, (flangerDepth * 100).toInt()), fontSize = 11.sp, color = Color(0xFF9D4EDD))
                 }
                 Slider(
                     value = flangerDepth,
@@ -1064,14 +1066,14 @@ private fun DjMixerSection(
         ) {
             Column {
                 Text(
-                    text = "Warm Tape Saturation",
+                    text = stringResource(R.string.ui_text_warm_tape_saturation),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 )
                 Text(
-                    text = "Harmonic punch & soft-limiting drive",
+                    text = stringResource(R.string.ui_sweep_harmonic_punch_soft_limiting_drive),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 11.sp,
                         color = Color(0xFF6E7280)
@@ -1129,7 +1131,7 @@ private fun DjTurntableSection(
         ) {
             Column {
                 Text(
-                    text = "Turntable & Tempo",
+                    text = stringResource(R.string.ui_sweep_turntable_tempo),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -1152,7 +1154,7 @@ private fun DjTurntableSection(
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "1.0x Normal",
+                    text = stringResource(R.string.ui_sweep_1_0x_normal),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFD0D3DC)
@@ -1175,14 +1177,14 @@ private fun DjTurntableSection(
         ) {
             Column {
                 Text(
-                    text = "Vinyl Turntable Mode",
+                    text = stringResource(R.string.ui_text_vinyl_turntable_mode),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
                 )
                 Text(
-                    text = "Speeding up increases pitch (Nightcore / Slowed)",
+                    text = stringResource(R.string.ui_sweep_speeding_up_increases_pitch_nightcore_slowed),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 11.sp,
                         color = Color(0xFF7A7E8D)
@@ -1210,7 +1212,7 @@ private fun DjTurntableSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Playback Speed (BPM)",
+                text = stringResource(R.string.ui_sweep_playback_speed_bpm),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFD0D3DC)
@@ -1244,7 +1246,7 @@ private fun DjTurntableSection(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Pitch Shift (Key)",
+                        text = stringResource(R.string.ui_sweep_pitch_shift_key),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.SemiBold,
                             color = Color(0xFFD0D3DC)
@@ -1479,7 +1481,7 @@ private fun MasterBoostCard(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "MASTER BOOST",
+                        text = stringResource(R.string.ui_text_master_boost),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 12.sp,
@@ -1506,7 +1508,7 @@ private fun MasterBoostCard(
                 }
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
-                    text = "High-fidelity hardware digital amplifier",
+                    text = stringResource(R.string.ui_sweep_high_fidelity_hardware_digital_amplifier),
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontSize = 12.sp,
                         color = Color(0xFF6E7280)

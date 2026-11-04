@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -60,7 +62,7 @@ fun SpotifyAccountScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Spotify Account") },
+                title = { Text(stringResource(R.string.ui_text_spotify_account)) },
                 navigationIcon = {
                     IconButton(onClick = navController::navigateUp) {
                         Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
@@ -114,32 +116,32 @@ fun SpotifyAccountScreen(
                 }
 
                 SettingsGeneralCategory(
-                    title = "Account Details",
+                    title = stringResource(R.string.ui_heading_account_details),
                     items = listOf(
                         {
                             PreferenceEntry(
-                                title = { Text("Email") },
+                                title = { Text(stringResource(R.string.ui_text_email)) },
                                 description = user!!.email ?: "Hidden",
                                 icon = { Icon(painterResource(R.drawable.email), contentDescription = null) }
                             )
                         },
                         {
                             PreferenceEntry(
-                                title = { Text("Subscription") },
+                                title = { Text(stringResource(R.string.ui_text_subscription)) },
                                 description = user!!.product?.uppercase() ?: "Unknown",
                                 icon = { Icon(painterResource(R.drawable.star), contentDescription = null) }
                             )
                         },
                         {
                             PreferenceEntry(
-                                title = { Text("Country") },
+                                title = { Text(stringResource(R.string.ui_text_country)) },
                                 description = user!!.country ?: "Unknown",
                                 icon = { Icon(painterResource(R.drawable.language), contentDescription = null) }
                             )
                         },
                         {
                             PreferenceEntry(
-                                title = { Text("User ID") },
+                                title = { Text(stringResource(R.string.ui_text_user_id)) },
                                 description = user!!.id,
                                 icon = { Icon(painterResource(R.drawable.info), contentDescription = null) }
                             )
@@ -149,7 +151,7 @@ fun SpotifyAccountScreen(
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Not logged in to Spotify.")
+                Text(stringResource(R.string.ui_remaining_not_logged_in_to_spotify))
             }
         }
     }

@@ -1,4 +1,6 @@
-﻿package com.darkxvenom.airbeats.ui.component
+package com.darkxvenom.airbeats.ui.component
+
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -175,7 +177,7 @@ fun DeveloperNewsPopupDialog(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.newspaper),
-                                contentDescription = "News",
+                                contentDescription = stringResource(R.string.ui_a11y_news),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -280,7 +282,7 @@ fun DeveloperNewsPopupDialog(
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Text(
-                                text = "Dismiss",
+                                text = stringResource(R.string.dismiss),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -301,7 +303,7 @@ fun DeveloperNewsPopupDialog(
                             )
                         ) {
                             Text(
-                                text = "All News",
+                                text = stringResource(R.string.ui_text_all_news),
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                             )
                         }

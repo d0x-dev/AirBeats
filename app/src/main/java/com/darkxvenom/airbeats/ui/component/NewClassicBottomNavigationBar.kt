@@ -111,7 +111,7 @@ fun NewClassicBottomNavigationBar(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.more_horiz),
-                            contentDescription = "More"
+                            contentDescription = stringResource(R.string.ui_text_more)
                         )
                     }
 
@@ -128,7 +128,7 @@ fun NewClassicBottomNavigationBar(
                         tonalElevation = 6.dp
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Downloads") },
+                            text = { Text(stringResource(R.string.ui_text_downloads)) },
                             onClick = {
                                 overflowExpanded = false
                                 onNavigateRoute("auto_playlist/downloaded")
@@ -150,7 +150,7 @@ fun NewClassicBottomNavigationBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Cached") },
+                            text = { Text(stringResource(R.string.cached_playlist)) },
                             onClick = {
                                 overflowExpanded = false
                                 onNavigateRoute("cache_playlist/cached")
@@ -172,7 +172,7 @@ fun NewClassicBottomNavigationBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Search") },
+                            text = { Text(stringResource(R.string.search)) },
                             onClick = {
                                 overflowExpanded = false
                                 val searchIndex = items.indexOfFirst { it.titleId == R.string.search }
@@ -195,7 +195,7 @@ fun NewClassicBottomNavigationBar(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Library") },
+                            text = { Text(stringResource(R.string.android_auto_library)) },
                             onClick = {
                                 overflowExpanded = false
                                 val libraryIndex = items.indexOfFirst { it.titleId == R.string.library }

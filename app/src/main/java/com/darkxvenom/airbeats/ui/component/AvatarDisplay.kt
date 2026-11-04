@@ -176,7 +176,7 @@ fun AvatarWithStatus(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.person),
-                        contentDescription = "Online",
+                        contentDescription = stringResource(R.string.together_online),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.fillMaxSize()
                     )

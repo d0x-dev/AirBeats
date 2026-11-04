@@ -1,5 +1,9 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import com.darkxvenom.airbeats.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -72,7 +76,7 @@ fun ScrobblerAppsScreen(
                 title = {
                     Column {
                         Text(
-                            text = "Choose apps",
+                            text = stringResource(R.string.ui_text_choose_apps),
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                         )
@@ -85,7 +89,7 @@ fun ScrobblerAppsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -103,7 +107,7 @@ fun ScrobblerAppsScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = viewModel::setQuery,
-                placeholder = { Text("Search installed apps") },
+                placeholder = { Text(stringResource(R.string.ui_text_search_installed_apps)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -130,7 +134,7 @@ fun ScrobblerAppsScreen(
                     TextButton(onClick = viewModel::selectAllDetectedMusicPlayers) {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.size(6.dp))
-                        Text("Select detected music players")
+                        Text(stringResource(R.string.ui_text_select_detected_music_players))
                     }
                 }
             }
@@ -164,7 +168,7 @@ fun ScrobblerAppsScreen(
 
                         if (query.isBlank() && index == 0 && isSelected) {
                             Text(
-                                "Selected",
+                                stringResource(R.string.ui_text_selected),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
@@ -174,7 +178,7 @@ fun ScrobblerAppsScreen(
                         if (query.isBlank() && lastWasSelected && !isSelected) {
                             lastWasSelected = false
                             Text(
-                                "All apps",
+                                stringResource(R.string.ui_text_all_apps),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Bold,

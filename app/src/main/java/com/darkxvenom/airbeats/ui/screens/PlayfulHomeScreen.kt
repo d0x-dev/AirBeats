@@ -360,7 +360,7 @@ fun PlayfulHomeScreen(
                             IconButton(onClick = { navController.navigate("settings") }) {
                                 Icon(
                                     imageVector = Icons.Default.Menu,
-                                    contentDescription = "Settings",
+                                    contentDescription = stringResource(R.string.settings),
                                     tint = Color.Black,
                                     modifier = Modifier.size(28.dp)
                                 )
@@ -532,7 +532,7 @@ fun PlayfulHomeScreen(
                                     if (picks.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Quick Picks",
+                                                text = stringResource(R.string.ui_text_quick_picks),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -583,7 +583,7 @@ fun PlayfulHomeScreen(
                                     if (freshFinds.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Fresh Finds",
+                                                text = stringResource(R.string.fresh_finds),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -608,7 +608,7 @@ fun PlayfulHomeScreen(
                                     if (recents.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Jump Back In",
+                                                text = stringResource(R.string.ui_text_jump_back_in),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -655,7 +655,7 @@ fun PlayfulHomeScreen(
                                     if (artistTriples.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Top Artists",
+                                                text = stringResource(R.string.ui_text_top_artists),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -679,7 +679,7 @@ fun PlayfulHomeScreen(
                                     if (favs.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Heavy Rotation",
+                                                text = stringResource(R.string.heavy_rotation),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -704,7 +704,7 @@ fun PlayfulHomeScreen(
                                     if (playlists.isNotEmpty()) {
                                         item {
                                             Text(
-                                                text = "Your Mixes & Playlists",
+                                                text = stringResource(R.string.ui_sweep_your_mixes_playlists),
                                                 fontSize = 20.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.Black,
@@ -825,7 +825,7 @@ fun PlayfulHomeScreen(
                                         )
                                         Icon(
                                             painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                                            contentDescription = "Play/Pause",
+                                            contentDescription = stringResource(R.string.ui_a11y_play_pause),
                                             tint = Color.White,
                                             modifier = Modifier.size(20.dp)
                                         )
@@ -853,14 +853,14 @@ fun PlayfulHomeScreen(
                                             painter = painterResource(
                                                 if (currentSong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border
                                             ),
-                                            contentDescription = "Like",
+                                            contentDescription = stringResource(R.string.action_like),
                                             tint = if (currentSong?.song?.liked == true) MaterialTheme.colorScheme.error else Color.Black
                                         )
                                     }
                                     IconButton(onClick = { playerConnection.player.seekToNext() }) {
                                         Icon(
                                             painter = painterResource(R.drawable.skip_next),
-                                            contentDescription = "Skip Next",
+                                            contentDescription = stringResource(R.string.ui_a11y_skip_next),
                                             tint = Color.Black
                                         )
                                     }

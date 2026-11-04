@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -635,7 +637,7 @@ private fun QueueCollapsedContentV8(
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(
                     painter = painterResource(R.drawable.lyrics_apple),
-                    contentDescription = "Lyrics",
+                    contentDescription = stringResource(R.string.lyrics),
                     tint = textBackgroundColor.copy(alpha = 0.7f),
                     modifier = Modifier.size(20.dp),
                 )
@@ -661,7 +663,7 @@ private fun QueueCollapsedContentV8(
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(
                     painter = painterResource(R.drawable.queue_music),
-                    contentDescription = "Queue",
+                    contentDescription = stringResource(R.string.queue),
                     tint = textBackgroundColor.copy(alpha = 0.7f),
                     modifier = Modifier.size(20.dp),
                 )
@@ -720,7 +722,7 @@ private fun V8DeviceSelector(
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Icon(
                 painter = painterResource(deviceIcon),
-                contentDescription = "Playback Device",
+                contentDescription = stringResource(R.string.ui_a11y_playback_device),
                 tint = textBackgroundColor.copy(alpha = if (isCasting || isBluetooth) 1f else 0.7f),
                 modifier = Modifier.size(22.dp),
             )
@@ -799,13 +801,13 @@ internal fun DeviceSelectionBottomSheet(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Playback Destination",
+                            text = stringResource(R.string.ui_text_playback_destination),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "Choose audio route or stream to multiple devices",
+                            text = stringResource(R.string.ui_text_choose_audio_route_or_stream_to_multiple_devices),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
                         )
@@ -819,7 +821,7 @@ internal fun DeviceSelectionBottomSheet(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
+                                contentDescription = stringResource(R.string.close),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(18.dp),
                             )
@@ -861,13 +863,13 @@ internal fun DeviceSelectionBottomSheet(
                             Spacer(Modifier.width(10.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Bluetooth permission required",
+                                    text = stringResource(R.string.ui_text_bluetooth_permission_required),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.SemiBold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = "Needed to detect connected Bluetooth earbuds and speakers.",
+                                    text = stringResource(R.string.ui_sweep_needed_to_detect_connected_bluetooth_earbuds_and_speakers),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 )
@@ -879,7 +881,7 @@ internal fun DeviceSelectionBottomSheet(
                                 color = MaterialTheme.colorScheme.primary,
                             ) {
                                 Text(
-                                    text = "Grant",
+                                    text = stringResource(R.string.ui_text_grant),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimary,
@@ -924,7 +926,7 @@ internal fun DeviceSelectionBottomSheet(
                         Spacer(Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "System Default (Automatic)",
+                                text = stringResource(R.string.ui_sweep_system_default_automatic),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = if (isAutoSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isAutoSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -938,7 +940,7 @@ internal fun DeviceSelectionBottomSheet(
                         if (isAutoSelected) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.ui_text_selected),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp),
                             )
@@ -1026,13 +1028,13 @@ internal fun DeviceSelectionBottomSheet(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Check,
-                                        contentDescription = "Active",
+                                        contentDescription = stringResource(R.string.ui_text_active),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(16.dp),
                                     )
                                     Spacer(Modifier.width(4.dp))
                                     Text(
-                                        text = "Active",
+                                        text = stringResource(R.string.ui_text_active),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
@@ -1083,13 +1085,13 @@ internal fun DeviceSelectionBottomSheet(
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Simultaneous Dual Playback",
+                                    text = stringResource(R.string.ui_text_simultaneous_dual_playback),
                                     style = MaterialTheme.typography.bodyLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = "Play in phone speaker + Bluetooth/Aux at the same time",
+                                    text = stringResource(R.string.ui_sweep_play_in_phone_speaker_bluetooth_aux_at_the_same_time),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
                                 )
@@ -1119,7 +1121,7 @@ internal fun DeviceSelectionBottomSheet(
                                 Spacer(Modifier.height(10.dp))
 
                                 Text(
-                                    text = "SECONDARY MIRROR OUTPUT",
+                                    text = stringResource(R.string.ui_text_secondary_mirror_output),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary,
@@ -1166,7 +1168,7 @@ internal fun DeviceSelectionBottomSheet(
                                             if (isSecSelected) {
                                                 Icon(
                                                     imageVector = Icons.Default.Check,
-                                                    contentDescription = "Active Secondary",
+                                                    contentDescription = stringResource(R.string.ui_a11y_active_secondary),
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(16.dp),
                                                 )
@@ -1182,7 +1184,7 @@ internal fun DeviceSelectionBottomSheet(
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     Text(
-                                        text = "Speaker Volume",
+                                        text = stringResource(R.string.ui_text_speaker_volume),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
@@ -1225,7 +1227,7 @@ internal fun DeviceSelectionBottomSheet(
                             .padding(14.dp),
                     ) {
                         Text(
-                            text = "Done",
+                            text = stringResource(R.string.done),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

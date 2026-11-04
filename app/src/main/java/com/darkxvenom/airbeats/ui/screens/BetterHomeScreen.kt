@@ -138,7 +138,7 @@ fun BetterHomeScreen(
     } else if (accountName.isNotBlank()) {
         accountName
     } else {
-        "Friend"
+        stringResource(R.string.friend)
     }
 
     val avatarManager = remember { AvatarPreferenceManager(context) }
@@ -166,7 +166,9 @@ fun BetterHomeScreen(
         }
     }
 
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks) {
+    val emptyHeroTitle = stringResource(R.string.ui_heading_midnight_air)
+    val emptyHeroSubtitle = stringResource(R.string.ui_heading_editorial_12_tracks_41_min)
+    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
         heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
             val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
             HeroPlaylistData(
@@ -178,8 +180,8 @@ fun BetterHomeScreen(
                 playlistId = null
             )
         } ?: HeroPlaylistData(
-            title = "Midnight Air",
-            subtitle = "Editorial · 12 tracks · 41 min",
+            title = emptyHeroTitle,
+            subtitle = emptyHeroSubtitle,
             tag = "FEATURED MIX",
             thumbnailUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800",
             songs = emptyList(),
@@ -201,19 +203,25 @@ fun BetterHomeScreen(
         label = "BetterBlurAlpha"
     )
 
-    val greeting = remember {
-        when (LocalTime.now().hour) {
-            in 5..11 -> "Good morning"
-            in 12..16 -> "Good afternoon"
-            in 17..21 -> "Good evening"
-            else -> "Good night"
-        }
+    val greeting = when (LocalTime.now().hour) {
+        in 5..11 -> stringResource(R.string.greeting_morning)
+        in 12..16 -> stringResource(R.string.greeting_afternoon)
+        in 17..21 -> stringResource(R.string.greeting_evening)
+        else -> stringResource(R.string.greeting_night)
     }
 
-    var selectedMood by remember { mutableStateOf("Late night") }
-    val moodsList = remember {
-        listOf("Late night", "Focus", "Workout", "Jazz", "Chill", "Party", "Electronic", "Acoustic")
-    }
+    val defaultMood = stringResource(R.string.mood_late_night)
+    var selectedMood by remember(defaultMood) { mutableStateOf(defaultMood) }
+    val moodsList = listOf(
+        stringResource(R.string.mood_late_night),
+        stringResource(R.string.mood_focus),
+        stringResource(R.string.mood_workout),
+        stringResource(R.string.mood_jazz),
+        stringResource(R.string.mood_chill),
+        stringResource(R.string.mood_party),
+        stringResource(R.string.mood_electronic),
+        stringResource(R.string.mood_acoustic)
+    )
 
     val currentPlayingMedia by playerConnection.mediaMetadata.collectAsState()
     val isPlaying by playerConnection.isPlaying.collectAsState()
@@ -346,7 +354,7 @@ fun BetterHomeScreen(
                     Spacer(Modifier.height(24.dp))
                     BetterSectionHeader(
                         number = "02",
-                        title = "Fresh mixes",
+                        title = stringResource(R.string.fresh_mixes),
                         onSeeAllClick = { navController.navigate("explore") }
                     )
                     LazyRow(
@@ -384,7 +392,7 @@ fun BetterHomeScreen(
                 Spacer(Modifier.height(24.dp))
                 BetterSectionHeader(
                     number = "03",
-                    title = "Moods and genres",
+                    title = stringResource(R.string.mood_and_genres),
                     onSeeAllClick = { navController.navigate("explore") }
                 )
                 LazyRow(
@@ -413,7 +421,7 @@ fun BetterHomeScreen(
                     Spacer(Modifier.height(24.dp))
                     BetterSectionHeader(
                         number = "04",
-                        title = "Recently",
+                        title = stringResource(R.string.recently),
                         onSeeAllClick = { navController.navigate("history") }
                     )
                 }
@@ -687,7 +695,7 @@ private fun BetterHeroSection(
                             is AvatarSelection.Custom -> {
                                 AsyncImage(
                                     model = (currentAvatarSelection as AvatarSelection.Custom).uri.toUri(),
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.ui_a11y_profile),
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -695,7 +703,7 @@ private fun BetterHeroSection(
                             is AvatarSelection.DiceBear -> {
                                 AsyncImage(
                                     model = (currentAvatarSelection as AvatarSelection.DiceBear).url,
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.ui_a11y_profile),
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
@@ -704,7 +712,7 @@ private fun BetterHeroSection(
                                 if (!userAvatarUrl.isNullOrBlank()) {
                                     AsyncImage(
                                         model = userAvatarUrl,
-                                        contentDescription = "Profile",
+                                        contentDescription = stringResource(R.string.ui_a11y_profile),
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
                                     )
@@ -721,7 +729,7 @@ private fun BetterHeroSection(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.person),
-                                            contentDescription = "Profile",
+                                            contentDescription = stringResource(R.string.ui_a11y_profile),
                                             tint = Color.White,
                                             modifier = Modifier.size(22.dp)
                                         )
@@ -735,7 +743,7 @@ private fun BetterHeroSection(
 
                     Column {
                         Text(
-                            text = "Hi, $displayName",
+                            text = stringResource(R.string.greeting_user, displayName),
                             color = Color.White,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
@@ -772,7 +780,7 @@ private fun BetterHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.notification_on),
-                        contentDescription = "New Releases",
+                        contentDescription = stringResource(R.string.ui_text_new_releases),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -791,7 +799,7 @@ private fun BetterHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.newspaper),
-                        contentDescription = "News from Developer",
+                        contentDescription = stringResource(R.string.ui_a11y_news_from_developer),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -810,7 +818,7 @@ private fun BetterHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.settings),
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.settings),
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
@@ -826,7 +834,7 @@ private fun BetterHeroSection(
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 Text(
-                    text = heroData.tag.ifBlank { "FEATURED MIX" }.uppercase(),
+                    text = heroData.tag.ifBlank { stringResource(R.string.featured_mix) }.uppercase(),
                     color = BetterLimeAccent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -875,13 +883,13 @@ private fun BetterHeroSection(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Play",
+                                contentDescription = stringResource(R.string.music_recognition_overlay_play),
                                 tint = Color.Black,
                                 modifier = Modifier.size(22.dp)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = "Play",
+                                text = stringResource(R.string.play),
                                 color = Color.Black,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
@@ -900,7 +908,7 @@ private fun BetterHeroSection(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.FavoriteBorder,
-                            contentDescription = "Favorite",
+                            contentDescription = stringResource(R.string.ui_a11y_favorite),
                             tint = Color.White,
                             modifier = Modifier.size(22.dp)
                         )
@@ -947,7 +955,7 @@ private fun BetterSectionHeader(
 
         if (onSeeAllClick != null) {
             Text(
-                text = "See all",
+                text = stringResource(R.string.see_all),
                 color = Color.White.copy(alpha = 0.60f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -1051,14 +1059,14 @@ private fun BetterContinueListeningCard(
                 if (isPlaying) {
                     Icon(
                         painter = painterResource(R.drawable.pause),
-                        contentDescription = "Pause",
+                        contentDescription = stringResource(R.string.ui_a11y_pause),
                         tint = Color.Black,
                         modifier = Modifier.size(20.dp)
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
+                        contentDescription = stringResource(R.string.music_recognition_overlay_play),
                         tint = Color.Black,
                         modifier = Modifier.size(22.dp)
                     )

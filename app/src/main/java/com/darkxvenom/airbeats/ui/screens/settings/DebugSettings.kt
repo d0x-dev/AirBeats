@@ -80,7 +80,7 @@ fun DebugSettings(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Experimental Settings",
+                        text = stringResource(R.string.ui_text_experimental_settings),
                         style = MaterialTheme.typography.titleLarge
                     )
                 },
@@ -181,7 +181,7 @@ private fun LogViewerPanel() {
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Debug logs",
+                        text = stringResource(R.string.ui_text_debug_logs),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -205,7 +205,7 @@ private fun LogViewerPanel() {
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.search),
-                            contentDescription = "Filter Levels"
+                            contentDescription = stringResource(R.string.ui_a11y_filter_levels)
                         )
                     }
 
@@ -236,7 +236,7 @@ private fun LogViewerPanel() {
                             }
                         )
                         LogLevelMenuItem(
-                            label = "Info",
+                            label = stringResource(R.string.info_button),
                             level = Log.INFO,
                             selectedLevels = selectedLevels,
                             onToggle = { level ->
@@ -258,7 +258,7 @@ private fun LogViewerPanel() {
                             }
                         )
                         LogLevelMenuItem(
-                            label = "Error",
+                            label = stringResource(R.string.error),
                             level = Log.ERROR,
                             selectedLevels = selectedLevels,
                             onToggle = { level ->
@@ -276,7 +276,7 @@ private fun LogViewerPanel() {
                             },
                             text = {
                                 Text(
-                                    text = "Reset to Default",
+                                    text = stringResource(R.string.ui_text_reset_to_default),
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             },
@@ -301,7 +301,7 @@ private fun LogViewerPanel() {
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
                     icon = { }
                 ) {
-                    Text("All Logs")
+                    Text(stringResource(R.string.ui_text_all_logs))
                 }
                 SegmentedButton(
                     selected = filterMode == 1,
@@ -309,7 +309,7 @@ private fun LogViewerPanel() {
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
                     icon = { }
                 ) {
-                    Text("Music ID")
+                    Text(stringResource(R.string.ui_text_music_id))
                 }
                 SegmentedButton(
                     selected = filterMode == 2,
@@ -317,7 +317,7 @@ private fun LogViewerPanel() {
                     shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
                     icon = { }
                 ) {
-                    Text("Discord")
+                    Text(stringResource(R.string.discord))
                 }
             }
 
@@ -364,7 +364,7 @@ private fun LogViewerPanel() {
                         modifier = Modifier.size(18.dp)
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(8.dp))
-                    Text("Clear")
+                    Text(stringResource(R.string.clear))
                 }
                 androidx.compose.material3.Button(
                     onClick = {
@@ -382,7 +382,7 @@ private fun LogViewerPanel() {
                         modifier = Modifier.size(18.dp)
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(8.dp))
-                    Text("Copy")
+                    Text(stringResource(R.string.ui_text_copy))
                 }
             }
         }
@@ -407,13 +407,13 @@ private fun EmptyLogPlaceholder() {
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
         )
         Text(
-            text = "No logs match the current filters.",
+            text = stringResource(R.string.ui_sweep_no_logs_match_the_current_filters),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Adjust the level or tag filter to see more.",
+            text = stringResource(R.string.ui_sweep_adjust_the_level_or_tag_filter_to_see_more),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             textAlign = TextAlign.Center

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -421,7 +423,7 @@ fun RankUpPopup(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "NEW TIER UNLOCKED!",
+                            text = stringResource(R.string.ui_sweep_new_tier_unlocked),
                             color = Color(0xFFFFD700),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
@@ -480,7 +482,7 @@ fun RankUpPopup(
                                 .height(48.dp)
                         ) {
                             Text(
-                                text = "AWESOME!",
+                                text = stringResource(R.string.ui_sweep_awesome),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
@@ -516,13 +518,13 @@ fun RankBadgeSelector(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Rank Badge Customisation",
+            text = stringResource(R.string.ui_text_rank_badge_customisation),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Showcase any of your unlocked badges next to your name. Changing this badge does not affect your actual stats ranking.",
+            text = stringResource(R.string.ui_sweep_showcase_any_of_your_unlocked_badges_next_to_your_name_changing_t),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -566,7 +568,7 @@ fun RankBadgeSelector(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Auto‑Show Highest Rank",
+                    text = stringResource(R.string.ui_sweep_auto_show_highest_rank),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -580,7 +582,7 @@ fun RankBadgeSelector(
             if (displayedRank == null) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.ui_text_selected),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
@@ -590,7 +592,7 @@ fun RankBadgeSelector(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "All Ranks",
+            text = stringResource(R.string.ui_text_all_ranks),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -674,7 +676,7 @@ fun RankBadgeSelector(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Lock,
-                                contentDescription = "Locked",
+                                contentDescription = stringResource(R.string.ui_a11y_locked),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                                 modifier = Modifier
                                     .padding(6.dp)
@@ -700,7 +702,7 @@ fun BadgeSelector(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Select Badge") },
+        title = { Text(stringResource(R.string.ui_text_select_badge)) },
         text = {
             Column {
                 Row(
@@ -710,7 +712,7 @@ fun BadgeSelector(
                         .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Auto (real rank)", fontWeight = if (currentDisplayed == null) FontWeight.Bold else FontWeight.Normal)
+                    Text(stringResource(R.string.auto_real_rank), fontWeight = if (currentDisplayed == null) FontWeight.Bold else FontWeight.Normal)
                 }
                 unlockedRanks.forEach { rank ->
                     Row(
@@ -727,7 +729,7 @@ fun BadgeSelector(
                 }
             }
         },
-        confirmButton = { Button(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { Button(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
 }
 

@@ -621,7 +621,7 @@ fun PlayerMenu(
                                 leadingContent = {
                                     Icon(
                                         painter = painterResource(if (isCasting) R.drawable.ic_cast_connected else R.drawable.ic_cast),
-                                        contentDescription = "Cast",
+                                        contentDescription = stringResource(R.string.ui_a11y_cast),
                                         tint = if (isCasting) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -831,7 +831,7 @@ fun PlayerMenu(
                             else -> R.drawable.airplay
                         }
                         androidx.compose.material3.ListItem(
-                            headlineContent = { Text("Output audio device") },
+                            headlineContent = { Text(stringResource(R.string.output_audio_device)) },
                             supportingContent = { Text(deviceName) },
                             leadingContent = {
                                 Icon(
@@ -849,7 +849,7 @@ fun PlayerMenu(
 
                     item {
                         androidx.compose.material3.ListItem(
-                            headlineContent = { Text("Set as Ringtone") },
+                            headlineContent = { Text(stringResource(R.string.set_as_ringtone)) },
                             leadingContent = {
                                 Icon(
                                     painter = painterResource(R.drawable.notification),
@@ -890,7 +890,7 @@ fun PlayerMenu(
                         val audioBoostPercent by service.audioBoostPercent.collectAsState()
 
                         androidx.compose.material3.ListItem(
-                            headlineContent = { Text("Audio FX & DJ Studio") },
+                            headlineContent = { Text(stringResource(R.string.ui_remaining_audio_fx_dj_studio)) },
                             supportingContent = {
                                 Text(
                                     text = if (audioBoostEnabled) "${audioBoostPercent}% Boost Active • Tap for DJ Studio" else "Tap to open DJ Studio console",
@@ -962,7 +962,7 @@ fun PlayerMenu(
                         val eightDAudioEnabled by playerConnection.service.eightDAudioEnabled.collectAsState()
                         val eightDAudioLevel by playerConnection.service.eightDAudioLevel.collectAsState()
                         androidx.compose.material3.ListItem(
-                            headlineContent = { Text("8D Audio") },
+                            headlineContent = { Text(stringResource(R.string.ui_remaining_8d_audio)) },
                             supportingContent = {
                                 Text(
                                     text = if (eightDAudioEnabled) "${eightDAudioLevel}D Spatial Orbit Active" else stringResource(R.string.disabled),
@@ -1502,7 +1502,7 @@ internal fun InAppEqualizerSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Pure Audio Bypass is active. Equalizer is locked for bit-exact sound.",
+                            text = stringResource(R.string.ui_sweep_pure_audio_bypass_is_active_equalizer_is_locked_for_bit_exact_sou),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -1914,7 +1914,7 @@ internal fun InAppDolbyAtmosSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Pure Audio Bypass is active. Dolby Atmos & Spatial Virtualizer are locked for bit-exact sound.",
+                            text = stringResource(R.string.ui_sweep_pure_audio_bypass_is_active_dolby_atmos_spatial_virtualizer_are_l),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -1984,14 +1984,14 @@ internal fun InAppDolbyAtmosSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Acoustic Spatial Processing",
+                            text = stringResource(R.string.ui_text_acoustic_spatial_processing),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Expands the stereo soundstage into a multi-dimensional listening field using acoustic mid/side expansion and cross-feed head modeling.",
+                        text = stringResource(R.string.ui_sweep_expands_the_stereo_soundstage_into_a_multi_dimensional_listening_),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -2004,7 +2004,7 @@ internal fun InAppDolbyAtmosSheet(onDismiss: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Hardware E-AC-3 Decoder",
+                            text = stringResource(R.string.ui_sweep_hardware_e_ac_3_decoder),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -2024,7 +2024,7 @@ internal fun InAppDolbyAtmosSheet(onDismiss: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Soundstage Enhancement",
+                            text = stringResource(R.string.ui_text_soundstage_enhancement),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -2169,7 +2169,7 @@ internal fun InAppEightDAudioSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Pure Audio Bypass is active. 8D Audio is locked for bit-exact sound.",
+                            text = stringResource(R.string.ui_sweep_pure_audio_bypass_is_active_8d_audio_is_locked_for_bit_exact_soun),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -2201,7 +2201,7 @@ internal fun InAppEightDAudioSheet(onDismiss: () -> Unit) {
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "8D Audio",
+                        text = stringResource(R.string.ui_remaining_8d_audio),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -2237,14 +2237,14 @@ internal fun InAppEightDAudioSheet(onDismiss: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "360° Binaural Spatial Orbit",
+                            text = stringResource(R.string.ui_sweep_360_binaural_spatial_orbit),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Music and vocals orbit 360° through your head using acoustic interaural time difference (ITD), head-shadow filtering, and virtual 3D room ambience. Best experienced with headphones, earphones, or dual speakers.",
+                        text = stringResource(R.string.ui_sweep_music_and_vocals_orbit_360_through_your_head_using_acoustic_inter),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -2260,7 +2260,7 @@ internal fun InAppEightDAudioSheet(onDismiss: () -> Unit) {
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "Effect Intensity",
+                                    text = stringResource(R.string.ui_text_effect_intensity),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -2320,17 +2320,17 @@ internal fun InAppEightDAudioSheet(onDismiss: () -> Unit) {
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "1D (Subtle)",
+                            text = stringResource(R.string.ui_sweep_1d_subtle),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
                         Text(
-                            text = "8D (Classic)",
+                            text = stringResource(R.string.ui_sweep_8d_classic),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )
                         Text(
-                            text = "16D (Extreme)",
+                            text = stringResource(R.string.ui_sweep_16d_extreme),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         )

@@ -178,7 +178,7 @@ fun PlaybackErrorDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Playback Error",
+                    text = stringResource(R.string.ui_text_playback_error),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Bold,
                     ),
@@ -273,7 +273,7 @@ fun PlaybackErrorDialog(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Copy", maxLines = 1)
+                        Text(text = stringResource(R.string.ui_text_copy), maxLines = 1)
                     }
 
                     FilledTonalButton(
@@ -297,7 +297,7 @@ fun PlaybackErrorDialog(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Share", maxLines = 1)
+                        Text(text = stringResource(R.string.share_clip), maxLines = 1)
                     }
                 }
 
@@ -313,7 +313,7 @@ fun PlaybackErrorDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(14.dp),
                     ) {
-                        Text(text = "Dismiss")
+                        Text(text = stringResource(R.string.dismiss))
                     }
 
                     Button(
@@ -327,7 +327,7 @@ fun PlaybackErrorDialog(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Retry", maxLines = 1)
+                        Text(text = stringResource(R.string.retry), maxLines = 1)
                     }
                 }
             }

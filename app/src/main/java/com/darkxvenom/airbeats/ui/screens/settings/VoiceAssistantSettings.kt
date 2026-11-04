@@ -187,7 +187,7 @@ fun VoiceAssistantSettings(
 
         // Status & Permissions Banner
         if (!hasMicPermission || !isIgnoringBatteryOptimizations || !hasOverlayPermission) {
-            PreferenceGroupTitle(title = "Permissions & Enhancements")
+            PreferenceGroupTitle(title = stringResource(R.string.ui_heading_permissions_enhancements))
 
             Column(
                 modifier = Modifier
@@ -221,7 +221,7 @@ fun VoiceAssistantSettings(
                             onClick = { micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("Grant", fontSize = 12.sp)
+                            Text(stringResource(R.string.ui_text_grant), fontSize = 12.sp)
                         }
                     }
                 }
@@ -234,12 +234,12 @@ fun VoiceAssistantSettings(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "✨ AirBeats Voice Aura HUD",
+                                text = stringResource(R.string.ui_sweep_airbeats_voice_aura_hud),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "Displays an animated glow & live speech sheet at the bottom of your phone when AirBeats listens in the background.",
+                                text = stringResource(R.string.ui_sweep_displays_an_animated_glow_live_speech_sheet_at_the_bottom_of_your),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -259,7 +259,7 @@ fun VoiceAssistantSettings(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("Enable", fontSize = 12.sp)
+                            Text(stringResource(R.string.ui_text_enable), fontSize = 12.sp)
                         }
                     }
                 }
@@ -293,7 +293,7 @@ fun VoiceAssistantSettings(
                                 }
                             }
                         ) {
-                            Text("Disable", fontSize = 12.sp)
+                            Text(stringResource(R.string.ui_text_disable), fontSize = 12.sp)
                         }
                     }
                 }
@@ -577,7 +577,7 @@ private fun VoiceTestCard() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "🗣️ Spoken words:",
+                        text = stringResource(R.string.ui_sweep_spoken_words),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -140,7 +142,7 @@ fun NameSetupDialog(
 
                     // Title
                     Text(
-                        text = "Welcome to AirBeats!",
+                        text = stringResource(R.string.ui_sweep_welcome_to_airbeats),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
@@ -151,7 +153,7 @@ fun NameSetupDialog(
 
                     // Subtitle
                     Text(
-                        text = "What should we call you? Enter your name or nickname to personalize your experience.",
+                        text = stringResource(R.string.ui_sweep_what_should_we_call_you_enter_your_name_or_nickname_to_personaliz),
                         fontSize = 14.sp,
                         color = subTextColor,
                         textAlign = TextAlign.Center,
@@ -170,14 +172,14 @@ fun NameSetupDialog(
                         },
                         label = {
                             Text(
-                                text = "Your Name",
+                                text = stringResource(R.string.ui_text_your_name),
                                 color = if (nameInput.text.isNotEmpty()) primaryColor else subTextColor,
                                 fontWeight = FontWeight.Medium
                             )
                         },
                         placeholder = {
                             Text(
-                                text = "Enter your name...",
+                                text = stringResource(R.string.ui_sweep_enter_your_name),
                                 color = subTextColor.copy(alpha = 0.7f)
                             )
                         },
@@ -253,7 +255,7 @@ fun NameSetupDialog(
                         )
                     ) {
                         Text(
-                            text = "Get Started",
+                            text = stringResource(R.string.ui_text_get_started),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )

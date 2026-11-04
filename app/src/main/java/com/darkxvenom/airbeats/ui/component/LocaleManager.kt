@@ -789,7 +789,7 @@ private fun SearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Limpiar búsqueda",
+                        contentDescription = stringResource(R.string.ui_a11y_limpiar_busqueda),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
@@ -848,12 +848,12 @@ private fun EmptySearchResult(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Sin resultados",
+            text = stringResource(R.string.ui_empty_no_results),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Prueba con otro término",
+            text = stringResource(R.string.ui_empty_try_another_term),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = 4.dp)

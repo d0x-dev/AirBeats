@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -238,7 +240,7 @@ fun AudioPipelineDialog(
                 .verticalScroll(rememberScrollState()),
         ) {
             Text(
-                text = "Audio Pipeline",
+                text = stringResource(R.string.ui_text_audio_pipeline),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
@@ -250,7 +252,7 @@ fun AudioPipelineDialog(
             // Pipeline stage 1: Track Info
             PipelineStep(
                 iconRes = R.drawable.info,
-                title = "Track Info",
+                title = stringResource(R.string.ui_heading_track_info),
                 isFirst = true,
                 isLast = false,
                 items = listOf(
@@ -309,7 +311,7 @@ fun AudioPipelineDialog(
             // Pipeline stage 5: Output Device
             PipelineStep(
                 iconRes = R.drawable.volume_up,
-                title = "Output Device",
+                title = stringResource(R.string.ui_heading_output_device),
                 isFirst = false,
                 isLast = true,
                 items = listOf(

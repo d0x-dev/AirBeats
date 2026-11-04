@@ -601,7 +601,7 @@ fun AboutScreen(
                         if (BuildConfig.BUILD_TYPE == "nightly") {
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "NIGHTLY",
+                                text = stringResource(R.string.ui_text_nightly),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier
@@ -617,7 +617,7 @@ fun AboutScreen(
                         if (BuildConfig.DEBUG) {
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "DEBUG",
+                                text = stringResource(R.string.ui_text_debug),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary,
                                 modifier = Modifier
@@ -661,14 +661,14 @@ fun AboutScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Founders",
+                            text = stringResource(R.string.ui_text_founders),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "2 Founders",
+                            text = stringResource(R.string.ui_founders),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -740,7 +740,7 @@ fun AboutScreen(
                             Icon(painterResource(R.drawable.github), contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Other Contributors",
+                                text = stringResource(R.string.ui_text_other_contributors),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface

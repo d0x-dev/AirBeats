@@ -178,7 +178,10 @@ fun NewClassicHomeScreen(
         }
     }
 
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks) {
+    val emptyHeroTitle = stringResource(R.string.ui_heading_90s_hiphop_soundtracks)
+    val emptyHeroSubtitle = stringResource(R.string.ui_heading_based_on_your_last_listening_habits_and_artis)
+    val recommendedByAiQueueTitle = stringResource(R.string.recommended_by_ai)
+    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
         heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
             val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
             HeroPlaylistData(
@@ -190,8 +193,8 @@ fun NewClassicHomeScreen(
                 playlistId = null
             )
         } ?: HeroPlaylistData(
-            title = "90s HipHop Soundtracks",
-            subtitle = "Based on your last listening habits and artists...",
+            title = emptyHeroTitle,
+            subtitle = emptyHeroSubtitle,
             tag = "HIPHOP",
             thumbnailUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
             songs = emptyList(),
@@ -279,7 +282,7 @@ fun NewClassicHomeScreen(
             if (trendingSongs.isNotEmpty()) {
                 item(key = "section_trending") {
                     NewClassicSectionHeader(
-                        title = "On Trending",
+                        title = stringResource(R.string.ui_heading_on_trending),
                         onSeeAllClick = {
                             navController.navigate("explore")
                         }
@@ -371,7 +374,7 @@ fun NewClassicHomeScreen(
                                 )
                                 is Artist -> NewClassicSongCard(
                                     title = item.title,
-                                    subtitle = "Artist",
+                                    subtitle = stringResource(R.string.sort_by_artist),
                                     thumbnailUrl = item.thumbnailUrl,
                                     shape = CircleShape,
                                     onClick = {
@@ -694,7 +697,7 @@ fun NewClassicHomeScreen(
                 item(key = "section_ai_recommended") {
                     Spacer(Modifier.height(20.dp))
                     NewClassicSectionHeader(
-                        title = "Recommended by AI",
+                        title = recommendedByAiQueueTitle,
                         onSeeAllClick = {
                             navController.navigate("local_playlist/${playlist.id}")
                         }
@@ -713,7 +716,7 @@ fun NewClassicHomeScreen(
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     playerConnection.playQueue(
                                         ListQueue(
-                                            title = "Recommended by AI",
+                                            title = recommendedByAiQueueTitle,
                                             items = songs.map { it.toMediaItem() },
                                             startIndex = songs.indexOf(song).coerceAtLeast(0)
                                         )
@@ -860,7 +863,7 @@ private fun NewClassicHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.notification_on),
-                        contentDescription = "New Releases",
+                        contentDescription = stringResource(R.string.ui_text_new_releases),
                         tint = buttonTint,
                         modifier = Modifier.size(20.dp)
                     )
@@ -881,7 +884,7 @@ private fun NewClassicHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.newspaper),
-                        contentDescription = "News from Developer",
+                        contentDescription = stringResource(R.string.ui_a11y_news_from_developer),
                         tint = buttonTint,
                         modifier = Modifier.size(20.dp)
                     )
@@ -902,7 +905,7 @@ private fun NewClassicHeroSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.settings),
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.settings),
                         tint = buttonTint,
                         modifier = Modifier.size(20.dp)
                     )
@@ -1003,7 +1006,7 @@ private fun NewClassicHeroSection(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "PLAY NOW",
+                            text = stringResource(R.string.ui_text_play_now),
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.8.sp,
@@ -1086,7 +1089,7 @@ private fun NewClassicSectionHeader(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "SEE ALL",
+                    text = stringResource(R.string.ui_text_see_all),
                     style = MaterialTheme.typography.labelSmall.copy(
                         color = seeAllTextColor,
                         fontWeight = FontWeight.Bold,

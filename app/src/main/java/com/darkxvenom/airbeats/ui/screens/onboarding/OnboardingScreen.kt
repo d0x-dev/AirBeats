@@ -239,7 +239,7 @@ private fun SetupTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -339,7 +339,7 @@ private fun WelcomeStep(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Welcome to AirBeats",
+                text = stringResource(R.string.ui_text_welcome_to_airbeats),
                 fontSize = 30.sp,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
@@ -350,7 +350,7 @@ private fun WelcomeStep(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Your private sanctuary for pure, high-fidelity music streaming and offline listening.",
+                text = stringResource(R.string.ui_sweep_your_private_sanctuary_for_pure_high_fidelity_music_streaming_and),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -363,8 +363,8 @@ private fun WelcomeStep(
             // Feature Highlights Cards
             FeatureCard(
                 iconRes = R.drawable.headphones,
-                title = "Lossless Audio Streaming",
-                subtitle = "Enjoy pristine audio quality with dynamic stream caching and zero intrusive ads.",
+                title = stringResource(R.string.ui_heading_lossless_audio_streaming),
+                subtitle = stringResource(R.string.ui_heading_enjoy_pristine_audio_quality_with_dynamic_str),
                 cardBg = cardBg,
                 cardBorder = cardBorder
             )
@@ -373,8 +373,8 @@ private fun WelcomeStep(
 
             FeatureCard(
                 iconRes = R.drawable.mic,
-                title = "Music Recognition",
-                subtitle = "Instantly identify songs playing around you with the built-in Shazam recognition engine.",
+                title = stringResource(R.string.music_recognition),
+                subtitle = stringResource(R.string.ui_heading_instantly_identify_songs_playing_around_you_w),
                 cardBg = cardBg,
                 cardBorder = cardBorder
             )
@@ -383,8 +383,8 @@ private fun WelcomeStep(
 
             FeatureCard(
                 iconRes = R.drawable.backup,
-                title = "Safe Local Backups",
-                subtitle = "Keep your playlists, history, and stats securely preserved on your device.",
+                title = stringResource(R.string.ui_heading_safe_local_backups),
+                subtitle = stringResource(R.string.ui_heading_keep_your_playlists_history_and_stats_securel),
                 cardBg = cardBg,
                 cardBorder = cardBorder
             )
@@ -396,7 +396,7 @@ private fun WelcomeStep(
                 .padding(vertical = 20.dp)
         ) {
             ExpressivePrimaryButton(
-                text = "Get Started",
+                text = stringResource(R.string.ui_text_get_started),
                 onClick = onNext
             )
         }
@@ -491,7 +491,7 @@ private fun ProfileSetupStep(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Set Up Your Profile",
+                text = stringResource(R.string.ui_text_set_up_your_profile),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
@@ -501,7 +501,7 @@ private fun ProfileSetupStep(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Choose your avatar and display name. This identity is universal across AirBeats and Global Stats.",
+                text = stringResource(R.string.ui_sweep_choose_your_avatar_and_display_name_this_identity_is_universal_ac),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -536,14 +536,14 @@ private fun ProfileSetupStep(
                 onValueChange = onNameChange,
                 label = {
                     Text(
-                        text = "What should we call you?",
+                        text = stringResource(R.string.what_should_we_call_you),
                         color = if (name.isNotEmpty()) primaryColor else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                 },
                 placeholder = {
                     Text(
-                        text = "Enter your nickname...",
+                        text = stringResource(R.string.ui_sweep_enter_your_nickname),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 },
@@ -559,7 +559,7 @@ private fun ProfileSetupStep(
                         IconButton(onClick = { onNameChange("") }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear",
+                                contentDescription = stringResource(R.string.clear),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -616,7 +616,7 @@ private fun ProfileSetupStep(
                 .padding(vertical = 20.dp)
         ) {
             ExpressivePrimaryButton(
-                text = "Continue",
+                text = stringResource(R.string.continue_button),
                 onClick = {
                     keyboardController?.hide()
                     onNext()
@@ -688,7 +688,7 @@ private fun PermissionsStep(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "App Permissions",
+                text = stringResource(R.string.ui_text_app_permissions),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
@@ -698,7 +698,7 @@ private fun PermissionsStep(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "AirBeats requests a few permissions to power music playback and recognition. All permissions are optional.",
+                text = stringResource(R.string.ui_sweep_airbeats_requests_a_few_permissions_to_power_music_playback_and_r),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -711,8 +711,8 @@ private fun PermissionsStep(
             // Permission 1: Notifications
             PermissionCard(
                 iconRes = R.drawable.notification,
-                title = "Notifications & Controls",
-                description = "Shows media controls in notification center and lock screen.",
+                title = stringResource(R.string.ui_heading_notifications_controls),
+                description = stringResource(R.string.ui_extra_shows_media_controls_in_notification_center_and_lock_screen),
                 isGranted = hasNotificationPermission,
                 onGrant = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -728,8 +728,8 @@ private fun PermissionsStep(
             // Permission 2: Full Storage & Backup Access (NO audio/video prompt)
             PermissionCard(
                 iconRes = R.drawable.folder,
-                title = "Full Storage & Backup Access",
-                description = "Grants direct storage access to discover offline music and automatically restore backups without opening files.",
+                title = stringResource(R.string.ui_heading_full_storage_backup_access),
+                description = stringResource(R.string.ui_extra_grants_direct_storage_access_to_discover_offline_music_and_automatic),
                 isGranted = hasStoragePermission,
                 onGrant = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -747,8 +747,8 @@ private fun PermissionsStep(
             // Permission 3: Microphone (Shazam)
             PermissionCard(
                 iconRes = R.drawable.mic,
-                title = "Audio Recognition",
-                description = "Used only when you tap the mic to identify music playing nearby.",
+                title = stringResource(R.string.ui_heading_audio_recognition),
+                description = stringResource(R.string.ui_extra_used_only_when_you_tap_the_mic_to_identify_music_playing_nearby),
                 isGranted = hasMicPermission,
                 onGrant = {
                     micLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -762,8 +762,8 @@ private fun PermissionsStep(
             // Permission 4: Bluetooth
             PermissionCard(
                 iconRes = R.drawable.ic_bluetooth,
-                title = "Bluetooth Devices",
-                description = "Displays connected wireless headphone names and battery status.",
+                title = stringResource(R.string.ui_heading_bluetooth_devices),
+                description = stringResource(R.string.ui_extra_displays_connected_wireless_headphone_names_and_battery_status),
                 isGranted = hasBluetoothPermission,
                 onGrant = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -777,7 +777,7 @@ private fun PermissionsStep(
             Spacer(modifier = Modifier.height(14.dp))
 
             Text(
-                text = "You can grant or change these anytime in Android App Settings.",
+                text = stringResource(R.string.ui_sweep_you_can_grant_or_change_these_anytime_in_android_app_settings),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
@@ -790,7 +790,7 @@ private fun PermissionsStep(
                 .padding(vertical = 20.dp)
         ) {
             ExpressivePrimaryButton(
-                text = "Continue",
+                text = stringResource(R.string.continue_button),
                 onClick = onNext
             )
         }
@@ -873,7 +873,7 @@ private fun PermissionCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Granted",
+                            text = stringResource(R.string.ui_text_granted),
                             color = Color(0xFF10B981),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -887,7 +887,7 @@ private fun PermissionCard(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Allow",
+                        text = stringResource(R.string.music_recognition_permission_action),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -989,7 +989,7 @@ private fun BackupScanStep(
             Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-                text = "Setting Up AirBeats",
+                text = stringResource(R.string.ui_text_setting_up_airbeats),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
@@ -999,7 +999,7 @@ private fun BackupScanStep(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Checking storage for previous backups to restore your library and preferences.",
+                text = stringResource(R.string.ui_sweep_checking_storage_for_previous_backups_to_restore_your_library_and),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -1035,7 +1035,7 @@ private fun BackupScanStep(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "Preserving your new username and avatar...",
+                                text = stringResource(R.string.ui_sweep_preserving_your_new_username_and_avatar),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1061,14 +1061,14 @@ private fun BackupScanStep(
                             )
                             Spacer(modifier = Modifier.height(20.dp))
                             Text(
-                                text = "Scanning Documents & Downloads...",
+                                text = stringResource(R.string.ui_sweep_scanning_documents_downloads),
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Looking for existing AirBeats backups",
+                                text = stringResource(R.string.ui_text_looking_for_existing_airbeats_backups),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1111,7 +1111,7 @@ private fun BackupScanStep(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "Backup Found!",
+                                text = stringResource(R.string.ui_sweep_backup_found),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1120,7 +1120,7 @@ private fun BackupScanStep(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "An existing AirBeats backup was located on your device. Restore your library, playlists, and settings now?",
+                                text = stringResource(R.string.ui_sweep_an_existing_airbeats_backup_was_located_on_your_device_restore_yo),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -1189,7 +1189,7 @@ private fun BackupScanStep(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "No Backup Found",
+                                text = stringResource(R.string.ui_text_no_backup_found),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -1198,7 +1198,7 @@ private fun BackupScanStep(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "No previous backups were detected in Documents or Downloads. You can restore a file manually or start fresh.",
+                                text = stringResource(R.string.ui_sweep_no_previous_backups_were_detected_in_documents_or_downloads_you_c),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center,
@@ -1223,7 +1223,7 @@ private fun BackupScanStep(
 
                 discoveredBackupFile != null -> {
                     ExpressivePrimaryButton(
-                        text = "Restore Backup",
+                        text = stringResource(R.string.ui_sweep_restore_backup),
                         iconPainter = painterResource(R.drawable.backup),
                         onClick = {
                             if (!AutoBackupManager.hasStoragePermission(context)) {
@@ -1246,7 +1246,7 @@ private fun BackupScanStep(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     ExpressiveTonalButton(
-                        text = "Restore Manually",
+                        text = stringResource(R.string.ui_sweep_restore_manually),
                         icon = painterResource(R.drawable.restore),
                         onClick = {
                             manualRestoreLauncher.launch(arrayOf("*/*"))
@@ -1256,7 +1256,7 @@ private fun BackupScanStep(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     ExpressiveOutlinedButton(
-                        text = "Cancel & Set Up as New",
+                        text = stringResource(R.string.ui_sweep_cancel_set_up_as_new),
                         onClick = onSkip
                     )
                 }
@@ -1264,7 +1264,7 @@ private fun BackupScanStep(
                 else -> {
                     // No Backup Found actions
                     ExpressiveTonalButton(
-                        text = "Restore Manually",
+                        text = stringResource(R.string.ui_sweep_restore_manually),
                         icon = painterResource(R.drawable.restore),
                         onClick = {
                             manualRestoreLauncher.launch(arrayOf("*/*"))
@@ -1274,7 +1274,7 @@ private fun BackupScanStep(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     ExpressivePrimaryButton(
-                        text = "Skip & Get Started",
+                        text = stringResource(R.string.ui_sweep_skip_get_started),
                         onClick = onSkip
                     )
                 }

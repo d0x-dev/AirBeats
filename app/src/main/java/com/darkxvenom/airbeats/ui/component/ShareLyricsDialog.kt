@@ -392,59 +392,59 @@ fun ShareLyricsImageCustomizationSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomizationCard(
-                title = "Style Settings",
+                title = stringResource(R.string.ui_heading_style_settings),
                 isExpanded = isStyleSettingsExpanded,
                 onExpandChange = { isStyleSettingsExpanded = it }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SettingSection(title = "Cover Art Style") {
+                    SettingSection(title = stringResource(R.string.ui_heading_cover_art_style)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = selectedCustomization.coverArtStyle == CoverArtStyle.ROUNDED,
                                 onClick = { selectedCustomization = selectedCustomization.copy(coverArtStyle = CoverArtStyle.ROUNDED) },
-                                label = { Text("Rounded", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.rounded), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.coverArtStyle == CoverArtStyle.CIRCLE,
                                 onClick = { selectedCustomization = selectedCustomization.copy(coverArtStyle = CoverArtStyle.CIRCLE) },
-                                label = { Text("Circle", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.circle), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.coverArtStyle == CoverArtStyle.SQUARE,
                                 onClick = { selectedCustomization = selectedCustomization.copy(coverArtStyle = CoverArtStyle.SQUARE) },
-                                label = { Text("Square", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.square), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
-                    SettingSection(title = "Lyrics Style") {
+                    SettingSection(title = stringResource(R.string.ui_heading_lyrics_style)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = selectedCustomization.lyricsStyle == LyricsStyle.NORMAL,
                                 onClick = { selectedCustomization = selectedCustomization.copy(lyricsStyle = LyricsStyle.NORMAL) },
-                                label = { Text("Normal", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.normal), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.lyricsStyle == LyricsStyle.ITALIC,
                                 onClick = { selectedCustomization = selectedCustomization.copy(lyricsStyle = LyricsStyle.ITALIC) },
-                                label = { Text("Italic", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.italic), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.lyricsStyle == LyricsStyle.CONDENSED,
                                 onClick = { selectedCustomization = selectedCustomization.copy(lyricsStyle = LyricsStyle.CONDENSED) },
-                                label = { Text("Condensed", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.condensed), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
                     SwitchSetting(
-                        title = "Show Accent Line",
+                        title = stringResource(R.string.ui_heading_show_accent_line),
                         checked = selectedCustomization.showAccentLine,
                         onCheckedChange = {
                             selectedCustomization = selectedCustomization.copy(
@@ -456,7 +456,7 @@ fun ShareLyricsImageCustomizationSheet(
                     )
 
                     SliderSetting(
-                        title = "Line Spacing",
+                        title = stringResource(R.string.ui_heading_line_spacing),
                         value = selectedCustomization.lyricsLineSpacing,
                         valueRange = 1.0f..1.8f,
                         steps = 15,
@@ -465,7 +465,7 @@ fun ShareLyricsImageCustomizationSheet(
                     )
 
                     SliderSetting(
-                        title = "Element Spacing",
+                        title = stringResource(R.string.ui_heading_element_spacing),
                         value = selectedCustomization.spacingBetweenElements,
                         valueRange = 8f..32f,
                         steps = 23,
@@ -478,36 +478,36 @@ fun ShareLyricsImageCustomizationSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomizationCard(
-                title = "Background Settings",
+                title = stringResource(R.string.ui_heading_background_settings),
                 isExpanded = isAdvancedSettingsExpanded,
                 onExpandChange = { isAdvancedSettingsExpanded = it }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SettingSection(title = "Background Style") {
+                    SettingSection(title = stringResource(R.string.ui_heading_background_style)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = selectedCustomization.backgroundStyle == BackgroundStyle.SOLID,
                                 onClick = { selectedCustomization = selectedCustomization.copy(backgroundStyle = BackgroundStyle.SOLID) },
-                                label = { Text("Solid", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.solid), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.backgroundStyle == BackgroundStyle.GRADIENT,
                                 onClick = { selectedCustomization = selectedCustomization.copy(backgroundStyle = BackgroundStyle.GRADIENT) },
-                                label = { Text("Gradient", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.gradient), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.backgroundStyle == BackgroundStyle.PATTERN,
                                 onClick = { selectedCustomization = selectedCustomization.copy(backgroundStyle = BackgroundStyle.PATTERN) },
-                                label = { Text("Pattern", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.pattern), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
                     SliderSetting(
-                        title = "Corner Radius",
+                        title = stringResource(R.string.ui_heading_corner_radius),
                         value = selectedCustomization.cornerRadius,
                         valueRange = 0f..40f,
                         steps = 39,
@@ -517,7 +517,7 @@ fun ShareLyricsImageCustomizationSheet(
 
                     if (selectedCustomization.backgroundStyle == BackgroundStyle.PATTERN) {
                         SliderSetting(
-                            title = "Pattern Opacity",
+                            title = stringResource(R.string.ui_heading_pattern_opacity),
                             value = selectedCustomization.patternOpacity,
                             valueRange = 0.01f..0.15f,
                             steps = 0,
@@ -534,7 +534,7 @@ fun ShareLyricsImageCustomizationSheet(
 
                     if (selectedCustomization.borderEnabled) {
                         SliderSetting(
-                            title = "Border Width",
+                            title = stringResource(R.string.ui_heading_border_width),
                             value = selectedCustomization.borderWidth,
                             valueRange = 1f..8f,
                             steps = 6,
@@ -548,59 +548,59 @@ fun ShareLyricsImageCustomizationSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomizationCard(
-                title = "Text Settings",
+                title = stringResource(R.string.ui_heading_text_settings),
                 isExpanded = isTextSettingsExpanded,
                 onExpandChange = { isTextSettingsExpanded = it }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    SettingSection(title = "Font Style") {
+                    SettingSection(title = stringResource(R.string.ui_heading_font_style)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = selectedCustomization.fontStyle == FontStyle.REGULAR,
                                 onClick = { selectedCustomization = selectedCustomization.copy(fontStyle = FontStyle.REGULAR) },
-                                label = { Text("Regular", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.regular), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.fontStyle == FontStyle.BOLD,
                                 onClick = { selectedCustomization = selectedCustomization.copy(fontStyle = FontStyle.BOLD) },
-                                label = { Text("Bold", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.bold), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.fontStyle == FontStyle.EXTRA_BOLD,
                                 onClick = { selectedCustomization = selectedCustomization.copy(fontStyle = FontStyle.EXTRA_BOLD) },
-                                label = { Text("Extra Bold", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.ui_text_extra_bold), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
-                    SettingSection(title = "Text Alignment") {
+                    SettingSection(title = stringResource(R.string.ui_heading_text_alignment)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = selectedCustomization.textAlignment == TextAlignment.LEFT,
                                 onClick = { selectedCustomization = selectedCustomization.copy(textAlignment = TextAlignment.LEFT) },
-                                label = { Text("Left", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.lyrics_align_left), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.textAlignment == TextAlignment.CENTER,
                                 onClick = { selectedCustomization = selectedCustomization.copy(textAlignment = TextAlignment.CENTER) },
-                                label = { Text("Center", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.lyrics_align_center), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                             FilterChip(
                                 selected = selectedCustomization.textAlignment == TextAlignment.RIGHT,
                                 onClick = { selectedCustomization = selectedCustomization.copy(textAlignment = TextAlignment.RIGHT) },
-                                label = { Text("Right", fontSize = 12.sp) },
+                                label = { Text(stringResource(R.string.lyrics_align_right), fontSize = 12.sp) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
                     }
 
                     SwitchSetting(
-                        title = "Text Shadow",
+                        title = stringResource(R.string.ui_heading_text_shadow),
                         checked = selectedCustomization.textShadowEnabled,
                         onCheckedChange = { selectedCustomization = selectedCustomization.copy(textShadowEnabled = it) }
                     )
@@ -610,73 +610,73 @@ fun ShareLyricsImageCustomizationSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             CustomizationCard(
-                title = "Layout Settings",
+                title = stringResource(R.string.ui_heading_layout_settings),
                 isExpanded = isLayoutSettingsExpanded,
                 onExpandChange = { isLayoutSettingsExpanded = it }
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     SwitchSetting(
-                        title = "Show Cover Art",
+                        title = stringResource(R.string.ui_heading_show_cover_art),
                         checked = selectedCustomization.showCoverArt,
                         onCheckedChange = { selectedCustomization = selectedCustomization.copy(showCoverArt = it) }
                     )
 
                     if (selectedCustomization.showCoverArt) {
                         SwitchSetting(
-                            title = "Show Song Title",
+                            title = stringResource(R.string.ui_heading_show_song_title),
                             checked = selectedCustomization.showSongTitle,
                             onCheckedChange = { selectedCustomization = selectedCustomization.copy(showSongTitle = it) }
                         )
 
                         SwitchSetting(
-                            title = "Show Artist Name",
+                            title = stringResource(R.string.ui_heading_show_artist_name),
                             checked = selectedCustomization.showArtistName,
                             onCheckedChange = { selectedCustomization = selectedCustomization.copy(showArtistName = it) }
                         )
                     }
 
                     SwitchSetting(
-                        title = "Show Logo",
+                        title = stringResource(R.string.ui_heading_show_logo),
                         checked = selectedCustomization.showLogo,
                         onCheckedChange = { selectedCustomization = selectedCustomization.copy(showLogo = it) }
                     )
 
                     if (selectedCustomization.showLogo) {
-                        SettingSection(title = "Logo Position") {
+                        SettingSection(title = stringResource(R.string.ui_heading_logo_position)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(
                                     selected = selectedCustomization.logoPosition == LogoPosition.BOTTOM_LEFT,
                                     onClick = { selectedCustomization = selectedCustomization.copy(logoPosition = LogoPosition.BOTTOM_LEFT) },
-                                    label = { Text("Bottom Left", fontSize = 11.sp) },
+                                    label = { Text(stringResource(R.string.ui_text_bottom_left), fontSize = 11.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                                 FilterChip(
                                     selected = selectedCustomization.logoPosition == LogoPosition.BOTTOM_RIGHT,
                                     onClick = { selectedCustomization = selectedCustomization.copy(logoPosition = LogoPosition.BOTTOM_RIGHT) },
-                                    label = { Text("Bottom Right", fontSize = 11.sp) },
+                                    label = { Text(stringResource(R.string.ui_text_bottom_right), fontSize = 11.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
                         }
 
-                        SettingSection(title = "Logo Size") {
+                        SettingSection(title = stringResource(R.string.ui_heading_logo_size)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 FilterChip(
                                     selected = selectedCustomization.logoSize == LogoSize.SMALL,
                                     onClick = { selectedCustomization = selectedCustomization.copy(logoSize = LogoSize.SMALL) },
-                                    label = { Text("Small", fontSize = 12.sp) },
+                                    label = { Text(stringResource(R.string.small), fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                                 FilterChip(
                                     selected = selectedCustomization.logoSize == LogoSize.MEDIUM,
                                     onClick = { selectedCustomization = selectedCustomization.copy(logoSize = LogoSize.MEDIUM) },
-                                    label = { Text("Medium", fontSize = 12.sp) },
+                                    label = { Text(stringResource(R.string.medium), fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                                 FilterChip(
                                     selected = selectedCustomization.logoSize == LogoSize.LARGE,
                                     onClick = { selectedCustomization = selectedCustomization.copy(logoSize = LogoSize.LARGE) },
-                                    label = { Text("Large", fontSize = 12.sp) },
+                                    label = { Text(stringResource(R.string.large), fontSize = 12.sp) },
                                     modifier = Modifier.weight(1f)
                                 )
                             }

@@ -593,7 +593,7 @@ fun SongMenu(
         }
         item {
             ListItem(
-                headlineContent = { Text(text = "Set as Ringtone") },
+                headlineContent = { Text(text = stringResource(R.string.set_as_ringtone)) },
                 leadingContent = {
                     Icon(
                         painter = painterResource(R.drawable.notification),

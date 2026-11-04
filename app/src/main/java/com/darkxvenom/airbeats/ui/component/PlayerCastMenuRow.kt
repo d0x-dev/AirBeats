@@ -111,7 +111,7 @@ fun PlayerCastMenuRow(
             ) {
                 Icon(
                     painter = painterResource(if (isCasting) R.drawable.ic_cast_connected else R.drawable.ic_cast),
-                    contentDescription = "Chromecast",
+                    contentDescription = stringResource(R.string.ui_a11y_chromecast),
                     tint = if (isCasting) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                     modifier = Modifier.size(24.dp),
                 )
@@ -145,7 +145,7 @@ fun PlayerCastMenuRow(
                         color = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
                     ) {
                         Text(
-                            text = "Disconnect",
+                            text = stringResource(R.string.ui_text_disconnect),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error,
@@ -192,7 +192,7 @@ fun PlayerCastIconButton(
 
         Icon(
             painter = painterResource(if (isCasting) R.drawable.ic_cast_connected else R.drawable.ic_cast),
-            contentDescription = "Cast Audio",
+            contentDescription = stringResource(R.string.ui_a11y_cast_audio),
             tint = if (isCasting) MaterialTheme.colorScheme.primary else tint,
             modifier = Modifier.size(22.dp),
         )

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -153,7 +155,7 @@ fun ApplePlayer(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.expand_more),
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.back),
                     tint = Color.White,
                     modifier = Modifier
                         .size(32.dp)
@@ -162,7 +164,7 @@ fun ApplePlayer(
                         .padding(4.dp)
                 )
                 Text(
-                    text = "Happy Mood",
+                    text = stringResource(R.string.ui_text_happy_mood),
                     color = Color.White,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
@@ -252,7 +254,7 @@ fun ApplePlayer(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.skip_previous),
-                            contentDescription = "Previous",
+                            contentDescription = stringResource(R.string.ui_a11y_previous),
                             tint = Color.Gray,
                             modifier = Modifier
                                 .size(32.dp)
@@ -275,7 +277,7 @@ fun ApplePlayer(
                         ) {
                             Icon(
                                 painter = painterResource(if (isPlaying && !isLoading) R.drawable.pause else R.drawable.play),
-                                contentDescription = "Play/Pause",
+                                contentDescription = stringResource(R.string.ui_a11y_play_pause),
                                 tint = Color.White,
                                 modifier = Modifier.size(32.dp)
                             )
@@ -283,7 +285,7 @@ fun ApplePlayer(
                         Spacer(modifier = Modifier.width(32.dp))
                         Icon(
                             painter = painterResource(R.drawable.skip_next),
-                            contentDescription = "Next",
+                            contentDescription = stringResource(R.string.ui_a11y_next),
                             tint = Color.Gray,
                             modifier = Modifier
                                 .size(32.dp)
@@ -405,7 +407,7 @@ fun ApplePlayer(
                         painter = painterResource(
                             if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle
                         ),
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.shuffle),
                         tint = if (shuffleModeEnabled) AppleRed else Color.White,
                         modifier = Modifier.size(28.dp)
                     )
@@ -428,7 +430,7 @@ fun ApplePlayer(
                         painter = painterResource(
                             if (isLiked) R.drawable.favorite else R.drawable.favorite_border
                         ),
-                        contentDescription = "Like",
+                        contentDescription = stringResource(R.string.action_like),
                         tint = if (isLiked) AppleRed else Color.White,
                         modifier = Modifier.size(28.dp)
                     )
@@ -455,7 +457,7 @@ fun ApplePlayer(
                                 else -> R.drawable.repeat
                             }
                         ),
-                        contentDescription = "Repeat",
+                        contentDescription = stringResource(R.string.ui_a11y_repeat),
                         tint = if (repeatMode != Player.REPEAT_MODE_OFF) AppleRed else Color.White,
                         modifier = Modifier
                             .size(28.dp)

@@ -477,8 +477,8 @@ fun HomeScreen(
                 if (isSectionVisible(com.darkxvenom.airbeats.constants.MaterialHomeSection.HERO)) {
                     item(key = "classic_hero") {
                         UniversalHomeHeroBanner(
-                            title = "Welcome back, $accountName",
-                            subtitle = "Continuous radio tuned to your favorites",
+                            title = stringResource(R.string.ui_heading_welcome_back_accountname, accountName),
+                            subtitle = stringResource(R.string.ui_heading_continuous_radio_tuned_to_your_favorites),
                             onPlayRadio = {
                                 com.darkxvenom.airbeats.ui.component.InfiniteRadioHelper.playShuffledRadio(
                                     playerConnection = playerConnection,
@@ -839,7 +839,7 @@ fun HomeScreen(
                 if (artistTriples.isNotEmpty()) {
                     item(key = "classic_top_artists_title") {
                         NavigationTitle(
-                            title = "Artists For You",
+                            title = stringResource(R.string.artists_for_you),
                             modifier = Modifier.animateItem()
                         )
                     }
@@ -1183,7 +1183,7 @@ fun HomeScreen(
                     )
 
                     androidx.compose.material3.DropdownMenuItem(
-                        text = { androidx.compose.material3.Text("AirBeats Charts") },
+                        text = { androidx.compose.material3.Text(stringResource(R.string.airbeats_charts)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(R.drawable.trending_up),
@@ -1381,7 +1381,7 @@ fun ModernHomeTopBarInline(
         ) {
 
             Text(
-                text = "Hi, $displayName",
+                text = stringResource(R.string.ui_dynamic_greeting_short, displayName),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),

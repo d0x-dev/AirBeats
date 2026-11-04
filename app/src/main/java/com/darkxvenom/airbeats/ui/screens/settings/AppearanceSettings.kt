@@ -556,8 +556,8 @@ fun AppearanceSettings(
                     items = listOf(
                         {
                             PreferenceEntry(
-                                title = { Text("App Icon") },
-                                description = "Customize app launcher icon and themes",
+                                title = { Text(stringResource(R.string.ui_text_app_icon)) },
+                                description = stringResource(R.string.ui_extra_customize_app_launcher_icon_and_themes),
                                 icon = { Icon(painterResource(R.drawable.apps), null) },
                                 onClick = { navController.navigate("settings/appearance/app_icon") }
                             )
@@ -586,8 +586,8 @@ fun AppearanceSettings(
                         )},
                         *(if (homeScreenStyle != HomeScreenStyle.NEW_CLASSIC && homeScreenStyle != HomeScreenStyle.BETTER) arrayOf<@Composable () -> Unit>({
                             PreferenceEntry(
-                                title = { Text("Home Sections") },
-                                description = "Customize visible sections on the Home screen",
+                                title = { Text(stringResource(R.string.ui_text_home_sections)) },
+                                description = stringResource(R.string.ui_extra_customize_visible_sections_on_the_home_screen),
                                 icon = { Icon(Icons.Filled.Dashboard, null) },
                                 onClick = { navController.navigate("settings/home_sections") }
                             )
@@ -647,7 +647,7 @@ fun AppearanceSettings(
                                         )
 
                                         EnumListPreference(
-                                            title = { Text("Color Effects") },
+                                            title = { Text(stringResource(R.string.ui_text_color_effects)) },
                                             icon = { Icon(Icons.Filled.AutoAwesome, null) },
                                             selectedValue = themeColorEffect,
                                             onValueSelected = { onThemeColorEffectKeyChange(it.name) },
@@ -671,7 +671,7 @@ fun AppearanceSettings(
                         },
                         {
                             SwitchPreference(
-                                title = { Text("Dynamic Background") },
+                                title = { Text(stringResource(R.string.ui_text_dynamic_background)) },
                                 description = if (dynamicBackground) "Using adaptive song artwork and ambient mesh background" else "Using plain background based on color scheme",
                                 icon = { Icon(painterResource(R.drawable.image), null) },
                                 checked = dynamicBackground,
@@ -700,8 +700,8 @@ fun AppearanceSettings(
                         )},
                         {
                             PreferenceEntry(
-                                title = { Text("Dynamic Island") },
-                                description = "Position, fluid size, landscape settings, liquid glass & colors",
+                                title = { Text(stringResource(R.string.ui_text_dynamic_island)) },
+                                description = stringResource(R.string.ui_extra_position_fluid_size_landscape_settings_liquid_glass_colors),
                                 icon = { Icon(painterResource(R.drawable.music_note), null) },
                                 onClick = {
                                     navController.navigate("settings/dynamic_island")
@@ -722,8 +722,8 @@ fun AppearanceSettings(
                             isEnabled = !isPlayful
                         )},
                         {SwitchPreference(
-                            title = { Text("Frosted Glass cards and buttons") },
-                            description = "Apply frosted glass effect to buttons, tags, settings cards, and popups",
+                            title = { Text(stringResource(R.string.ui_text_frosted_glass_cards_and_buttons)) },
+                            description = stringResource(R.string.ui_extra_apply_frosted_glass_effect_to_buttons_tags_settings_cards_and_popups),
                             icon = { Icon(painterResource(R.drawable.contrast), null) },
                             checked = frostedGlassCardsButtons,
                             onCheckedChange = { newValue ->
@@ -755,7 +755,7 @@ fun AppearanceSettings(
                             onCheckedChange = onFullScreenModeChange,
                         )},
                         { PreferenceEntry(
-                            title = { Text("Fonts") },
+                            title = { Text(stringResource(R.string.ui_text_fonts)) },
                             description = selectedFont.title,
                             icon = { Icon(painterResource(R.drawable.tune), null) },
                             onClick = { showFontDialog = true }
@@ -768,7 +768,7 @@ fun AppearanceSettings(
                 if (showFontDialog) {
                     AlertDialog(
                         onDismissRequest = { showFontDialog = false },
-                        title = { Text("Fonts", fontWeight = FontWeight.Bold) },
+                        title = { Text(stringResource(R.string.ui_text_fonts), fontWeight = FontWeight.Bold) },
                         text = {
                             Column(
                                 modifier = Modifier
@@ -804,7 +804,7 @@ fun AppearanceSettings(
                                                 fontSize = 15.sp
                                             )
                                             Text(
-                                                text = "The quick brown fox jumps over the lazy dog",
+                                                text = stringResource(R.string.ui_text_the_quick_brown_fox_jumps_over_the_lazy_dog),
                                                 fontFamily = font.getFontFamily(),
                                                 fontSize = 11.sp,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -816,7 +816,7 @@ fun AppearanceSettings(
                         },
                         confirmButton = {
                             TextButton(onClick = { showFontDialog = false }) {
-                                Text("Close")
+                                Text(stringResource(R.string.close))
                             }
                         }
                     )
@@ -904,7 +904,7 @@ fun AppearanceSettings(
                         *(if (playerScreenStyle == PlayerScreenStyle.COLOURFULL || playerScreenStyle == PlayerScreenStyle.APPLE || playerScreenStyle == PlayerScreenStyle.GALAXY) arrayOf(
                             { PreferenceEntry(
                                 title = { Text(stringResource(R.string.player_colour)) },
-                                description = "Choose a custom background color",
+                                description = stringResource(R.string.ui_extra_choose_a_custom_background_color),
                                 icon = { Icon(painterResource(R.drawable.palette), null) },
                                 onClick = {
                                     showColorPickerOptionDialog = true
@@ -1199,12 +1199,12 @@ fun AccentColorSettingsSection(
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Accents",
+                    text = stringResource(R.string.ui_text_accents),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Select an accent color for the app interface",
+                    text = stringResource(R.string.ui_text_select_an_accent_color_for_the_app_interface),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1377,7 +1377,7 @@ private fun CustomColorPickerDialog(
             Button(
                 onClick = { onColorConfirmed(currentColor.toArgb()) }
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.apply))
             }
         },
         onDismiss = onDismiss
@@ -1387,7 +1387,7 @@ private fun CustomColorPickerDialog(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Custom Accent Color",
+                text = stringResource(R.string.ui_text_custom_accent_color),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -1417,7 +1417,7 @@ private fun CustomColorPickerDialog(
                             } catch (_: Exception) {}
                         }
                     },
-                    label = { Text("HEX Code") },
+                    label = { Text(stringResource(R.string.ui_text_hex_code)) },
                     prefix = { Text("#") },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
@@ -1425,7 +1425,7 @@ private fun CustomColorPickerDialog(
             }
 
             Text(
-                text = "Quick Palette",
+                text = stringResource(R.string.ui_text_quick_palette),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

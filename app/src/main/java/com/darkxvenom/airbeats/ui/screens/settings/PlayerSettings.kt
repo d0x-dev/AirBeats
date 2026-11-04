@@ -294,7 +294,7 @@ fun PlayerSettings(
                         else -> R.drawable.airplay
                     }
                     PreferenceEntry(
-                        title = { Text("Output audio device") },
+                        title = { Text(stringResource(R.string.output_audio_device)) },
                         description = deviceName,
                         icon = {
                             Icon(
@@ -318,7 +318,7 @@ fun PlayerSettings(
                         else -> "YouTube Music • Native stream"
                     }
                     PreferenceEntry(
-                        title = { Text("Streaming Quality") },
+                        title = { Text(stringResource(R.string.ui_text_streaming_quality)) },
                         description = streamingQualitySubtitle,
                         icon = { Icon(Icons.Filled.HighQuality, null) },
                         onClick = { showQualityDialog = true }
@@ -337,7 +337,7 @@ fun PlayerSettings(
 
                 {
                     SwitchPreference(
-                        title = { Text("Pure Audio (Direct Source Bypass)") },
+                        title = { Text(stringResource(R.string.ui_remaining_pure_audio_direct_source_bypass)) },
                         description = if (isBypassActive) {
                             "ACTIVE • All audio effects, filters, and processors are locked. Bit-exact source audio stream."
                         } else {
@@ -354,8 +354,8 @@ fun PlayerSettings(
 
                 {
                     SwitchPreference(
-                        title = { Text("Bit-Perfect Output") },
-                        description = "Bypasses Android audio resampling, software volume scaling, and equalizer when connected to a compatible USB DAC (Android 14+).",
+                        title = { Text(stringResource(R.string.ui_remaining_bit_perfect_output)) },
+                        description = stringResource(R.string.ui_extra_bypasses_android_audio_resampling_software_volume_scaling_and_equali),
                         icon = { Icon(painterResource(R.drawable.tune), null) },
                         checked = bitPerfect,
                         isEnabled = !isBypassActive,
@@ -418,7 +418,7 @@ fun PlayerSettings(
                 {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SwitchPreference(
-                            title = { Text("Audio FX & DJ Studio") },
+                            title = { Text(stringResource(R.string.ui_remaining_audio_fx_dj_studio)) },
                             description = when {
                                 isBypassActive -> "Locked by Pure Audio Bypass"
                                 isAudioFxAndDjOn -> if (audioBoostEnabled) "${audioBoostPercent}% Boost Active • Tap to expand controls" else "Studio DJ effects active • Tap to expand controls"
@@ -449,7 +449,7 @@ fun PlayerSettings(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "Master Volume Boost",
+                                        text = stringResource(R.string.ui_text_master_volume_boost),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -498,7 +498,7 @@ fun PlayerSettings(
                                 ) {
                                     Column {
                                         Text(
-                                            text = "Echo & Delay Effect",
+                                            text = stringResource(R.string.ui_sweep_echo_delay_effect),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -529,7 +529,7 @@ fun PlayerSettings(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "DJ Filter Sweep",
+                                        text = stringResource(R.string.ui_text_dj_filter_sweep),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -578,7 +578,7 @@ fun PlayerSettings(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Open Full DJ Studio Console",
+                                            text = stringResource(R.string.ui_text_open_full_dj_studio_console),
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFFFF2A6D)
@@ -593,7 +593,7 @@ fun PlayerSettings(
                 {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         SwitchPreference(
-                            title = { Text("8D Audio") },
+                            title = { Text(stringResource(R.string.ui_remaining_8d_audio)) },
                             description = when {
                                 isBypassActive -> "Locked by Pure Audio Bypass"
                                 eightDAudio -> "${eightDAudioLevel}D Spatial Orbit • Best with headphones or dual speakers"
@@ -626,7 +626,7 @@ fun PlayerSettings(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = "8D Effect Intensity",
+                                                text = stringResource(R.string.ui_sweep_8d_effect_intensity),
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface,
@@ -687,17 +687,17 @@ fun PlayerSettings(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "1D (Subtle)",
+                                        text = stringResource(R.string.ui_sweep_1d_subtle),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     )
                                     Text(
-                                        text = "8D (Classic)",
+                                        text = stringResource(R.string.ui_sweep_8d_classic),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     )
                                     Text(
-                                        text = "16D (Extreme)",
+                                        text = stringResource(R.string.ui_sweep_16d_extreme),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     )
@@ -720,7 +720,7 @@ fun PlayerSettings(
                 )},
 
                 {EnumListPreference(
-                    title = { Text("Download quality") },
+                    title = { Text(stringResource(R.string.ui_text_download_quality)) },
                     icon = { Icon(painterResource(R.drawable.download), null) },
                     selectedValue = downloadQuality,
                     values = listOf(AudioQuality.LOW, AudioQuality.MEDIUM, AudioQuality.HIGH),
@@ -937,7 +937,7 @@ fun PlayerSettings(
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text(
-                            "Streaming Quality",
+                            stringResource(R.string.ui_text_streaming_quality),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
@@ -1018,7 +1018,7 @@ fun PlayerSettings(
                                     ) {
                                         Icon(
                                             Icons.Filled.Check,
-                                            contentDescription = "Selected",
+                                            contentDescription = stringResource(R.string.ui_text_selected),
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             modifier = Modifier.size(18.dp),
                                         )

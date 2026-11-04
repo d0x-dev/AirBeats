@@ -213,7 +213,7 @@ fun DownloadQualityDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Download quality") },
+        title = { Text(stringResource(R.string.ui_text_download_quality)) },
         text = {
             Column {
                 listOf(
@@ -238,9 +238,9 @@ fun DownloadQualityDialog(
                     context.dataStore.edit { it[DownloadQualityKey] = selected.name }
                     onQualitySelected()
                 }
-            }) { Text("Download") }
+            }) { Text(stringResource(R.string.save_snippet)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.visitor_data_reset_cancel)) } },
     )
 }
 

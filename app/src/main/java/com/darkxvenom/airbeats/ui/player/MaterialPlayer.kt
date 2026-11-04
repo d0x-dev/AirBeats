@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -537,7 +539,7 @@ fun MaterialPlayer(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                    contentDescription = "Like",
+                                    contentDescription = stringResource(R.string.action_like),
                                     tint = if (isLiked) Color(0xFFFF3B30) else buttonIconColor,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -554,7 +556,7 @@ fun MaterialPlayer(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Filled.Share,
-                                    contentDescription = "Share",
+                                    contentDescription = stringResource(R.string.share_clip),
                                     tint = buttonIconColor,
                                     modifier = Modifier.size(19.dp)
                                 )
@@ -571,7 +573,7 @@ fun MaterialPlayer(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Filled.MoreVert,
-                                    contentDescription = "More",
+                                    contentDescription = stringResource(R.string.ui_text_more),
                                     tint = buttonIconColor,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -601,7 +603,7 @@ fun MaterialPlayer(
                     ) { state ->
                         if (state.text.isNullOrBlank()) {
                             Text(
-                                text = "Tap to view lyrics",
+                                text = stringResource(R.string.ui_text_tap_to_view_lyrics),
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 14.sp
@@ -645,7 +647,7 @@ fun MaterialPlayer(
                     Spacer(Modifier.width(6.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = "Open lyrics",
+                        contentDescription = stringResource(R.string.ui_a11y_open_lyrics),
                         tint = onBackgroundColor.copy(alpha = 0.55f),
                         modifier = Modifier.size(11.dp)
                     )
@@ -740,7 +742,7 @@ fun MaterialPlayer(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Filled.SkipPrevious,
-                            contentDescription = "Previous",
+                            contentDescription = stringResource(R.string.ui_a11y_previous),
                             tint = buttonIconColor.copy(alpha = if (canSkipPrevious) 1f else 0.4f),
                             modifier = Modifier.size(30.dp)
                         )
@@ -792,7 +794,7 @@ fun MaterialPlayer(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Filled.SkipNext,
-                            contentDescription = "Next",
+                            contentDescription = stringResource(R.string.ui_a11y_next),
                             tint = buttonIconColor.copy(alpha = if (canSkipNext) 1f else 0.4f),
                             modifier = Modifier.size(30.dp)
                         )
@@ -810,7 +812,7 @@ fun MaterialPlayer(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.volume_off),
-                    contentDescription = "Volume Down",
+                    contentDescription = stringResource(R.string.ui_a11y_volume_down),
                     tint = buttonIconColor.copy(alpha = 0.65f),
                     modifier = Modifier.size(19.dp)
                 )
@@ -852,7 +854,7 @@ fun MaterialPlayer(
 
                 Icon(
                     painter = painterResource(R.drawable.volume_up),
-                    contentDescription = "Volume Up",
+                    contentDescription = stringResource(R.string.ui_a11y_volume_up),
                     tint = buttonIconColor.copy(alpha = 0.65f),
                     modifier = Modifier.size(21.dp)
                 )
@@ -923,7 +925,7 @@ fun MaterialPlayer(
                             modifier = Modifier.size(16.dp)
                         )
                     },
-                    label = "Queue",
+                    label = stringResource(R.string.queue),
                     onClick = onQueueClick,
                     containerColor = surfaceContainer,
                     contentColor = onBackgroundColor,

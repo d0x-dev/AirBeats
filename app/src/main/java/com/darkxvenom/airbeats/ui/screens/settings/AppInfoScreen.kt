@@ -299,7 +299,7 @@ fun AppInfoScreen(
                         IconButton(onClick = { navController.navigateUp() }) {
                             Icon(
                                 painter = painterResource(R.drawable.arrow_back),
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.back)
                             )
                         }
                     },
@@ -310,7 +310,7 @@ fun AppInfoScreen(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.sync),
-                                contentDescription = "Refresh",
+                                contentDescription = stringResource(R.string.ui_text_refresh),
                                 modifier = if (uiState.isRefreshing) Modifier.rotate(refreshRotation) else Modifier
                             )
                         }
@@ -390,9 +390,9 @@ fun AppInfoScreen(
                 // 6. Recent Releases Section
                 item {
                     SectionHeaderRow(
-                        title = "Recent Releases",
+                        title = stringResource(R.string.ui_heading_recent_releases),
                         icon = painterResource(R.drawable.deployed_code_update),
-                        actionText = "All Releases",
+                        actionText = stringResource(R.string.ui_extra_all_releases),
                         onActionClick = {
                             uriHandler.openUri(RemoteConfigManager.getReleasesPageUrl().ifBlank { "https://github.com/d0x-dev/AirBeats/releases" })
                         }
@@ -429,9 +429,9 @@ fun AppInfoScreen(
                 // 7. Recent Commits Section
                 item {
                     SectionHeaderRow(
-                        title = "Recent Commits",
+                        title = stringResource(R.string.ui_heading_recent_commits),
                         icon = painterResource(R.drawable.github),
-                        actionText = "View Commits",
+                        actionText = stringResource(R.string.ui_extra_view_commits),
                         onActionClick = {
                             uriHandler.openUri("https://github.com/d0x-dev/AirBeats/commits")
                         }
@@ -464,7 +464,7 @@ fun AppInfoScreen(
                 // 8. Community & Contribution Hub
                 item {
                     SectionHeaderRow(
-                        title = "Community & Support",
+                        title = stringResource(R.string.ui_heading_community_support),
                         icon = painterResource(R.drawable.resource_public),
                         actionText = null,
                         onActionClick = null
@@ -537,7 +537,7 @@ private fun AppInfoHeaderCard(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.airbeats_monochrome),
-                        contentDescription = "AirBeats Logo",
+                        contentDescription = stringResource(R.string.ui_a11y_airbeats_logo),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(30.dp)
                     )
@@ -548,7 +548,7 @@ private fun AppInfoHeaderCard(
 
             // App Name
             Text(
-                text = "AirBeats",
+                text = stringResource(R.string.ui_text_airbeats),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 0.4.sp
@@ -615,13 +615,13 @@ private fun AppInfoHeaderCard(
                 )
                 InfoChip(
                     modifier = Modifier.weight(1f),
-                    label = "Build Flavor",
+                    label = stringResource(R.string.ui_extra_build_flavor),
                     value = BuildConfig.BUILD_TYPE.uppercase(),
                     isClickable = false
                 )
                 InfoChip(
                     modifier = Modifier.weight(1f),
-                    label = "Android Target",
+                    label = stringResource(R.string.ui_extra_android_target),
                     value = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                     isClickable = false
                 )
@@ -718,14 +718,14 @@ private fun RealtimeUpdateCard(
                     }
                     Column {
                         Text(
-                            text = "Check for Updates",
+                            text = stringResource(R.string.ui_text_check_for_updates),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Real-time GitHub release check",
+                            text = stringResource(R.string.ui_sweep_real_time_github_release_check),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
@@ -753,7 +753,7 @@ private fun RealtimeUpdateCard(
                         )
                     } else {
                         Text(
-                            text = "Check Now",
+                            text = stringResource(R.string.ui_text_check_now),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             maxLines = 1,
                             softWrap = false
@@ -767,7 +767,7 @@ private fun RealtimeUpdateCard(
             when (updateCheckState) {
                 UpdateCheckUiState.Idle -> {
                     Text(
-                        text = "Tap Check Now to verify if your AirBeats is running the latest build.",
+                        text = stringResource(R.string.ui_sweep_tap_check_now_to_verify_if_your_airbeats_is_running_the_latest_bu),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -779,7 +779,7 @@ private fun RealtimeUpdateCard(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                         Text(
-                            text = "Querying latest GitHub release information…",
+                            text = stringResource(R.string.ui_sweep_querying_latest_github_release_information),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -863,7 +863,7 @@ private fun RealtimeUpdateCard(
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Download",
+                                        text = stringResource(R.string.save_snippet),
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                         maxLines = 1,
                                         softWrap = false
@@ -935,7 +935,7 @@ private fun ActiveDownloadCard(
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                             Text(
-                                text = "Downloading Update…",
+                                text = stringResource(R.string.ui_sweep_downloading_update),
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -1000,14 +1000,14 @@ private fun ActiveDownloadCard(
                             )
                             Column {
                                 Text(
-                                    text = "Update Ready to Install",
+                                    text = stringResource(R.string.ui_text_update_ready_to_install),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "APK verified & downloaded",
+                                    text = stringResource(R.string.ui_sweep_apk_verified_downloaded),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1,
@@ -1027,7 +1027,7 @@ private fun ActiveDownloadCard(
                             modifier = Modifier.heightIn(min = 34.dp, max = 36.dp)
                         ) {
                             Text(
-                                text = "Install Now",
+                                text = stringResource(R.string.ui_text_install_now),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
                                 softWrap = false
@@ -1054,7 +1054,7 @@ private fun ActiveDownloadCard(
                             )
                             Column {
                                 Text(
-                                    text = "Download Failed",
+                                    text = stringResource(R.string.ui_text_download_failed),
                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.error,
                                     maxLines = 1,
@@ -1076,7 +1076,7 @@ private fun ActiveDownloadCard(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.arrow_forward),
-                                contentDescription = "Dismiss",
+                                contentDescription = stringResource(R.string.dismiss),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -1184,7 +1184,7 @@ private fun ChannelSwitcherCard(
                         modifier = Modifier.heightIn(min = 32.dp, max = 36.dp)
                     ) {
                         Text(
-                            text = "Get Stable",
+                            text = stringResource(R.string.ui_text_get_stable),
                             style = MaterialTheme.typography.labelMedium,
                             maxLines = 1,
                             softWrap = false
@@ -1206,7 +1206,7 @@ private fun ChannelSwitcherCard(
                             CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Color.Black)
                         } else {
                             Text(
-                                text = "Re-Download Nightly",
+                                text = stringResource(R.string.ui_sweep_re_download_nightly),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
                                 softWrap = false
@@ -1233,7 +1233,7 @@ private fun ChannelSwitcherCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Fetching…",
+                                text = stringResource(R.string.ui_sweep_fetching),
                                 style = MaterialTheme.typography.labelMedium,
                                 maxLines = 1,
                                 softWrap = false
@@ -1246,7 +1246,7 @@ private fun ChannelSwitcherCard(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Switch to Nightly",
+                                text = stringResource(R.string.ui_text_switch_to_nightly),
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 maxLines = 1,
                                 softWrap = false
@@ -1267,9 +1267,9 @@ private fun DesktopEcosystemSection(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeaderRow(
-            title = "AirBeats for Desktop",
+            title = stringResource(R.string.ui_heading_airbeats_for_desktop),
             icon = painterResource(R.drawable.desktop_windows),
-            actionText = "Desktop Repo",
+            actionText = stringResource(R.string.ui_extra_desktop_repo),
             onActionClick = { onOpenUrl("https://github.com/d0x-dev/airbeats-desktop") }
         )
 
@@ -1286,12 +1286,12 @@ private fun DesktopEcosystemSection(
                     .padding(14.dp)
             ) {
                 Text(
-                    text = "AirBeats Desktop Repository",
+                    text = stringResource(R.string.ui_text_airbeats_desktop_repository),
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Official cross-platform desktop application with synchronized playback & Listen Together.",
+                    text = stringResource(R.string.ui_sweep_official_cross_platform_desktop_application_with_synchronized_pla),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1303,27 +1303,27 @@ private fun DesktopEcosystemSection(
                     // Windows Card
                     PlatformCard(
                         icon = painterResource(R.drawable.ic_platform_windows),
-                        title = "AirBeats for Windows",
-                        subtitle = "Windows 10 / 11 64-bit (.exe & Portable)",
-                        actionText = "Get Windows",
+                        title = stringResource(R.string.ui_heading_airbeats_for_windows),
+                        subtitle = stringResource(R.string.ui_heading_windows_10_11_64_bit_exe_portable),
+                        actionText = stringResource(R.string.ui_extra_get_windows),
                         onClick = { onOpenUrl("https://github.com/d0x-dev/airbeats-desktop/releases") }
                     )
 
                     // Mac Card
                     PlatformCard(
                         icon = painterResource(R.drawable.ic_platform_mac),
-                        title = "AirBeats for Mac",
-                        subtitle = "macOS Apple Silicon & Intel (.dmg)",
-                        actionText = "Get macOS",
+                        title = stringResource(R.string.ui_heading_airbeats_for_mac),
+                        subtitle = stringResource(R.string.ui_heading_macos_apple_silicon_intel_dmg),
+                        actionText = stringResource(R.string.ui_extra_get_macos),
                         onClick = { onOpenUrl("https://github.com/d0x-dev/airbeats-desktop/releases") }
                     )
 
                     // Linux Card
                     PlatformCard(
                         icon = painterResource(R.drawable.ic_platform_linux),
-                        title = "AirBeats for Linux",
-                        subtitle = "Snap Store, AppImage & Debian/Ubuntu (.deb)",
-                        actionText = "Snap Store",
+                        title = stringResource(R.string.ui_heading_airbeats_for_linux),
+                        subtitle = stringResource(R.string.ui_heading_snap_store_appimage_debian_ubuntu_deb),
+                        actionText = stringResource(R.string.ui_extra_snap_store),
                         onClick = { onOpenUrl("https://snapcraft.io/airbeats") }
                     )
                 }
@@ -1460,7 +1460,7 @@ private fun AppReleaseCard(
                             color = Color(0xFFFFB74D).copy(alpha = 0.15f)
                         ) {
                             Text(
-                                text = "Nightly",
+                                text = stringResource(R.string.ui_text_nightly_2),
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
                                 color = Color(0xFFFFB74D),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
@@ -1537,7 +1537,7 @@ private fun AppReleaseCard(
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                     modifier = Modifier.heightIn(min = 30.dp, max = 34.dp)
                 ) {
-                    Text("GitHub", style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
+                    Text(stringResource(R.string.ui_text_github), style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
                 }
 
                 if (apkAsset != null) {
@@ -1555,7 +1555,7 @@ private fun AppReleaseCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            "Download APK",
+                            stringResource(R.string.ui_text_download_apk),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             maxLines = 1,
                             softWrap = false
@@ -1672,8 +1672,8 @@ private fun CommunityHubCard(
         ) {
             CommunityLinkItem(
                 icon = painterResource(R.drawable.github),
-                title = "GitHub Repository",
-                subtitle = "Browse source code, branches and pull requests",
+                title = stringResource(R.string.ui_heading_github_repository),
+                subtitle = stringResource(R.string.ui_heading_browse_source_code_branches_and_pull_requests),
                 onClick = { onOpenUrl("https://github.com/d0x-dev/AirBeats") }
             )
 
@@ -1681,8 +1681,8 @@ private fun CommunityHubCard(
 
             CommunityLinkItem(
                 icon = painterResource(R.drawable.star),
-                title = "Give a Star on GitHub",
-                subtitle = "Show your support and help AirBeats grow",
+                title = stringResource(R.string.ui_heading_give_a_star_on_github),
+                subtitle = stringResource(R.string.ui_heading_show_your_support_and_help_airbeats_grow),
                 onClick = { onOpenUrl("https://github.com/d0x-dev/AirBeats") }
             )
 
@@ -1690,8 +1690,8 @@ private fun CommunityHubCard(
 
             CommunityLinkItem(
                 icon = painterResource(R.drawable.bug_report),
-                title = "Raise an Issue",
-                subtitle = "Report unexpected bugs or request new features",
+                title = stringResource(R.string.ui_heading_raise_an_issue),
+                subtitle = stringResource(R.string.ui_heading_report_unexpected_bugs_or_request_new_feature),
                 onClick = { onOpenUrl("https://github.com/d0x-dev/AirBeats/issues/new") }
             )
 
@@ -1699,8 +1699,8 @@ private fun CommunityHubCard(
 
             CommunityLinkItem(
                 icon = painterResource(R.drawable.telegram),
-                title = "Telegram Community",
-                subtitle = "Join real-time discussion channels and tester groups",
+                title = stringResource(R.string.ui_heading_telegram_community),
+                subtitle = stringResource(R.string.ui_heading_join_real_time_discussion_channels_and_tester),
                 onClick = { onOpenUrl(telegramUrl) }
             )
 
@@ -1708,8 +1708,8 @@ private fun CommunityHubCard(
 
             CommunityLinkItem(
                 icon = painterResource(R.drawable.globe_search),
-                title = "community.airbeats.org",
-                subtitle = "Official web community forum & documentation",
+                title = stringResource(R.string.ui_heading_community_airbeats_org),
+                subtitle = stringResource(R.string.ui_heading_official_web_community_forum_documentation),
                 onClick = { onOpenUrl("https://community.airbeats.org") }
             )
         }
@@ -1867,7 +1867,7 @@ private fun SectionErrorCard(message: String, onRetry: () -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
-                    text = "Unable to load data",
+                    text = stringResource(R.string.ui_text_unable_to_load_data),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.error
                 )
@@ -1885,7 +1885,7 @@ private fun SectionErrorCard(message: String, onRetry: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 modifier = Modifier.heightIn(min = 30.dp, max = 34.dp)
             ) {
-                Text("Retry", style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
+                Text(stringResource(R.string.retry), style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
             }
         }
     }

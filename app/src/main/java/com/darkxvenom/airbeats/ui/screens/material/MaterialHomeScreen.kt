@@ -160,7 +160,7 @@ fun MaterialHomeScreen(
     var isGeneratingMix by remember { mutableStateOf(false) }
     val namePrefMgr = remember { NamePreferenceManager(context) }
     val rawUserName by namePrefMgr.userName.collectAsState(initial = "")
-    val displayName = rawUserName.takeIf { it.isNotBlank() } ?: "Guest"
+    val displayName = rawUserName.takeIf { it.isNotBlank() } ?: stringResource(R.string.guest)
 
     val quickPicks by viewModel.quickPicks.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
@@ -259,13 +259,11 @@ fun MaterialHomeScreen(
         }
     }
 
-    val greeting = remember {
-        when (LocalTime.now().hour) {
-            in 5..11 -> "Good morning"
-            in 12..16 -> "Good afternoon"
-            in 17..21 -> "Good evening"
-            else -> "Good night"
-        }
+    val greeting = when (LocalTime.now().hour) {
+        in 5..11 -> stringResource(R.string.greeting_morning)
+        in 12..16 -> stringResource(R.string.greeting_afternoon)
+        in 17..21 -> stringResource(R.string.greeting_evening)
+        else -> stringResource(R.string.greeting_night)
     }
 
     val formattedDate = remember {
@@ -311,7 +309,7 @@ fun MaterialHomeScreen(
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                 Text(
-                                    text = "$greeting, $displayName",
+                                    text = stringResource(R.string.greeting_with_name, greeting, displayName),
                                     style = MaterialTheme.typography.headlineMedium.copy(
                                         fontSize = 24.sp,
                                         fontWeight = FontWeight.ExtraBold,
@@ -356,14 +354,14 @@ fun MaterialHomeScreen(
                                 .padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            MaterialSectionHeader(title = "Quick Access")
+                            MaterialSectionHeader(title = stringResource(R.string.ui_heading_quick_access))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 MaterialQuickTile(
-                                    title = "Liked Songs",
-                                    subtitle = "Your collection",
+                                    title = stringResource(R.string.ui_heading_liked_songs),
+                                    subtitle = stringResource(R.string.ui_heading_your_collection),
                                     icon = Icons.Filled.Favorite,
                                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -392,8 +390,8 @@ fun MaterialHomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 MaterialQuickTile(
-                                    title = "History",
-                                    subtitle = "Recent listens",
+                                    title = stringResource(R.string.history),
+                                    subtitle = stringResource(R.string.ui_heading_recent_listens),
                                     icon = Icons.Filled.History,
                                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -401,8 +399,8 @@ fun MaterialHomeScreen(
                                     onClick = { navController.navigate("history") }
                                 )
                                 MaterialQuickTile(
-                                    title = "Stats",
-                                    subtitle = "Listening stats",
+                                    title = stringResource(R.string.stats),
+                                    subtitle = stringResource(R.string.ui_heading_listening_stats),
                                     icon = Icons.Filled.TrendingUp,
                                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                                     contentColor = MaterialTheme.colorScheme.onSurface,
@@ -419,7 +417,7 @@ fun MaterialHomeScreen(
                     item(key = "taste_strip") {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             MaterialSectionHeader(
-                                title = "Explore by Vibe",
+                                title = stringResource(R.string.ui_heading_explore_by_vibe),
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                             LazyRow(
@@ -457,9 +455,9 @@ fun MaterialHomeScreen(
                         item(key = "quick_picks") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Quick Picks",
-                                    subtitle = "Trending songs picked for you",
-                                    actionText = "Play all",
+                                    title = stringResource(R.string.ui_text_quick_picks),
+                                    subtitle = stringResource(R.string.ui_heading_trending_songs_picked_for_you),
+                                    actionText = stringResource(R.string.ui_extra_play_all),
                                     actionIcon = Icons.Filled.PlayArrow,
                                     onActionClick = {
                                         picks.firstOrNull()?.let {
@@ -494,7 +492,7 @@ fun MaterialHomeScreen(
                         item(key = "because_you_listen_to") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Because You Listen To",
+                                    title = stringResource(R.string.ui_heading_because_you_listen_to),
                                     subtitle = recommendation.title.title,
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
@@ -541,8 +539,8 @@ fun MaterialHomeScreen(
                             ) {
                                 Column(modifier = Modifier.padding(vertical = 14.dp)) {
                                     MaterialSectionHeader(
-                                        title = "Fresh Finds",
-                                        subtitle = "New tracks beyond your usual rotation",
+                                        title = stringResource(R.string.fresh_finds),
+                                        subtitle = stringResource(R.string.fresh_tracks_desc),
                                         modifier = Modifier.padding(horizontal = 14.dp)
                                     )
                                     Spacer(Modifier.height(8.dp))
@@ -574,8 +572,8 @@ fun MaterialHomeScreen(
                         item(key = "jump_back_in") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Jump Back In",
-                                    subtitle = "From your recent listening history",
+                                    title = stringResource(R.string.ui_text_jump_back_in),
+                                    subtitle = stringResource(R.string.ui_heading_from_your_recent_listening_history),
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                                 LazyRow(
@@ -604,8 +602,8 @@ fun MaterialHomeScreen(
                         item(key = "mixes") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Mixes & Playlists",
-                                    subtitle = "Familiar favorites, continuous playback",
+                                    title = stringResource(R.string.ui_heading_mixes_playlists),
+                                    subtitle = stringResource(R.string.ui_heading_familiar_favorites_continuous_playback),
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                                 LazyRow(
@@ -662,8 +660,8 @@ fun MaterialHomeScreen(
                         item(key = "top_artists") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Artists For You",
-                                    subtitle = "Top artists from your taste profile",
+                                    title = stringResource(R.string.artists_for_you),
+                                    subtitle = stringResource(R.string.artists_for_you_desc),
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                                 LazyRow(
@@ -694,8 +692,8 @@ fun MaterialHomeScreen(
                         item(key = "heavy_rotation") {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 MaterialSectionHeader(
-                                    title = "Heavy Rotation",
-                                    subtitle = "Favorites worth listening to again",
+                                    title = stringResource(R.string.heavy_rotation),
+                                    subtitle = stringResource(R.string.heavy_rotation_desc),
                                     modifier = Modifier.padding(horizontal = 16.dp)
                                 )
                                 LazyRow(
@@ -737,7 +735,7 @@ fun MaterialHomeScreen(
                                 MaterialSectionHeader(
                                     title = section.title,
                                     subtitle = section.label,
-                                    actionText = if (section.endpoint != null) "See all" else null,
+                                    actionText = if (section.endpoint != null) stringResource(R.string.see_all) else null,
                                     actionIcon = if (section.endpoint != null) Icons.AutoMirrored.Filled.ArrowForwardIos else null,
                                     onActionClick = section.endpoint?.let { endpoint ->
                                         {
@@ -880,7 +878,7 @@ private fun MaterialTopHeader(
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "AirBeats",
+                    text = stringResource(R.string.ui_text_airbeats),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -894,14 +892,14 @@ private fun MaterialTopHeader(
                 IconButton(onClick = onNewReleasesClick) {
                     Icon(
                         imageVector = Icons.Filled.NewReleases,
-                        contentDescription = "New Releases",
+                        contentDescription = stringResource(R.string.ui_text_new_releases),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 IconButton(onClick = onDevNewsClick) {
                     Icon(
                         painter = painterResource(R.drawable.newspaper),
-                        contentDescription = "News from Developer",
+                        contentDescription = stringResource(R.string.ui_a11y_news_from_developer),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp)
                     )
@@ -909,7 +907,7 @@ private fun MaterialTopHeader(
                 IconButton(onClick = onSettingsClick) {
                     Icon(
                         imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.settings),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -955,7 +953,7 @@ private fun MaterialHeroBanner(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Infinite Radio",
+                        text = stringResource(R.string.smart_radio),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -963,7 +961,7 @@ private fun MaterialHeroBanner(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "Endless discovery tuned to your musical taste",
+                    text = stringResource(R.string.smart_radio_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
                 )
@@ -982,7 +980,7 @@ private fun MaterialHeroBanner(
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Play Radio",
+                    contentDescription = stringResource(R.string.play_radio),
                     modifier = Modifier.size(28.dp)
                 )
             }
@@ -1411,7 +1409,7 @@ private fun MaterialSpotlightCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Artist Spotlight",
+                        text = stringResource(R.string.artist_spotlight),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -1451,13 +1449,13 @@ private fun MaterialSpotlightCard(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text("Play Radio", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(stringResource(R.string.play_radio), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
 
                     if (artistId != null) {
                         TextButton(onClick = onOpenArtist) {
-                            Text("View Profile", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.view_profile), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

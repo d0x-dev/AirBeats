@@ -1501,7 +1501,7 @@ fun BottomSheetPlayer(
                     if (download?.state == Download.STATE_DOWNLOADING) {
                         val progress = (download!!.percentDownloaded).toInt()
                         Text(
-                            text = "$progress%",
+                            text = stringResource(R.string.ui_dynamic_progress_percent_final, progress),
                             style = MaterialTheme.typography.labelSmall,
                             color = iconButtonColor,
                             fontSize = 8.sp,
@@ -3619,7 +3619,7 @@ private fun SpotifyLyricsPreviewCard(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = "Show",
+                    text = stringResource(R.string.ui_text_show),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.72f),
@@ -3728,7 +3728,7 @@ private fun SpotifyArtistCard(
                 color = Color.White,
             )
             Text(
-                text = "Artist",
+                text = stringResource(R.string.sort_by_artist),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.7f),
             )
@@ -3774,7 +3774,7 @@ private fun SpotifyDetailsCard(
             )
             Spacer(Modifier.height(22.dp))
             Text(
-                text = "Description",
+                text = stringResource(R.string.ui_text_description),
                 style = MaterialTheme.typography.headlineSmall.copy(fontFamily = SpotifyFontFamily, fontSize = 20.sp, fontWeight = FontWeight.Bold),
                     color = Color.White,
             )
@@ -3786,7 +3786,7 @@ private fun SpotifyDetailsCard(
             )
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "More",
+                text = stringResource(R.string.ui_text_more),
                 style = MaterialTheme.typography.headlineSmall.copy(fontFamily = SpotifyFontFamily, fontSize = 20.sp, fontWeight = FontWeight.Bold),
                     color = Color.White,
             )

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -110,7 +112,7 @@ fun DevLogInBottomSheet(
                             IconButton(onClick = { textValue = "" }) {
                                 Icon(
                                     painter = painterResource(R.drawable.close),
-                                    contentDescription = "Clear"
+                                    contentDescription = stringResource(R.string.clear)
                                 )
                             }
                         }
@@ -121,7 +123,7 @@ fun DevLogInBottomSheet(
                         }) {
                             Icon(
                                 painter = painterResource(R.drawable.content_copy),
-                                contentDescription = "Paste"
+                                contentDescription = stringResource(R.string.ui_a11y_paste)
                             )
                         }
                     }
@@ -138,7 +140,7 @@ fun DevLogInBottomSheet(
                     onClick = onDismiss,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.visitor_data_reset_cancel))
                 }
 
                 Button(
@@ -153,7 +155,7 @@ fun DevLogInBottomSheet(
                     modifier = Modifier.weight(1f),
                     enabled = textValue.isNotBlank()
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             }
         }

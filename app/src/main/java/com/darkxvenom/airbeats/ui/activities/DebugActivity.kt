@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.activities
 
+import androidx.compose.ui.res.stringResource
+
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -153,7 +155,7 @@ private fun CrashReportScaffold(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Crash Report",
+                        text = stringResource(R.string.ui_text_crash_report),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -217,7 +219,7 @@ private fun CrashReportScaffold(
                             modifier = Modifier.size(22.dp),
                         )
                         Text(
-                            text = "Application crashed",
+                            text = stringResource(R.string.ui_text_application_crashed),
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
@@ -252,7 +254,7 @@ private fun CrashReportScaffold(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = "Device info",
+                        text = stringResource(R.string.ui_text_device_info),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     )
                     deviceInfo.forEachIndexed { index, (k, v) ->
@@ -280,7 +282,7 @@ private fun CrashReportScaffold(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text(
-                        text = "Stack trace",
+                        text = stringResource(R.string.ui_text_stack_trace),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     )
                     SelectionContainer {
@@ -306,7 +308,7 @@ private fun CrashReportScaffold(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
-                    Text("Restart")
+                    Text(stringResource(R.string.ui_text_restart))
                 }
                 Button(
                     onClick = onClose,
@@ -314,7 +316,7 @@ private fun CrashReportScaffold(
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 ) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
 

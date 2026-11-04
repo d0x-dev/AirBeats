@@ -104,7 +104,7 @@ fun DynamicIslandSettings(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Dynamic Island",
+                        text = stringResource(R.string.ui_text_dynamic_island),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -114,7 +114,7 @@ fun DynamicIslandSettings(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             painter = painterResource(R.drawable.arrow_back),
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -154,8 +154,8 @@ fun DynamicIslandSettings(
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SwitchPreference(
-                        title = { Text("Enable Dynamic Island", fontWeight = FontWeight.Bold) },
-                        description = "Displays live rotating artwork, squiggly seekbar, and player controls overlay",
+                        title = { Text(stringResource(R.string.enable_dynamic_island), fontWeight = FontWeight.Bold) },
+                        description = stringResource(R.string.ui_extra_displays_live_rotating_artwork_squiggly_seekbar_and_player_controls_),
                         icon = { Icon(painterResource(R.drawable.music_note), null) },
                         checked = enableDynamicIsland,
                         onCheckedChange = { newValue ->
@@ -244,7 +244,7 @@ fun DynamicIslandSettings(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Horizontal Position (X)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.ui_remaining_horizontal_position_x), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                                 Text(if (activeX == 0) "Center (0 dp)" else if (activeX > 0) "+$activeX dp" else "$activeX dp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
                             Slider(
@@ -260,8 +260,8 @@ fun DynamicIslandSettings(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Vertical Position (Y)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                Text("$activeY dp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Text(stringResource(R.string.ui_remaining_vertical_position_y), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.ui_dynamic_dp_value, activeY), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
                             Slider(
                                 value = activeY.toFloat(),
@@ -279,7 +279,7 @@ fun DynamicIslandSettings(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Island Width", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.ui_text_island_width), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                                 Text(widthLabel, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
                             Slider(
@@ -295,8 +295,8 @@ fun DynamicIslandSettings(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Island Height", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                Text("$activeH dp", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                                Text(stringResource(R.string.ui_text_island_height), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                Text(stringResource(R.string.ui_dynamic_dp_value, activeH), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                             }
                             Slider(
                                 value = activeH.toFloat(),
@@ -315,7 +315,7 @@ fun DynamicIslandSettings(
                                 },
                                 modifier = Modifier.align(Alignment.End)
                             ) {
-                                Text("Reset to Defaults")
+                                Text(stringResource(R.string.ui_text_reset_to_defaults))
                             }
                         }
                     }
@@ -342,7 +342,7 @@ fun DynamicIslandSettings(
                                 "AMOLED Dark" to android.graphics.Color.parseColor("#212121"),
                                 "Crimson Dark" to android.graphics.Color.parseColor("#2A0808"),
                             )
-                            Text("Background Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.ui_text_background_color), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -372,7 +372,7 @@ fun DynamicIslandSettings(
                                 "Electric Amber" to android.graphics.Color.parseColor("#FF6D00"),
                                 "Bubble Pink" to android.graphics.Color.parseColor("#FF4081"),
                             )
-                            Text("Accent & Progress Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.ui_remaining_accent_progress_color), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -400,7 +400,7 @@ fun DynamicIslandSettings(
                                 "Warm Cream" to android.graphics.Color.parseColor("#FFFDD0"),
                                 "Neon Yellow" to android.graphics.Color.parseColor("#FFFF00"),
                             )
-                            Text("Text & Icon Color", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.ui_remaining_text_icon_color), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)

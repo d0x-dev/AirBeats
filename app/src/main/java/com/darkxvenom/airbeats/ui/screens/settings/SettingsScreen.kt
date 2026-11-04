@@ -487,7 +487,7 @@ fun VersionCard(uriHandler: UriHandler, navController: NavController? = null) {
                         icon = painterResource(R.drawable.resource_public),
                         title = {
                             Text(
-                                text = "Official Website",
+                                text = stringResource(R.string.ui_text_official_website),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -995,12 +995,12 @@ fun SettingsScreen(
                             ),
                             SettingsCategoryItem(
                                 icon = painterResource(R.drawable.lyrics),
-                                title = { Text("Lyrics", color = MaterialTheme.colorScheme.onSurface) },
+                                title = { Text(stringResource(R.string.lyrics), color = MaterialTheme.colorScheme.onSurface) },
                                 onClick = { navController.navigate("settings/lyrics") }
                             ),
                             SettingsCategoryItem(
                                 icon = painterResource(R.drawable.ic_gen_ai),
-                                title = { Text("AI Integration", color = MaterialTheme.colorScheme.onSurface) },
+                                title = { Text(stringResource(R.string.ai_integration), color = MaterialTheme.colorScheme.onSurface) },
                                 onClick = { navController.navigate("settings/ai") }
                             ),
                             SettingsCategoryItem(
@@ -1017,7 +1017,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.swipe),
                                 title = {
                                     Text(
-                                        "Gestures",
+                                        stringResource(R.string.ui_text_gestures),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1027,7 +1027,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.graphic_eq),
                                 title = {
                                     Text(
-                                        "Scrobbler",
+                                        stringResource(R.string.ui_text_scrobbler),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1037,7 +1037,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.play),
                                 title = {
                                     Text(
-                                        "Android Auto",
+                                        stringResource(R.string.android_auto),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1087,7 +1087,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.bug_report),
                                 title = {
                                     Text(
-                                        "Experimental Settings",
+                                        stringResource(R.string.ui_text_experimental_settings),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1104,7 +1104,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.newspaper),
                                 title = {
                                     Text(
-                                        "News from Developers",
+                                        stringResource(R.string.ui_text_news_from_developers_2),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1124,7 +1124,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.translate), // Assuming R.drawable.translate exists. If not, I can use R.drawable.language
                                 title = {
                                     Text(
-                                        "Help Translate",
+                                        stringResource(R.string.ui_text_help_translate),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1144,7 +1144,7 @@ fun SettingsScreen(
                                 icon = painterResource(R.drawable.telegram),
                                 title = {
                                     Text(
-                                        "Telegram",
+                                        stringResource(R.string.ui_text_telegram),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 },
@@ -1362,7 +1362,7 @@ fun ProfileSection(
                                         }
                                     )
                                     .build(),
-                                contentDescription = "Avatar de $accountName",
+                                contentDescription = stringResource(R.string.ui_a11y_avatar_de_accountname, accountName),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(CircleShape),
@@ -1404,7 +1404,7 @@ fun ProfileSection(
                                         }
                                     )
                                     .build(),
-                                contentDescription = "Avatar DiceBear de $accountName",
+                                contentDescription = stringResource(R.string.ui_a11y_avatar_dicebear_de_accountname, accountName),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(CircleShape),
@@ -1567,7 +1567,7 @@ fun ProfileSection(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.airbeats_monochrome),
-                        contentDescription = "Logo de AirBeats",
+                        contentDescription = stringResource(R.string.ui_a11y_logo_de_airbeats),
                         modifier = Modifier.fillMaxSize(),
                         tint = MaterialTheme.colorScheme.primary
                     )

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -173,7 +175,7 @@ fun UpdateAvailableDialog(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.update),
-                            contentDescription = "Update Icon",
+                            contentDescription = stringResource(R.string.ui_a11y_update_icon),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(26.dp)
                         )
@@ -184,7 +186,7 @@ fun UpdateAvailableDialog(
 
                 // Title
                 Text(
-                    text = "Update Available",
+                    text = stringResource(R.string.ui_text_update_available),
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -213,7 +215,7 @@ fun UpdateAvailableDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "A new version of AirBeats is ready to install with latest features and enhancements.",
+                    text = stringResource(R.string.ui_sweep_a_new_version_of_airbeats_is_ready_to_install_with_latest_feature),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -221,7 +223,7 @@ fun UpdateAvailableDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Expandable "What's New" Accordion Card
+                // Expandable stringResource(R.string.ui_sweep_what_s_new) Accordion Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
@@ -264,7 +266,7 @@ fun UpdateAvailableDialog(
                                 }
 
                                 Text(
-                                    text = "What's New",
+                                    text = stringResource(R.string.ui_sweep_what_s_new),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
@@ -312,7 +314,7 @@ fun UpdateAvailableDialog(
                                 ) {
                                     if (notesList.isEmpty()) {
                                         Text(
-                                            text = "• Performance improvements and bug fixes.",
+                                            text = stringResource(R.string.ui_sweep_performance_improvements_and_bug_fixes),
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -379,7 +381,7 @@ fun UpdateAvailableDialog(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "Downloading update…",
+                                            text = stringResource(R.string.downloadingup),
                                             style = MaterialTheme.typography.bodyMedium.copy(
                                                 fontWeight = FontWeight.SemiBold
                                             ),
@@ -477,14 +479,14 @@ fun UpdateAvailableDialog(
                                     }
                                     Column {
                                         Text(
-                                            text = "Download Complete",
+                                            text = stringResource(R.string.ui_text_download_complete),
                                             style = MaterialTheme.typography.titleSmall.copy(
                                                 fontWeight = FontWeight.Bold
                                             ),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = "Tap Install to update now",
+                                            text = stringResource(R.string.ui_text_tap_install_to_update_now),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -521,7 +523,7 @@ fun UpdateAvailableDialog(
                                     )
                                     Column {
                                         Text(
-                                            text = "Download Failed",
+                                            text = stringResource(R.string.ui_text_download_failed),
                                             style = MaterialTheme.typography.titleSmall.copy(
                                                 fontWeight = FontWeight.Bold
                                             ),
@@ -555,7 +557,7 @@ fun UpdateAvailableDialog(
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     ) {
                         Text(
-                            text = "Later",
+                            text = stringResource(R.string.ui_text_later),
                             style = MaterialTheme.typography.labelLarge.copy(
                                 fontWeight = FontWeight.SemiBold
                             ),

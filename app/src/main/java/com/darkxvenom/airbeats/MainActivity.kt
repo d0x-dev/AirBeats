@@ -1302,7 +1302,7 @@ class MainActivity : FragmentActivity() {
                                                         IconButton(onClick = { navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) }) {
                                                             Icon(
                                                                 painter = painterResource(R.drawable.mic),
-                                                                contentDescription = "Music Recognition"
+                                                                contentDescription = stringResource(R.string.music_recognition)
                                                             )
                                                         }
                                                     }
@@ -2333,7 +2333,7 @@ fun ProfileIconWithUpdateBadge(
                             .error(R.drawable.person)
                             .placeholder(R.drawable.person)
                             .build(),
-                        contentDescription = "Avatar personalizado",
+                        contentDescription = stringResource(R.string.ui_a11y_avatar_personalizado),
                         modifier = modifier
                             .size(28.dp)
                             .clip(CircleShape),
@@ -2348,7 +2348,7 @@ fun ProfileIconWithUpdateBadge(
                             .error(R.drawable.person)
                             .placeholder(R.drawable.person)
                             .build(),
-                        contentDescription = "Avatar DiceBear",
+                        contentDescription = stringResource(R.string.ui_a11y_avatar_dicebear),
                         modifier = modifier
                             .size(28.dp)
                             .clip(CircleShape),
@@ -2358,7 +2358,7 @@ fun ProfileIconWithUpdateBadge(
                 else -> {
                     Icon(
                         painter = painterResource(R.drawable.person),
-                        contentDescription = "Avatar predeterminado",
+                        contentDescription = stringResource(R.string.ui_a11y_avatar_predeterminado),
                         modifier = modifier
                     )
                 }
@@ -2395,7 +2395,7 @@ fun ProfileIconWithUpdateBadge(
                 )
                 Icon(
                     painter = painterResource(R.drawable.update),
-                    contentDescription = "Actualización disponible",
+                    contentDescription = stringResource(R.string.ui_a11y_actualizacion_disponible),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .size(18.dp)
@@ -2498,7 +2498,7 @@ fun ModernHomeTopBar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Hi, $displayName",
+                            text = stringResource(R.string.ui_dynamic_greeting_short, displayName),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -2599,7 +2599,7 @@ fun HeadphoneSplashScreen(statusText: String? = null) {
             }
 
             Text(
-                text = "AirBeats",
+                text = stringResource(R.string.ui_text_airbeats),
                 fontSize = 42.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 2.sp,

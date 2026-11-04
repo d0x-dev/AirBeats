@@ -128,7 +128,7 @@ fun SharedMusicScreen(
                     IconButton(onClick = { showDebugLogs = true }) {
                         Icon(
                             painter = painterResource(R.drawable.bug_report),
-                            contentDescription = "Debug Logs"
+                            contentDescription = stringResource(R.string.ui_a11y_debug_logs)
                         )
                     }
                 },
@@ -457,7 +457,7 @@ private fun SuccessContent(
         if (state.candidates.size > 1) {
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Alternative Matches",
+                text = stringResource(R.string.ui_text_alternative_matches),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -651,7 +651,7 @@ private fun MusicDebugLogsSheet(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Recognition Logs",
+                        text = stringResource(R.string.ui_text_recognition_logs),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -672,7 +672,7 @@ private fun MusicDebugLogsSheet(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close"
+                        contentDescription = stringResource(R.string.close)
                     )
                 }
             }
@@ -686,7 +686,7 @@ private fun MusicDebugLogsSheet(
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     icon = { }
                 ) {
-                    Text("Music ID")
+                    Text(stringResource(R.string.ui_text_music_id))
                 }
                 SegmentedButton(
                     selected = filterMode == 1,
@@ -694,7 +694,7 @@ private fun MusicDebugLogsSheet(
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     icon = { }
                 ) {
-                    Text("All Logs")
+                    Text(stringResource(R.string.ui_text_all_logs))
                 }
             }
 
@@ -713,7 +713,7 @@ private fun MusicDebugLogsSheet(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No logs captured yet.\nShare a link to see live extraction & detection logs.",
+                            text = stringResource(R.string.ui_sweep_no_logs_captured_yet_share_a_link_to_see_live_extraction_detectio),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center
@@ -748,7 +748,7 @@ private fun MusicDebugLogsSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Clear")
+                    Text(stringResource(R.string.clear))
                 }
                 Button(
                     onClick = {
@@ -765,7 +765,7 @@ private fun MusicDebugLogsSheet(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Copy")
+                    Text(stringResource(R.string.ui_text_copy))
                 }
             }
         }

@@ -118,7 +118,7 @@ fun AppIconScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "App Icon",
+                            text = stringResource(R.string.ui_text_app_icon),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                         )
                     },
@@ -200,14 +200,14 @@ fun AppIconScreen(
                 item {
                     Column {
                         Text(
-                            text = "App Icons",
+                            text = stringResource(R.string.ui_text_app_icons),
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         )
                         Text(
-                            text = "Official app launcher icons. Tap to switch directly.",
+                            text = stringResource(R.string.ui_sweep_official_app_launcher_icons_tap_to_switch_directly),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -252,14 +252,14 @@ fun AppIconScreen(
                     ) {
                         Column {
                             Text(
-                                text = "Community Icons",
+                                text = stringResource(R.string.ui_text_community_icons),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
                             )
                             Text(
-                                text = "Submitted by community. Pin as shortcut until in-app update.",
+                                text = stringResource(R.string.ui_sweep_submitted_by_community_pin_as_shortcut_until_in_app_update),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -289,7 +289,7 @@ fun AppIconScreen(
                                 } else {
                                     Icon(
                                         painter = painterResource(R.drawable.sync),
-                                        contentDescription = "Refresh from GitHub",
+                                        contentDescription = stringResource(R.string.ui_a11y_refresh_from_github),
                                         modifier = Modifier.size(20.dp),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -453,7 +453,7 @@ private fun HomeScreenMockupCard(
                                 .background(Color(0xFF00E676))
                         )
                         Text(
-                            text = "Live Launcher Preview",
+                            text = stringResource(R.string.ui_text_live_launcher_preview),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -557,7 +557,7 @@ private fun HomeScreenMockupCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Add to Home Screen",
+                            text = stringResource(R.string.ui_text_add_to_home_screen),
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                         )
                     }
@@ -690,7 +690,7 @@ private fun InAppIconCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = "Active Icon",
+                        contentDescription = stringResource(R.string.ui_a11y_active_icon),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(18.dp)
                     )
@@ -704,7 +704,7 @@ private fun InAppIconCard(
                     ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                 ) {
-                    Text(text = "Apply", style = MaterialTheme.typography.labelMedium)
+                    Text(text = stringResource(R.string.apply), style = MaterialTheme.typography.labelMedium)
                 }
             }
         }
@@ -797,7 +797,7 @@ private fun CommunityIconCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Selected",
+                            contentDescription = stringResource(R.string.ui_text_selected),
                             tint = MaterialTheme.colorScheme.onSecondary,
                             modifier = Modifier.size(14.dp)
                         )
@@ -839,7 +839,7 @@ private fun CommunityIconCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Add to Home",
+                    text = stringResource(R.string.ui_text_add_to_home),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -899,12 +899,12 @@ private fun CommunitySubmissionBanner(
                 }
                 Column {
                     Text(
-                        text = "Design an AirBeats Icon?",
+                        text = stringResource(R.string.ui_sweep_design_an_airbeats_icon),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Submit an SVG link to get your theme included!",
+                        text = stringResource(R.string.ui_sweep_submit_an_svg_link_to_get_your_theme_included),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -912,7 +912,7 @@ private fun CommunitySubmissionBanner(
             }
 
             Text(
-                text = "Anyone in the community can contribute. Share your vector design with a raw GitHub SVG URL and it will be added to the live catalog for everyone to pin to their home screen.",
+                text = stringResource(R.string.ui_sweep_anyone_in_the_community_can_contribute_share_your_vector_design_w),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -932,7 +932,7 @@ private fun CommunitySubmissionBanner(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Submit Custom Icon",
+                    text = stringResource(R.string.ui_text_submit_custom_icon),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
@@ -962,7 +962,7 @@ private fun SystemNoticeCard() {
                 modifier = Modifier.size(20.dp)
             )
             Text(
-                text = "The Default Icon changes the primary app launcher icon. Community icons from GitHub are pinned directly to your Home screen with their unique vector artwork via the system Add to Home screen feature.",
+                text = stringResource(R.string.ui_default_icon_community_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
@@ -987,7 +987,7 @@ private fun CommunityIconSubmitDialog(
         onDismiss = onDismiss,
         title = {
             Text(
-                text = "Submit Icon Design",
+                text = stringResource(R.string.ui_text_submit_icon_design),
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
         },
@@ -1019,7 +1019,7 @@ private fun CommunityIconSubmitDialog(
             ) {
                 Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Open GitHub")
+                Text(stringResource(R.string.ui_text_open_github))
             }
         }
     ) {
@@ -1030,7 +1030,7 @@ private fun CommunityIconSubmitDialog(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                text = "Provide a direct public link to your SVG (e.g. GitHub raw file or Gist). We will review it and add it to the AirBeats icon catalog!",
+                text = stringResource(R.string.ui_sweep_provide_a_direct_public_link_to_your_svg_e_g_github_raw_file_or_g),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1038,8 +1038,8 @@ private fun CommunityIconSubmitDialog(
             OutlinedTextField(
                 value = iconName,
                 onValueChange = { iconName = it },
-                label = { Text("Icon Title") },
-                placeholder = { Text("e.g. Midnight Cyber") },
+                label = { Text(stringResource(R.string.ui_text_icon_title)) },
+                placeholder = { Text(stringResource(R.string.ui_dynamic_svg_example)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -1048,8 +1048,8 @@ private fun CommunityIconSubmitDialog(
             OutlinedTextField(
                 value = designerName,
                 onValueChange = { designerName = it },
-                label = { Text("Your Name / GitHub Handle") },
-                placeholder = { Text("e.g. @yourhandle") },
+                label = { Text(stringResource(R.string.ui_remaining_your_name_github_handle)) },
+                placeholder = { Text(stringResource(R.string.ui_dynamic_custom_icon_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
@@ -1058,7 +1058,7 @@ private fun CommunityIconSubmitDialog(
             OutlinedTextField(
                 value = svgLink,
                 onValueChange = { svgLink = it },
-                label = { Text("Direct SVG URL *") },
+                label = { Text(stringResource(R.string.ui_remaining_direct_svg_url)) },
                 placeholder = { Text("https://raw.githubusercontent.com/.../icon.svg") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -1085,17 +1085,17 @@ private fun CommunityIconSubmitDialog(
                     ) {
                         AsyncImage(
                             model = svgLink.trim(),
-                            contentDescription = "SVG Preview",
+                            contentDescription = stringResource(R.string.ui_a11y_svg_preview),
                             modifier = Modifier.fillMaxSize(0.8f)
                         )
                     }
                     Column {
                         Text(
-                            text = "Live SVG Preview",
+                            text = stringResource(R.string.ui_text_live_svg_preview),
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = "Will be loaded via URL",
+                            text = stringResource(R.string.ui_text_will_be_loaded_via_url),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -1120,7 +1120,7 @@ private fun CommunityIconSubmitDialog(
             ) {
                 Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Copy Submission Template")
+                Text(stringResource(R.string.ui_text_copy_submission_template))
             }
         }
     }

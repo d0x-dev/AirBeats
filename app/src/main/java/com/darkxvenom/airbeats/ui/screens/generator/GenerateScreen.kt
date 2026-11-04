@@ -139,7 +139,7 @@ fun GenerateScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Generating Playlist…",
+                                    text = stringResource(R.string.ui_sweep_generating_playlist),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -192,7 +192,7 @@ fun GenerateScreen(
                             IconButton(onClick = viewModel::dismissError) {
                                 Icon(
                                     imageVector = Icons.Filled.Close,
-                                    contentDescription = "Dismiss",
+                                    contentDescription = stringResource(R.string.dismiss),
                                     tint = MaterialTheme.colorScheme.onErrorContainer
                                 )
                             }
@@ -250,8 +250,8 @@ fun GenerateScreen(
                                 OutlinedTextField(
                                     value = state.promptInput,
                                     onValueChange = viewModel::setPrompt,
-                                    label = { Text("Vibe or Prompt (e.g. Late night rain drive, 90s bollywood)") },
-                                    placeholder = { Text("Describe the music style or mood…") },
+                                    label = { Text(stringResource(R.string.ui_remaining_vibe_or_prompt_e_g_late_night_rain_drive_90s_bollywood)) },
+                                    placeholder = { Text(stringResource(R.string.ui_remaining_describe_the_music_style_or_mood)) },
                                     singleLine = false,
                                     maxLines = 3,
                                     shape = RoundedCornerShape(16.dp),
@@ -263,7 +263,7 @@ fun GenerateScreen(
                                     OutlinedTextField(
                                         value = state.seedTrackName,
                                         onValueChange = { viewModel.setSeedTrack(it, state.seedArtistName) },
-                                        label = { Text("Seed Song Title") },
+                                        label = { Text(stringResource(R.string.ui_text_seed_song_title)) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(16.dp),
                                         modifier = Modifier.fillMaxWidth()
@@ -271,7 +271,7 @@ fun GenerateScreen(
                                     OutlinedTextField(
                                         value = state.seedArtistName,
                                         onValueChange = { viewModel.setSeedTrack(state.seedTrackName, it) },
-                                        label = { Text("Artist (Optional)") },
+                                        label = { Text(stringResource(R.string.ui_remaining_artist_optional)) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(16.dp),
                                         modifier = Modifier.fillMaxWidth()
@@ -282,8 +282,8 @@ fun GenerateScreen(
                                 OutlinedTextField(
                                     value = state.seedArtistQuery,
                                     onValueChange = viewModel::setSeedArtistQuery,
-                                    label = { Text("Artist Name") },
-                                    placeholder = { Text("e.g. Arijit Singh, The Weeknd") },
+                                    label = { Text(stringResource(R.string.ui_text_artist_name)) },
+                                    placeholder = { Text(stringResource(R.string.ui_remaining_e_g_arijit_singh_the_weeknd)) },
                                     singleLine = true,
                                     shape = RoundedCornerShape(16.dp),
                                     modifier = Modifier.fillMaxWidth()
@@ -292,7 +292,7 @@ fun GenerateScreen(
                             GenerateMode.TAG -> {
                                 Column {
                                     Text(
-                                        text = "Select a Genre or Vibe:",
+                                        text = stringResource(R.string.ui_sweep_select_a_genre_or_vibe),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -330,7 +330,7 @@ fun GenerateScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Playlist Length:",
+                                text = stringResource(R.string.ui_sweep_playlist_length),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -374,7 +374,7 @@ fun GenerateScreen(
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                text = "Generate Playlist",
+                                text = stringResource(R.string.generate_playlist),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp
                             )
@@ -386,7 +386,7 @@ fun GenerateScreen(
             // Modes Header
             item(key = "modesHeader") {
                 Text(
-                    text = "DISCOVERY ENGINES",
+                    text = stringResource(R.string.ui_text_discovery_engines),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -473,7 +473,7 @@ fun GenerateScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }

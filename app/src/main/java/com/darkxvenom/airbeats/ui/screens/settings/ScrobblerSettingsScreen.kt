@@ -374,7 +374,7 @@ fun ScrobblerSettingsScreen(
     }
 
     SettingsPage(
-        title = "Scrobbler",
+        title = stringResource(R.string.ui_text_scrobbler),
         navController = navController,
         scrollBehavior = scrollBehavior,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -391,11 +391,11 @@ fun ScrobblerSettingsScreen(
 
         // ── Scrobbler Configuration Category ──
         SettingsGeneralCategory(
-            title = "Scrobbler",
+            title = stringResource(R.string.ui_text_scrobbler),
             items = listOf(
                 {
                     SwitchPreference(
-                        title = { Text("Scrobble") },
+                        title = { Text(stringResource(R.string.ui_text_scrobble)) },
                         description = if (settings.enabled) {
                             if (!isNotificationAccessGranted(context)) {
                                 "Permission needed: tap to grant Notification Listener access"
@@ -417,7 +417,7 @@ fun ScrobblerSettingsScreen(
                 },
                 {
                     PreferenceEntry(
-                        title = { Text("Choose apps") },
+                        title = { Text(stringResource(R.string.ui_text_choose_apps)) },
                         description = if (settings.selectedPackages.isEmpty()) "None selected yet" else "${settings.selectedPackages.size} app(s) selected",
                         icon = { Icon(painterResource(R.drawable.music_note), null) },
                         onClick = { navController.navigate("settings/scrobbler/apps") },
@@ -425,8 +425,8 @@ fun ScrobblerSettingsScreen(
                 },
                 {
                     SwitchPreference(
-                        title = { Text("Submit \"Now Playing\"") },
-                        description = "Show currently playing track immediately on Last.fm",
+                        title = { Text(stringResource(R.string.ui_dynamic_submit_now_playing)) },
+                        description = stringResource(R.string.ui_extra_show_currently_playing_track_immediately_on_last_fm),
                         icon = { Icon(painterResource(R.drawable.play), null) },
                         checked = settings.submitNowPlaying,
                         onCheckedChange = viewModel::setSubmitNowPlaying,
@@ -444,7 +444,7 @@ fun ScrobblerSettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                text = "Scrobble delay",
+                                text = stringResource(R.string.ui_text_scrobble_delay),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -488,7 +488,7 @@ fun ScrobblerSettingsScreen(
                     modifier = Modifier.size(32.dp)
                 )
             },
-            title = { Text("Sign in to Last.fm") },
+            title = { Text(stringResource(R.string.ui_remaining_sign_in_to_last_fm)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -498,14 +498,14 @@ fun ScrobblerSettingsScreen(
                     OutlinedTextField(
                         value = usernameInput,
                         onValueChange = { usernameInput = it },
-                        label = { Text("Username") },
+                        label = { Text(stringResource(R.string.ui_text_username)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = passwordInput,
                         onValueChange = { passwordInput = it },
-                        label = { Text("Password") },
+                        label = { Text(stringResource(R.string.ui_text_password)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         isError = directSignInError != null,
@@ -523,7 +523,7 @@ fun ScrobblerSettingsScreen(
                     if (directSignInLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Connect", color = Color.White)
+                        Text(stringResource(R.string.ui_text_connect), color = Color.White)
                     }
                 }
             },
@@ -550,7 +550,7 @@ fun ScrobblerSettingsScreen(
                     modifier = Modifier.size(32.dp)
                 )
             },
-            title = { Text("Enable scrobbling") },
+            title = { Text(stringResource(R.string.ui_text_enable_scrobbling_2)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -560,7 +560,7 @@ fun ScrobblerSettingsScreen(
                     OutlinedTextField(
                         value = passwordInput,
                         onValueChange = { passwordInput = it },
-                        label = { Text("Last.fm Password") },
+                        label = { Text(stringResource(R.string.ui_remaining_last_fm_password)) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         isError = sessionKeyError != null,
@@ -578,7 +578,7 @@ fun ScrobblerSettingsScreen(
                     if (sessionKeyLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Enable", color = Color.White)
+                        Text(stringResource(R.string.ui_text_enable), color = Color.White)
                     }
                 }
             },
@@ -598,7 +598,7 @@ fun ScrobblerSettingsScreen(
 
         AlertDialog(
             onDismissRequest = viewModel::dismissCredentialsDialog,
-            title = { Text("Last.fm API Credentials") },
+            title = { Text(stringResource(R.string.ui_remaining_last_fm_api_credentials)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
@@ -609,14 +609,14 @@ fun ScrobblerSettingsScreen(
                     OutlinedTextField(
                         value = apiKeyInput,
                         onValueChange = { apiKeyInput = it },
-                        label = { Text("API Key") },
+                        label = { Text(stringResource(R.string.ai_api_key)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = apiSecretInput,
                         onValueChange = { apiSecretInput = it },
-                        label = { Text("Shared Secret") },
+                        label = { Text(stringResource(R.string.ui_text_shared_secret)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -626,7 +626,7 @@ fun ScrobblerSettingsScreen(
                 Button(
                     onClick = { viewModel.saveApiCredentials(apiKeyInput, apiSecretInput) }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
@@ -642,8 +642,8 @@ fun ScrobblerSettingsScreen(
     if (showDisconnectConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showDisconnectConfirmDialog = false },
-            title = { Text("Disconnect Last.fm?") },
-            text = { Text("This will sign out your account and disable scrobbling until you connect again.") },
+            title = { Text(stringResource(R.string.ui_remaining_disconnect_last_fm)) },
+            text = { Text(stringResource(R.string.ui_remaining_this_will_sign_out_your_account_and_disable_scrobbling_until_you_)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -652,7 +652,7 @@ fun ScrobblerSettingsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Disconnect")
+                    Text(stringResource(R.string.ui_text_disconnect))
                 }
             },
             dismissButton = {
@@ -676,7 +676,7 @@ fun ScrobblerSettingsScreen(
                     modifier = Modifier.size(32.dp)
                 )
             },
-            title = { Text("Complete Last.fm Sign-In") },
+            title = { Text(stringResource(R.string.ui_remaining_complete_last_fm_sign_in)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
@@ -698,7 +698,7 @@ fun ScrobblerSettingsScreen(
                     if (webAuthLoading) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Complete Sign-In", color = Color.White)
+                        Text(stringResource(R.string.ui_remaining_complete_sign_in), color = Color.White)
                     }
                 }
             },
@@ -751,7 +751,7 @@ private fun LastFmAccountCard(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_lastfm),
-                        contentDescription = "Last.fm",
+                        contentDescription = stringResource(R.string.ui_a11y_last_fm),
                         tint = Color(0xFFD51007),
                         modifier = Modifier.size(24.dp)
                     )
@@ -759,7 +759,7 @@ private fun LastFmAccountCard(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Last.fm Integration",
+                        text = stringResource(R.string.ui_sweep_last_fm_integration),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -772,7 +772,7 @@ private fun LastFmAccountCard(
                         )
                     } else {
                         Text(
-                            text = "Scrobble & track your listening history",
+                            text = stringResource(R.string.ui_sweep_scrobble_track_your_listening_history),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -818,7 +818,7 @@ private fun LastFmAccountCard(
                             shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD51007))
                         ) {
-                            Text("Enable Scrobbling", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.ui_text_enable_scrobbling), color = Color.White, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     OutlinedButton(
@@ -827,7 +827,7 @@ private fun LastFmAccountCard(
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     ) {
-                        Text("Disconnect", color = MaterialTheme.colorScheme.error)
+                        Text(stringResource(R.string.ui_text_disconnect), color = MaterialTheme.colorScheme.error)
                     }
                 }
             } else {
@@ -841,7 +841,7 @@ private fun LastFmAccountCard(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD51007))
                     ) {
-                        Text("Log In via Web", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.ui_text_log_in_via_web), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                     OutlinedButton(
                         onClick = onDirectSignIn,
@@ -849,7 +849,7 @@ private fun LastFmAccountCard(
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     ) {
-                        Text("Direct Sign-In")
+                        Text(stringResource(R.string.ui_remaining_direct_sign_in))
                     }
                 }
             }
@@ -863,12 +863,12 @@ private fun LastFmAccountCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "API Credentials",
+                    text = stringResource(R.string.ui_text_api_credentials),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Configure ❯",
+                    text = stringResource(R.string.ui_sweep_configure),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary
                 )

@@ -129,8 +129,8 @@ private val SummaryD  = Color(0xFF1DB954)
 
 private data class InsightPersonality(
     val emoji: String,
-    val title: String,
-    val description: String,
+    @androidx.annotation.StringRes val titleRes: Int,
+    @androidx.annotation.StringRes val descriptionRes: Int,
     val gradTop: Color,
     val gradBot: Color,
     val accent: Color,
@@ -138,26 +138,26 @@ private data class InsightPersonality(
 
 private val PersonalityDevoted = InsightPersonality(
     emoji = "🎯",
-    title = "Devoted Fan",
-    description = "When you find a song you love, you play it on repeat. Your loyalty to your favourites is unmatched — and that's your superpower.",
+    titleRes = R.string.ui_heading_devoted_fan,
+    descriptionRes = R.string.ui_extra_when_you_find_a_song_you_love_you_play_it_on_repeat_your_loyalty_to_,
     gradTop = PersonA, gradBot = PersonB, accent = PersonB,
 )
 private val PersonalityExplorer = InsightPersonality(
     emoji = "🧭",
-    title = "Music Explorer",
-    description = "Always discovering, never settling. Your taste spans worlds, and your playlist never sounds the same twice.",
+    titleRes = R.string.ui_heading_music_explorer,
+    descriptionRes = R.string.ui_extra_always_discovering_never_settling_your_taste_spans_worlds_and_your_p,
     gradTop = WelcomeA, gradBot = WelcomeB, accent = WelcomeB,
 )
 private val PersonalityAudiophile = InsightPersonality(
     emoji = "🎧",
-    title = "True Audiophile",
-    description = "Hours melt away when you're in the zone. Music isn't background noise for you — it's everything.",
+    titleRes = R.string.ui_heading_true_audiophile,
+    descriptionRes = R.string.ui_extra_hours_melt_away_when_you_re_in_the_zone_music_isn_t_background_noise,
     gradTop = MinutesA, gradBot = MinutesB, accent = MinutesC,
 )
 private val PersonalityCasual = InsightPersonality(
     emoji = "🌊",
-    title = "Laid-Back Listener",
-    description = "Music moves effortlessly with your life. It's always there when you need it, easy and perfectly in tune.",
+    titleRes = R.string.ui_heading_laid_back_listener,
+    descriptionRes = R.string.ui_extra_music_moves_effortlessly_with_your_life_it_s_always_there_when_you_n,
     gradTop = SongsA, gradBot = SongsB, accent = SongsC,
 )
 
@@ -352,14 +352,14 @@ fun YearInMusicScreen(
                     // Brand label — centered
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text       = "Airbeats",
+                            text       = stringResource(R.string.ui_text_airbeats_2),
                             style      = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color      = SnowDim,
                             letterSpacing = 1.5.sp,
                         )
                         Text(
-                            text       = "Insight",
+                            text       = stringResource(R.string.ui_text_insight),
                             style      = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color      = Snow,
@@ -589,7 +589,7 @@ private fun WelcomePage(year: Int, modifier: Modifier = Modifier) {
         ) {
             // "Your" label
             Text(
-                text       = "your",
+                text       = stringResource(R.string.ui_text_your),
                 style      = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Light,
                 color      = SnowMid,
@@ -599,7 +599,7 @@ private fun WelcomePage(year: Int, modifier: Modifier = Modifier) {
 
             // "Insight" wordmark
             Text(
-                text       = "Insight",
+                text       = stringResource(R.string.ui_text_insight),
                 style      = MaterialTheme.typography.displayLarge.copy(fontSize = 72.sp),
                 fontWeight = FontWeight.ExtraBold,
                 color      = Snow,
@@ -630,7 +630,7 @@ private fun WelcomePage(year: Int, modifier: Modifier = Modifier) {
 
             // Tagline
             Text(
-                text       = "Everything you listened to\nthis year, in one place.",
+                text       = stringResource(R.string.ui_year_in_review_intro),
                 style      = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
                 color      = SnowMid,
@@ -661,7 +661,7 @@ private fun WelcomePage(year: Int, modifier: Modifier = Modifier) {
                 }
                 Spacer(Modifier.width(4.dp))
                 Text(
-                    text  = "Swipe to explore",
+                    text  = stringResource(R.string.ui_text_swipe_to_explore),
                     style = MaterialTheme.typography.labelMedium,
                     color = SnowDim,
                 )
@@ -728,7 +728,7 @@ private fun MinutesPage(
             Spacer(Modifier.height(32.dp))
 
             Text(
-                text       = "You listened to",
+                text       = stringResource(R.string.ui_text_you_listened_to),
                 style      = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Light,
                 color      = SnowMid,
@@ -754,7 +754,7 @@ private fun MinutesPage(
             )
 
             Text(
-                text  = "of music",
+                text  = stringResource(R.string.ui_text_of_music),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Light,
                 color = SnowMid,
@@ -772,7 +772,7 @@ private fun MinutesPage(
                     ) {
                         Text("🎬", fontSize = 28.sp)
                         Text(
-                            text = "That's like watching $movieCount full movies back-to-back.",
+                            text = stringResource(R.string.ui_sweep_that_s_like_watching_moviecount_full_movies_back_to_back, movieCount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = SnowMid,
                             lineHeight = 22.sp,
@@ -790,7 +790,7 @@ private fun MinutesPage(
                 ) {
                     Text("🎵", fontSize = 28.sp)
                     Text(
-                        text  = "Across $totalSongsPlayed plays of your top songs.",
+                        text  = stringResource(R.string.ui_sweep_across_totalsongsplayed_plays_of_your_top_songs, totalSongsPlayed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = SnowMid,
                     )
@@ -829,13 +829,13 @@ private fun TopSongsListPage(songs: List<SongWithStats>, modifier: Modifier = Mo
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text       = "Your Top",
+                text       = stringResource(R.string.ui_text_your_top),
                 style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Light,
                 color      = SnowMid,
             )
             Text(
-                text       = "Songs",
+                text       = stringResource(R.string.filter_songs),
                 style      = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Black,
                 color      = SongsB,
@@ -982,7 +982,7 @@ private fun SongSpotlightPage(
 
             // Badge
             InsightBadge(
-                text       = "#1 Song this year",
+                text       = stringResource(R.string.ui_sweep_1_song_this_year),
                 background = Brush.linearGradient(listOf(SpotB, SpotA.copy(alpha = 0.6f))),
             )
 
@@ -1029,7 +1029,7 @@ private fun SongSpotlightPage(
             Spacer(Modifier.weight(0.5f))
 
             Text(
-                text  = "Hold to see song options",
+                text  = stringResource(R.string.ui_text_hold_to_see_song_options),
                 style = MaterialTheme.typography.labelSmall,
                 color = SnowDim,
             )
@@ -1087,7 +1087,7 @@ private fun ArtistSpotlightPage(
             verticalArrangement = Arrangement.Center,
         ) {
             InsightBadge(
-                text       = "#1 Artist",
+                text       = stringResource(R.string.ui_sweep_1_artist),
                 background = Brush.linearGradient(listOf(ArtistB, ArtistC)),
             )
 
@@ -1152,7 +1152,7 @@ private fun ArtistSpotlightPage(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                text  = "Hold to see artist options",
+                text  = stringResource(R.string.ui_text_hold_to_see_artist_options),
                 style = MaterialTheme.typography.labelSmall,
                 color = SnowDim,
             )
@@ -1189,13 +1189,13 @@ private fun TopAlbumsPage(albums: List<Album>, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text       = "Your Top",
+                text       = stringResource(R.string.ui_text_your_top),
                 style      = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Light,
                 color      = SnowMid,
             )
             Text(
-                text       = "Albums",
+                text       = stringResource(R.string.filter_albums),
                 style      = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Black,
                 color      = AlbumB,
@@ -1311,7 +1311,7 @@ private fun PersonalityPage(
             horizontalAlignment = Alignment.Start,
         ) {
             Text(
-                text  = "Your listening\npersonality",
+                text  = stringResource(R.string.ui_year_listening_personality),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Light,
                 color = SnowMid,
@@ -1330,7 +1330,7 @@ private fun PersonalityPage(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                text       = personality.title,
+                text       = stringResource(personality.titleRes),
                 style      = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Black,
                 color      = personality.accent,
@@ -1341,7 +1341,7 @@ private fun PersonalityPage(
 
             InsightGlassCard {
                 Text(
-                    text       = personality.description,
+                    text       = stringResource(personality.descriptionRes),
                     style      = MaterialTheme.typography.bodyLarge,
                     color      = SnowMid,
                     lineHeight = 26.sp,
@@ -1452,7 +1452,7 @@ private fun SummaryPage(
                     }
                     Column {
                         Text(
-                            "Airbeats Insight",
+                            stringResource(R.string.ui_text_airbeats_insight_2),
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold,
                             color = Snow,
@@ -1468,7 +1468,7 @@ private fun SummaryPage(
                 Spacer(Modifier.height(8.dp))
 
                 Text(
-                    text       = "Your year\nwrapped up.",
+                    text       = stringResource(R.string.ui_year_wrapped_title),
                     style      = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Black,
                     color      = Snow,
@@ -1485,14 +1485,14 @@ private fun SummaryPage(
                 ) {
                     SummaryStatBox(
                         emoji = "⏱",
-                        label = "Time listened",
+                        label = stringResource(R.string.ui_extra_time_listened),
                         value = makeTimeString(totalListeningTime),
                         accent = MinutesC,
                         modifier = Modifier.weight(1f),
                     )
                     SummaryStatBox(
                         emoji = "▶",
-                        label = "Total plays",
+                        label = stringResource(R.string.ui_extra_total_plays),
                         value = totalSongsPlayed.toString(),
                         accent = SongsB,
                         modifier = Modifier.weight(1f),
@@ -1510,7 +1510,7 @@ private fun SummaryPage(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text(
-                            text  = "Highlights",
+                            text  = stringResource(R.string.ui_text_highlights),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = SnowMid,
@@ -1518,7 +1518,7 @@ private fun SummaryPage(
                         topSong?.let {
                             SummaryHighlight(
                                 emoji  = "🎵",
-                                label  = "Top Song",
+                                label = stringResource(R.string.ui_extra_top_song),
                                 value  = it.title,
                                 accent = SpotB,
                             )
@@ -1526,7 +1526,7 @@ private fun SummaryPage(
                         topArtist?.let {
                             SummaryHighlight(
                                 emoji  = "🎤",
-                                label  = "Top Artist",
+                                label = stringResource(R.string.ui_extra_top_artist),
                                 value  = it.artist.name,
                                 accent = ArtistB,
                             )
@@ -1534,14 +1534,14 @@ private fun SummaryPage(
                         topAlbum?.let {
                             SummaryHighlight(
                                 emoji  = "💿",
-                                label  = "Top Album",
+                                label = stringResource(R.string.ui_extra_top_album),
                                 value  = it.album.title,
                                 accent = AlbumB,
                             )
                         }
                         if (topSong == null && topArtist == null && topAlbum == null) {
                             Text(
-                                text  = "No listening data available",
+                                text  = stringResource(R.string.ui_text_no_listening_data_available),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = SnowDim,
                             )
@@ -1564,7 +1564,7 @@ private fun SummaryPage(
                     color = SnowDim,
                 )
                 Text(
-                    "Airbeats Insight",
+                    stringResource(R.string.ui_text_airbeats_insight_2),
                     style = MaterialTheme.typography.labelSmall,
                     color = SnowDim,
                 )
@@ -1707,7 +1707,7 @@ private fun InsightYearPickerDialog(
         titleContentColor = Snow,
         title = {
             Text(
-                "Select year",
+                stringResource(R.string.ui_text_select_year),
                 fontWeight = FontWeight.ExtraBold,
                 color      = Snow,
             )

@@ -2,6 +2,9 @@
 
 package com.darkxvenom.airbeats.ui.component
 
+import com.darkxvenom.airbeats.R
+import androidx.compose.ui.res.stringResource
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -251,6 +254,8 @@ private fun SearchBarInputField(
     focusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     val focused = interactionSource.collectIsFocusedAsState().value
+    val searchAccessibilityLabel = stringResource(R.string.search)
+    val searchSuggestionsAvailable = stringResource(R.string.search_suggestions_available)
     val textColor = LocalTextStyle.current.color.takeOrElse {
         if (focused) colors.focusedTextColor else colors.unfocusedTextColor
     }
@@ -282,9 +287,9 @@ private fun SearchBarInputField(
                     }
                 }
                 .semantics {
-                    contentDescription = "Search"
+                    contentDescription = searchAccessibilityLabel
                     if (active) {
-                        stateDescription = "Suggestions available"
+                        stateDescription = searchSuggestionsAvailable
                     }
                 }
                 .onKeyEvent {

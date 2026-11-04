@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.library
 
+import androidx.compose.ui.res.stringResource
+
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -50,6 +52,8 @@ fun LocalSongsScreen(
     navController: NavController,
     viewModel: LocalSongsViewModel = hiltViewModel(),
 ) {
+    val localSongsQueueTitle = stringResource(R.string.ui_text_local_songs)
+
     val context = LocalContext.current
     val playerConnection = LocalPlayerConnection.current
 
@@ -113,12 +117,12 @@ fun LocalSongsScreen(
                 IconButton(onClick = navController::navigateUp) {
                     Icon(
                         painter = painterResource(R.drawable.arrow_back),
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.back),
                     )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Local Songs",
+                        text = stringResource(R.string.ui_text_local_songs),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -135,7 +139,7 @@ fun LocalSongsScreen(
                     IconButton(onClick = { viewModel.loadSongs() }) {
                         Icon(
                             painter = painterResource(R.drawable.refresh),
-                            contentDescription = "Refresh",
+                            contentDescription = stringResource(R.string.ui_text_refresh),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -178,8 +182,8 @@ fun LocalSongsScreen(
                 songs.isEmpty() && searchQuery.isNotEmpty() -> {
                     EmptyState(
                         icon = R.drawable.search,
-                        title = "No results",
-                        subtitle = "No songs match \"$searchQuery\"",
+                        title = stringResource(R.string.ui_text_no_results),
+                        subtitle = stringResource(R.string.ui_heading_no_songs_match_searchquery, searchQuery),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -187,8 +191,8 @@ fun LocalSongsScreen(
                 songs.isEmpty() -> {
                     EmptyState(
                         icon = R.drawable.music_note,
-                        title = "No local songs found",
-                        subtitle = "Audio files of at least 30 seconds will appear here",
+                        title = stringResource(R.string.ui_heading_no_local_songs_found),
+                        subtitle = stringResource(R.string.ui_heading_audio_files_of_at_least_30_seconds_will_appea),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -214,7 +218,7 @@ fun LocalSongsScreen(
                                         val mediaItems = songs.map { it.toMediaItem() }
                                         pc.playQueue(
                                             ListQueue(
-                                                title = "Local Songs",
+                                                title = localSongsQueueTitle,
                                                 items = mediaItems,
                                                 startIndex = index,
                                             )
@@ -342,7 +346,7 @@ private fun SearchBar(
                 Box {
                     if (query.isEmpty()) {
                         Text(
-                            text = "Search songs, artists, albums…",
+                            text = stringResource(R.string.ui_sweep_search_songs_artists_albums),
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             softWrap = false,
@@ -367,7 +371,7 @@ private fun SearchBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.close),
-                    contentDescription = "Clear",
+                    contentDescription = stringResource(R.string.clear),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(10.dp)
                 )

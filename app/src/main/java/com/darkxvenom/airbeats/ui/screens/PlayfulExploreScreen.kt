@@ -176,7 +176,7 @@ fun PlayfulExploreScreen(
                                     )
                                     Icon(
                                         painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                                        contentDescription = "Play/Pause",
+                                        contentDescription = stringResource(R.string.ui_a11y_play_pause),
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -204,14 +204,14 @@ fun PlayfulExploreScreen(
                                         painter = painterResource(
                                             if (currentSong?.song?.liked == true) R.drawable.favorite else R.drawable.favorite_border
                                         ),
-                                        contentDescription = "Like",
+                                        contentDescription = stringResource(R.string.action_like),
                                         tint = if (currentSong?.song?.liked == true) MaterialTheme.colorScheme.error else Color.Black
                                     )
                                 }
                                 IconButton(onClick = { playerConnection.player.seekToNext() }) {
                                     Icon(
                                         painter = painterResource(R.drawable.skip_next),
-                                        contentDescription = "Skip Next",
+                                        contentDescription = stringResource(R.string.ui_a11y_skip_next),
                                         tint = Color.Black
                                     )
                                 }

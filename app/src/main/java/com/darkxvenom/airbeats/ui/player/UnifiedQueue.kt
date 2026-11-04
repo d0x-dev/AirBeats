@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -108,7 +110,7 @@ fun UnifiedQueue(
         collapsedContent = {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 IconButton(onClick = state::expandSoft) {
-                    Icon(painterResource(R.drawable.expand_less), contentDescription = "Open queue")
+                    Icon(painterResource(R.drawable.expand_less), contentDescription = stringResource(R.string.ui_a11y_open_queue))
                 }
             }
         },
@@ -118,10 +120,10 @@ fun UnifiedQueue(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 IconButton(onClick = state::collapseSoft) {
-                    Icon(painterResource(R.drawable.expand_more), contentDescription = "Close queue")
+                    Icon(painterResource(R.drawable.expand_more), contentDescription = stringResource(R.string.ui_a11y_close_queue))
                 }
                 Text(
-                    text = "Queue",
+                    text = stringResource(R.string.queue),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
@@ -129,7 +131,7 @@ fun UnifiedQueue(
                 IconButton(onClick = { playerConnection.toggleShuffle() }) {
                     Icon(
                         painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.shuffle),
                         tint = if (shuffleModeEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
@@ -142,7 +144,7 @@ fun UnifiedQueue(
                                 else -> R.drawable.repeat
                             }
                         ),
-                        contentDescription = "Repeat",
+                        contentDescription = stringResource(R.string.ui_a11y_repeat),
                         tint = if (repeatMode != Player.REPEAT_MODE_OFF) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
                 }
@@ -161,7 +163,7 @@ fun UnifiedQueue(
                     )
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Now playing", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(stringResource(R.string.ui_text_now_playing), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                         Text(metadata.title, maxLines = 1, overflow = TextOverflow.Ellipsis, fontWeight = FontWeight.SemiBold)
                         Text(metadata.artists.joinToString { it.name }, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
                     }
@@ -173,10 +175,10 @@ fun UnifiedQueue(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Continue playing", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.ui_text_continue_playing), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     if (!queueTitle.isNullOrBlank()) Text(queueTitle!!, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                Text("Endless queue", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.ui_text_endless_queue), style = MaterialTheme.typography.labelLarge)
                 Switch(
                     checked = endlessQueue,
                     onCheckedChange = {
@@ -252,18 +254,18 @@ fun UnifiedQueue(
                             }
                             Box {
                                 IconButton(onClick = { actionMenuIndex = item.index }) {
-                                    Icon(painterResource(R.drawable.more_vert), contentDescription = "Queue item options")
+                                    Icon(painterResource(R.drawable.more_vert), contentDescription = stringResource(R.string.ui_a11y_queue_item_options))
                                 }
                                 DropdownMenu(expanded = actionMenuIndex == item.index, onDismissRequest = { actionMenuIndex = -1 }) {
                                     DropdownMenuItem(
-                                        text = { Text("Play now") },
+                                        text = { Text(stringResource(R.string.ui_text_play_now_2)) },
                                         onClick = {
                                             playerConnection.playQueueIndex(item.index, item.value.mediaItem.mediaId)
                                             actionMenuIndex = -1
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Play next") },
+                                        text = { Text(stringResource(R.string.play_next)) },
                                         onClick = {
                                             val target = (currentIndex + 1).coerceAtMost(queueWindows.lastIndex)
                                             playerConnection.moveQueueItem(item.index, target)
@@ -271,7 +273,7 @@ fun UnifiedQueue(
                                         }
                                     )
                                     DropdownMenuItem(
-                                        text = { Text("Remove") },
+                                        text = { Text(stringResource(R.string.ui_text_remove)) },
                                         onClick = {
                                             playerConnection.removeQueueItem(item.index, item.value.mediaItem.mediaId)
                                             actionMenuIndex = -1
@@ -285,7 +287,7 @@ fun UnifiedQueue(
 
                 item(key = "header_upcoming") {
                     Text(
-                        text = "Up next",
+                        text = stringResource(R.string.ui_text_up_next),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(top = 12.dp, bottom = 6.dp)
@@ -323,12 +325,12 @@ fun UnifiedQueue(
                             }
                             Box {
                                 IconButton(onClick = { actionMenuIndex = item.index }) {
-                                    Icon(painterResource(R.drawable.more_vert), contentDescription = "Queue item options")
+                                    Icon(painterResource(R.drawable.more_vert), contentDescription = stringResource(R.string.ui_a11y_queue_item_options))
                                 }
                                 DropdownMenu(expanded = actionMenuIndex == item.index, onDismissRequest = { actionMenuIndex = -1 }) {
-                                    DropdownMenuItem(text = { Text("Move up") }, enabled = item.index > currentIndex + 1, onClick = { playerConnection.moveQueueItem(item.index, item.index - 1); actionMenuIndex = -1 })
-                                    DropdownMenuItem(text = { Text("Move down") }, enabled = item.index < queueWindows.lastIndex, onClick = { playerConnection.moveQueueItem(item.index, item.index + 1); actionMenuIndex = -1 })
-                                    DropdownMenuItem(text = { Text("Delete") }, onClick = { playerConnection.removeQueueItem(item.index, item.value.mediaItem.mediaId); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_text_move_up)) }, enabled = item.index > currentIndex + 1, onClick = { playerConnection.moveQueueItem(item.index, item.index - 1); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_text_move_down)) }, enabled = item.index < queueWindows.lastIndex, onClick = { playerConnection.moveQueueItem(item.index, item.index + 1); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { playerConnection.removeQueueItem(item.index, item.value.mediaItem.mediaId); actionMenuIndex = -1 })
                                 }
                             }
                         }
@@ -353,13 +355,13 @@ fun UnifiedQueue(
                             }
                             Box {
                                 IconButton(onClick = { actionMenuIndex = idx }) {
-                                    Icon(painterResource(R.drawable.more_vert), contentDescription = "Queue item options")
+                                    Icon(painterResource(R.drawable.more_vert), contentDescription = stringResource(R.string.ui_a11y_queue_item_options))
                                 }
                                 DropdownMenu(expanded = actionMenuIndex == idx, onDismissRequest = { actionMenuIndex = -1 }) {
-                                    DropdownMenuItem(text = { Text("Play now") }, onClick = { playerConnection.playQueueIndex(idx, item.songId); actionMenuIndex = -1 })
-                                    DropdownMenuItem(text = { Text("Move up") }, enabled = idx > 0, onClick = { playerConnection.moveQueueItem(idx, idx - 1, item.songId); actionMenuIndex = -1 })
-                                    DropdownMenuItem(text = { Text("Move down") }, enabled = idx < sharedQueue.lastIndex, onClick = { playerConnection.moveQueueItem(idx, idx + 1, item.songId); actionMenuIndex = -1 })
-                                    DropdownMenuItem(text = { Text("Delete") }, onClick = { playerConnection.removeQueueItem(idx, item.songId); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_text_play_now_2)) }, onClick = { playerConnection.playQueueIndex(idx, item.songId); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_text_move_up)) }, enabled = idx > 0, onClick = { playerConnection.moveQueueItem(idx, idx - 1, item.songId); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.ui_text_move_down)) }, enabled = idx < sharedQueue.lastIndex, onClick = { playerConnection.moveQueueItem(idx, idx + 1, item.songId); actionMenuIndex = -1 })
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.delete)) }, onClick = { playerConnection.removeQueueItem(idx, item.songId); actionMenuIndex = -1 })
                                 }
                             }
                         }

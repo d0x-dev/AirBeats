@@ -356,7 +356,7 @@ fun SongSnippetStudioDialog(
                         if (loadingProgress > 0) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                text = "$loadingProgress%",
+                                text = stringResource(R.string.ui_dynamic_progress_percent_final, loadingProgress),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold
@@ -379,7 +379,7 @@ fun SongSnippetStudioDialog(
                         )
                         Spacer(Modifier.height(12.dp))
                         Button(onClick = { loadAudio() }) {
-                            Text("Retry")
+                            Text(stringResource(R.string.retry))
                         }
                     }
                 } else {

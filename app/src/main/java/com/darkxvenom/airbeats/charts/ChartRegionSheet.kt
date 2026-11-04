@@ -1,5 +1,9 @@
 package com.darkxvenom.airbeats.charts
 
+import com.darkxvenom.airbeats.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -73,7 +77,7 @@ fun ChartRegionSheet(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Choose Charts Region",
+                text = stringResource(R.string.ui_text_choose_charts_region),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -83,12 +87,12 @@ fun ChartRegionSheet(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search regions...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                placeholder = { Text(stringResource(R.string.ui_remaining_search_regions)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search)) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
                         }
                     }
                 },
@@ -115,7 +119,7 @@ fun ChartRegionSheet(
                 if (searchQuery.isEmpty()) {
                     item {
                         Text(
-                            text = "System",
+                            text = stringResource(R.string.ui_text_system),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -225,7 +229,7 @@ private fun ChartRegionListItem(
             {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.ui_text_selected),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

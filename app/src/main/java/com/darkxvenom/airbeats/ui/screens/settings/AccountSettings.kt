@@ -454,7 +454,7 @@ fun AccountSettings(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Changes will be applied after restarting the app",
+                        text = stringResource(R.string.ui_text_changes_will_be_applied_after_restarting_the_app),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -554,7 +554,7 @@ fun AdvancedTokenLoginDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "📖 How to get your cookies",
+                                text = stringResource(R.string.ui_sweep_how_to_get_your_cookies),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -569,7 +569,7 @@ fun AdvancedTokenLoginDialog(
                         if (showHelp) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "1. Open music.youtube.com in your PC browser (or Kiwi Browser) and log in.\n" +
+                                text = stringResource(R.string.ui_cookie_instruction_step_one) +
                                         "2. Press F12 -> Application tab -> Cookies -> https://music.youtube.com.\n" +
                                         "3. Copy the values of SAPISID, HSID, SSID, SID, and LOGIN_INFO into the fields below.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -596,35 +596,35 @@ fun AdvancedTokenLoginDialog(
                     OutlinedTextField(
                         value = sapisid,
                         onValueChange = { sapisid = it },
-                        label = { Text("SAPISID (Required)") },
+                        label = { Text(stringResource(R.string.ui_dynamic_cookie_required, "SAPISID")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = hsid,
                         onValueChange = { hsid = it },
-                        label = { Text("HSID (Required)") },
+                        label = { Text(stringResource(R.string.ui_dynamic_cookie_required, "HSID")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = ssid,
                         onValueChange = { ssid = it },
-                        label = { Text("SSID (Required)") },
+                        label = { Text(stringResource(R.string.ui_dynamic_cookie_required, "SSID")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = sid,
                         onValueChange = { sid = it },
-                        label = { Text("SID (Required)") },
+                        label = { Text(stringResource(R.string.ui_dynamic_cookie_required, "SID")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = loginInfo,
                         onValueChange = { loginInfo = it },
-                        label = { Text("LOGIN_INFO (Required)") },
+                        label = { Text(stringResource(R.string.ui_dynamic_cookie_required, "LOGIN_INFO")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )

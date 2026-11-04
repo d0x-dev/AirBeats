@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import java.io.File
 import android.content.Context
 import android.os.Build
@@ -246,7 +248,7 @@ fun BetterPlayerContent(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.expand_more),
-                    contentDescription = "Collapse",
+                    contentDescription = stringResource(R.string.collapse),
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -278,7 +280,7 @@ fun BetterPlayerContent(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Icon(
                                     painter = painterResource(R.drawable.bedtime),
-                                    contentDescription = "Sleep timer",
+                                    contentDescription = stringResource(R.string.sleep_timer),
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -293,7 +295,7 @@ fun BetterPlayerContent(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.bedtime),
-                            contentDescription = "Sleep timer",
+                            contentDescription = stringResource(R.string.sleep_timer),
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -307,7 +309,7 @@ fun BetterPlayerContent(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.lyrics),
-                        contentDescription = "Lyrics",
+                        contentDescription = stringResource(R.string.lyrics),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -320,7 +322,7 @@ fun BetterPlayerContent(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.more_vert),
-                        contentDescription = "More",
+                        contentDescription = stringResource(R.string.ui_text_more),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -393,7 +395,7 @@ fun BetterPlayerContent(
                 if (mediaMetadata.explicit) {
                     Icon(
                         painter = painterResource(R.drawable.explicit),
-                        contentDescription = "Explicit",
+                        contentDescription = stringResource(R.string.ui_a11y_explicit),
                         tint = accent.copy(alpha = 0.8f),
                         modifier = Modifier
                             .padding(end = 6.dp)
@@ -569,7 +571,7 @@ fun BetterPlayerContent(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_next),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.ui_a11y_next),
                         modifier = Modifier.size(34.dp)
                     )
                 }
@@ -597,7 +599,7 @@ fun BetterPlayerContent(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.ui_a11y_previous),
                         modifier = Modifier.size(34.dp)
                     )
                 }
@@ -723,7 +725,7 @@ fun BetterPlayerContent(
                     accent = accent,
                     field = field,
                     iconResId = R.drawable.list,
-                    contentDescription = "Queue",
+                    contentDescription = stringResource(R.string.queue),
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
@@ -736,7 +738,7 @@ fun BetterPlayerContent(
                     accent = accent,
                     field = field,
                     iconResId = R.drawable.shuffle,
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.shuffle),
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
@@ -749,7 +751,7 @@ fun BetterPlayerContent(
                     accent = accent,
                     field = field,
                     iconResId = if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.repeat_one else R.drawable.repeat,
-                    contentDescription = "Repeat",
+                    contentDescription = stringResource(R.string.ui_a11y_repeat),
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
@@ -762,7 +764,7 @@ fun BetterPlayerContent(
                     accent = accent,
                     field = field,
                     iconResId = if (liked) R.drawable.favorite else R.drawable.favorite_border,
-                    contentDescription = "Like",
+                    contentDescription = stringResource(R.string.action_like),
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
@@ -775,7 +777,7 @@ fun BetterPlayerContent(
                     accent = accent,
                     field = field,
                     iconResId = R.drawable.library_add,
-                    contentDescription = "Add to playlist",
+                    contentDescription = stringResource(R.string.add_to_playlist),
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp)
@@ -867,7 +869,7 @@ private fun BetterDieCutArt(
             if (artworkUrl != null) {
                 AsyncImage(
                     model = artworkUrl,
-                    contentDescription = "Album Art",
+                    contentDescription = stringResource(R.string.ui_a11y_album_art),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -1056,7 +1058,7 @@ private fun BetterPlayerLyricsRow(
                 .padding(vertical = 4.dp)
         ) {
             Text(
-                text = "Tap to view lyrics",
+                text = stringResource(R.string.ui_text_tap_to_view_lyrics),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
@@ -1069,7 +1071,7 @@ private fun BetterPlayerLyricsRow(
             Spacer(Modifier.width(6.dp))
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                contentDescription = "Open lyrics",
+                contentDescription = stringResource(R.string.ui_a11y_open_lyrics),
                 tint = accent.copy(alpha = 0.55f),
                 modifier = Modifier.size(11.dp)
             )
@@ -1153,7 +1155,7 @@ private fun BetterPlayerLyricsRow(
         ) { state ->
             if (state.text.isNullOrBlank()) {
                 Text(
-                    text = "Tap to view lyrics",
+                    text = stringResource(R.string.ui_text_tap_to_view_lyrics),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
@@ -1197,7 +1199,7 @@ private fun BetterPlayerLyricsRow(
         Spacer(Modifier.width(6.dp))
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-            contentDescription = "Open lyrics",
+            contentDescription = stringResource(R.string.ui_a11y_open_lyrics),
             tint = accent.copy(alpha = 0.55f),
             modifier = Modifier.size(11.dp)
         )

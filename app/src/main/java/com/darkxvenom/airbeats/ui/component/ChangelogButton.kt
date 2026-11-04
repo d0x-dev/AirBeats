@@ -358,7 +358,7 @@ private fun ErrorContent(error: String, onRetry: () -> Unit) {
                 modifier = Modifier.size(24.dp)
             )
             Text(
-                text = "Error loading",
+                text = stringResource(R.string.ui_text_error_loading),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
@@ -375,7 +375,7 @@ private fun ErrorContent(error: String, onRetry: () -> Unit) {
                     contentColor = MaterialTheme.colorScheme.onError
                 )
             ) {
-                Text("Retry")
+                Text(stringResource(R.string.retry))
             }
         }
     }
@@ -447,7 +447,7 @@ private fun LastUpdatedIndicator(lastUpdated: String?) {
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                text = "Last updated: $it",
+                text = stringResource(R.string.ui_sweep_last_updated_it, it),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -553,7 +553,7 @@ private fun ReleaseCard(release: Release) {
                                 color = MaterialTheme.colorScheme.tertiary
                             ) {
                                 Text(
-                                    text = "Pre-release",
+                                    text = stringResource(R.string.ui_sweep_pre_release),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onTertiary,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -571,7 +571,7 @@ private fun ReleaseCard(release: Release) {
                     }
                     release.author?.let { author ->
                         Text(
-                            text = "by $author",
+                            text = stringResource(R.string.ui_sweep_by_author, author),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = 4.dp)

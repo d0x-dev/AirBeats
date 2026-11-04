@@ -392,7 +392,7 @@ fun LyricsMenu(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Search language") },
+                label = { Text(stringResource(R.string.ui_text_search_language)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
             )
@@ -437,7 +437,7 @@ fun LyricsMenu(
                                     modifier = Modifier.padding(start = 6.dp)
                                 ) {
                                     Text(
-                                        text = "Popular",
+                                        text = stringResource(R.string.ui_text_popular),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.secondary,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -557,7 +557,7 @@ fun LyricsMenu(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
-                                text = "API Key Missing",
+                                text = stringResource(R.string.ui_text_api_key_missing),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onErrorContainer
@@ -641,8 +641,8 @@ fun LyricsMenu(
                 OutlinedTextField(
                     value = customPromptText,
                     onValueChange = { customPromptText = it },
-                    label = { Text("Custom Prompt (optional)") },
-                    placeholder = { Text("e.g., Translate into poetic Hinglish with rhymes", fontSize = 12.sp) },
+                    label = { Text(stringResource(R.string.ui_remaining_custom_prompt_optional)) },
+                    placeholder = { Text(stringResource(R.string.ui_remaining_e_g_translate_into_poetic_hinglish_with_rhymes), fontSize = 12.sp) },
                     singleLine = false,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
@@ -706,7 +706,7 @@ fun LyricsMenu(
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Translating lyrics...",
+                                        text = stringResource(R.string.ui_sweep_translating_lyrics),
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold
                                     )
@@ -721,7 +721,7 @@ fun LyricsMenu(
                                 TextButton(
                                     onClick = { LyricsTranslationHelper.cancelTranslation() }
                                 ) {
-                                    Text("Cancel", style = MaterialTheme.typography.labelSmall)
+                                    Text(stringResource(R.string.visitor_data_reset_cancel), style = MaterialTheme.typography.labelSmall)
                                 }
                             }
                         }
@@ -769,7 +769,7 @@ fun LyricsMenu(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "Translation applied successfully!",
+                                    text = stringResource(R.string.ui_sweep_translation_applied_successfully),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.weight(1f)
@@ -936,7 +936,7 @@ fun LyricsMenu(
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "AI Translation Active",
+                            text = stringResource(R.string.ui_text_ai_translation_active),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -963,7 +963,7 @@ fun LyricsMenu(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Clear",
+                            stringResource(R.string.clear),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -989,7 +989,7 @@ fun LyricsMenu(
 
             EnhancedMenuActionCard(
                 title = stringResource(R.string.search),
-                subtitle = "Search online",
+                subtitle = stringResource(R.string.search_online),
                 icon = R.drawable.search,
                 modifier = Modifier.weight(1f),
                 onClick = { showSearchDialog = true }
@@ -1004,7 +1004,7 @@ fun LyricsMenu(
         ) {
             EnhancedMenuActionCard(
                 title = stringResource(R.string.refetch),
-                subtitle = "Reload lyrics",
+                subtitle = stringResource(R.string.ui_heading_reload_lyrics),
                 icon = R.drawable.cached,
                 modifier = Modifier.weight(1f),
                 onClick = {
@@ -1016,7 +1016,7 @@ fun LyricsMenu(
 
             EnhancedMenuActionCard(
                 title = stringResource(R.string.edit),
-                subtitle = "Edit lyrics text",
+                subtitle = stringResource(R.string.ui_heading_edit_lyrics_text),
                 icon = R.drawable.edit,
                 modifier = Modifier.weight(1f),
                 onClick = { showEditDialog = true }

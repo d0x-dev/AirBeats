@@ -18,37 +18,37 @@ import com.darkxvenom.airbeats.R
 
 enum class LyricsLayoutStyle(
     val displayName: String,
-    val description: String,
+    @StringRes val descriptionRes: Int,
     @StringRes val titleRes: Int,
 ) {
     GlassCard(
         displayName = "Glass Card",
-        description = "Liquid glass panel",
+        descriptionRes = R.string.ui_extra_liquid_glass_panel,
         titleRes = R.string.lyrics_layout_glass_card,
     ),
     Minimal(
         displayName = "Minimal",
-        description = "Clean and distraction-free",
+        descriptionRes = R.string.ui_extra_clean_and_distraction_free,
         titleRes = R.string.lyrics_layout_minimal,
     ),
     CoverFocused(
         displayName = "Cover Focus",
-        description = "Prominent album cover art",
+        descriptionRes = R.string.ui_extra_prominent_album_cover_art,
         titleRes = R.string.lyrics_layout_cover_focus,
     ),
     Centered(
         displayName = "Centered",
-        description = "Lyrics front and center",
+        descriptionRes = R.string.ui_extra_lyrics_front_and_center,
         titleRes = R.string.lyrics_layout_centered,
     ),
     BlurWash(
         displayName = "Blur Wash",
-        description = "Ultra blurred backdrop",
+        descriptionRes = R.string.ui_extra_ultra_blurred_backdrop,
         titleRes = R.string.lyrics_layout_blur_wash,
     ),
     StreamingModern(
         displayName = "Streaming",
-        description = "Modern music app aesthetic",
+        descriptionRes = R.string.ui_extra_modern_music_app_aesthetic,
         titleRes = R.string.lyrics_layout_streaming,
     ),
 }
