@@ -368,13 +368,29 @@ class LocaleManager private constructor(private val context: Context) {
             availableLocaleCodes.forEach { localeCode ->
                 try {
                     val locale = parseLocaleCode(localeCode)
-                    val displayName = locale.getDisplayLanguage(Locale.ENGLISH)
-                        .replaceFirstChar { it.uppercase() }
-                    val nativeName = locale.getDisplayLanguage(locale)
-                        .replaceFirstChar { it.uppercase() }
+                    val isBrazilianPortuguese = locale.language == "pt" && locale.country == "BR"
+                    val isPortugalPortuguese = locale.language == "pt" &&
+                        (locale.country == "PT" || locale.country.isEmpty())
+                    val displayName = when {
+                        isBrazilianPortuguese -> "Portuguese (Brazil)"
+                        isPortugalPortuguese -> "Portuguese (Portugal)"
+                        else -> locale.getDisplayLanguage(Locale.ENGLISH)
+                            .replaceFirstChar { it.uppercase() }
+                    }
+                    val nativeName = when {
+                        isBrazilianPortuguese -> "português (Brasil)"
+                        isPortugalPortuguese -> "português (Portugal)"
+                        else -> locale.getDisplayLanguage(locale)
+                            .replaceFirstChar { it.uppercase() }
+                    }
 
-                    // Obtener metadata (bandera y estado)
-                    val metadata = LANGUAGE_METADATA[localeCode]
+                    // Resource locales can be reported as pt_BR instead of pt-rBR.
+                    val metadataCode = when {
+                        isBrazilianPortuguese -> "pt-rBR"
+                        isPortugalPortuguese -> "pt"
+                        else -> localeCode
+                    }
+                    val metadata = LANGUAGE_METADATA[metadataCode]
                         ?: LanguageMetadata("🌍", CompletionStatus.COMPLETE)
 
                     languages.add(
