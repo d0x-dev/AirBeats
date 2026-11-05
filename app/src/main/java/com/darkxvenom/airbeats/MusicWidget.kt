@@ -7,11 +7,13 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.KeyEvent
 import android.widget.RemoteViews
+import android.util.TypedValue
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.Player
 import androidx.media3.session.MediaButtonReceiver
@@ -45,6 +47,16 @@ class MusicWidget : AppWidgetProvider() {
             updateWidget(context, appWidgetManager, appWidgetId)
         }
         startProgressUpdater(context)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
     }
 
     override fun onEnabled(context: Context) {
@@ -191,6 +203,92 @@ class MusicWidget : AppWidgetProvider() {
 
             setPendingIntents(context, views)
 
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 260).takeIf { it > 0 } ?: 260
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 120).takeIf { it > 0 } ?: 120
+            val maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, minHeight).takeIf { it > 0 } ?: minHeight
+            val tinyWidget = minWidth < 150 || minHeight < 64
+            val narrowWidget = minWidth < 185
+            val shortWidget = minHeight < 108
+            val hideTrackInfo = minWidth < 145 || shortWidget
+            val useArtworkBackdrop = narrowWidget || shortWidget
+            val compactTitleVisible = hideTrackInfo && minHeight >= 88
+            val horizontalPadding = dpToPx(context, if (narrowWidget || shortWidget) 6 else 16)
+            val verticalPadding = dpToPx(context, if (shortWidget) 4 else 16)
+            views.setViewPadding(
+                R.id.widget_root_content,
+                horizontalPadding,
+                verticalPadding,
+                horizontalPadding,
+                verticalPadding,
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hideTrackInfo) {
+                val artworkSizeDp = (maxHeight - 40).coerceIn(48, 104)
+                views.setViewLayoutWidth(R.id.widget_album_art, artworkSizeDp.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
+                views.setViewLayoutHeight(R.id.widget_album_art, artworkSizeDp.toFloat(), TypedValue.COMPLEX_UNIT_DIP)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val playButtonSizeDp = when {
+                    minHeight < 64 -> 32
+                    shortWidget || minWidth < 150 -> 36
+                    else -> 48
+                }
+                views.setViewLayoutWidth(
+                    R.id.widget_play_pause,
+                    playButtonSizeDp.toFloat(),
+                    TypedValue.COMPLEX_UNIT_DIP,
+                )
+                views.setViewLayoutHeight(
+                    R.id.widget_play_pause,
+                    playButtonSizeDp.toFloat(),
+                    TypedValue.COMPLEX_UNIT_DIP,
+                )
+            }
+            views.setViewVisibility(
+                R.id.widget_background_art,
+                if (useArtworkBackdrop) android.view.View.VISIBLE else android.view.View.GONE,
+            )
+            views.setViewVisibility(
+                R.id.widget_background_scrim,
+                if (useArtworkBackdrop) android.view.View.VISIBLE else android.view.View.GONE,
+            )
+            views.setViewVisibility(
+                R.id.widget_content_row,
+                if (hideTrackInfo) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_album_art,
+                if (narrowWidget) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_compact_details,
+                if (compactTitleVisible) android.view.View.VISIBLE else android.view.View.GONE,
+            )
+            views.setViewVisibility(
+                R.id.widget_artist,
+                if (minWidth < 170 || minHeight < 78) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_progress_row,
+                if (minWidth < 180 || minHeight < 86) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_shuffle,
+                if (tinyWidget || minWidth < 220) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_like,
+                if (tinyWidget || minWidth < 220) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_prev,
+                if (tinyWidget || minWidth < 155) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+            views.setViewVisibility(
+                R.id.widget_next,
+                if (tinyWidget || minWidth < 155) android.view.View.GONE else android.view.View.VISIBLE,
+            )
+
             if (livePlayer != null || persistedPlayback != null) {
                 val metadata = livePlayer?.mediaMetadata
                 val songTitle = metadata?.title?.toString()
@@ -207,6 +305,8 @@ class MusicWidget : AppWidgetProvider() {
 
                 views.setTextViewText(R.id.widget_song_title, songTitle)
                 views.setTextViewText(R.id.widget_artist, artist)
+                views.setTextViewText(R.id.widget_compact_title, songTitle)
+
                 val playPauseIcon = if (isPlaying) R.drawable.pause else R.drawable.play
                 views.setImageViewResource(R.id.widget_play_pause, playPauseIcon)
 
@@ -265,20 +365,25 @@ class MusicWidget : AppWidgetProvider() {
                             drawable?.let {
                                 val bitmap = it.toBitmap()
                                 views.setImageViewBitmap(R.id.widget_album_art, bitmap)
+                                views.setImageViewBitmap(R.id.widget_background_art, bitmap)
                                 appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                             }
                         } catch (e: Exception) {
                             views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
+                            views.setImageViewResource(R.id.widget_background_art, R.drawable.music_note)
                             appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                         }
                     }
                 } else {
                     views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
+                    views.setImageViewResource(R.id.widget_background_art, R.drawable.music_note)
                 }
             } else {
                 views.setTextViewText(R.id.widget_song_title, context.getString(R.string.app_name))
                 views.setTextViewText(R.id.widget_artist, context.getString(R.string.tap_to_open))
+                views.setTextViewText(R.id.widget_compact_title, context.getString(R.string.app_name))
                 views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
+                views.setImageViewResource(R.id.widget_background_art, R.drawable.music_note)
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -299,7 +404,9 @@ class MusicWidget : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_like, likePendingIntent)
 
             views.setOnClickPendingIntent(R.id.widget_album_art, openAppPendingIntent)
+            views.setOnClickPendingIntent(R.id.widget_background_art, openAppPendingIntent)
             views.setOnClickPendingIntent(R.id.widget_song_title, openAppPendingIntent)
+            views.setOnClickPendingIntent(R.id.widget_compact_title, openAppPendingIntent)
             views.setOnClickPendingIntent(R.id.widget_artist, openAppPendingIntent)
             views.setOnClickPendingIntent(R.id.widget_progress_bar, openAppPendingIntent)
         }
@@ -320,6 +427,9 @@ class MusicWidget : AppWidgetProvider() {
                 component = ComponentName(context, MediaButtonReceiver::class.java)
                 putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
             }
+
+        private fun dpToPx(context: Context, dp: Int): Int =
+            (dp * context.resources.displayMetrics.density).toInt()
 
         private fun readPersistedPlayback(context: Context): PersistedWidgetPlayback? {
             val queueFile = context.filesDir.resolve(MusicService.PERSISTENT_QUEUE_FILE)
