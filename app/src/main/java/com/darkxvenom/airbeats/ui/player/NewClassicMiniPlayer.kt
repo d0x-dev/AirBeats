@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -273,7 +275,7 @@ fun NewClassicMiniPlayer(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.person),
-                        contentDescription = "Artist",
+                        contentDescription = stringResource(R.string.sort_by_artist),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )

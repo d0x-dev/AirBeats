@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.component.bottomSheetDraggable
 import androidx.compose.animation.core.animateFloatAsState
@@ -109,12 +111,12 @@ fun GroovePlayer(
                 IconButton(onClick = onCollapse) {
                     Icon(
                         imageVector = Icons.Rounded.KeyboardArrowDown,
-                        contentDescription = "Collapse",
+                        contentDescription = stringResource(R.string.collapse),
                         tint = textPrimary
                     )
                 }
                 Text(
-                    text = "Music World",
+                    text = stringResource(R.string.ui_text_music_world),
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp,
                     color = textPrimary
@@ -122,7 +124,7 @@ fun GroovePlayer(
                 IconButton(onClick = onMenuClick) {
                     Icon(
                         imageVector = Icons.Rounded.MoreVert,
-                        contentDescription = "Menu",
+                        contentDescription = stringResource(R.string.ui_a11y_menu),
                         tint = textPrimary
                     )
                 }
@@ -184,7 +186,7 @@ fun GroovePlayer(
 
                 AsyncImage(
                     model = mediaMetadata?.thumbnailUrl,
-                    contentDescription = "Artwork",
+                    contentDescription = stringResource(R.string.ui_a11y_artwork),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(220.dp)
@@ -317,7 +319,7 @@ fun GroovePlayer(
                 IconButton(onClick = onShuffleClick) {
                     Icon(
                         painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.shuffle),
                         tint = if (shuffleModeEnabled) accentColor else Color(0xFF8A8F9E),
                         modifier = Modifier.size(24.dp)
                     )
@@ -346,7 +348,7 @@ fun GroovePlayer(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.SkipPrevious,
-                                contentDescription = "Previous",
+                                contentDescription = stringResource(R.string.ui_a11y_previous),
                                 tint = if (canSkipPrevious) Color(0xFF8A8F9E) else Color(0xFFE0E0E0),
                                 modifier = Modifier.size(28.dp)
                             )
@@ -363,7 +365,7 @@ fun GroovePlayer(
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.SkipNext,
-                                contentDescription = "Next",
+                                contentDescription = stringResource(R.string.ui_a11y_next),
                                 tint = if (canSkipNext) Color(0xFF8A8F9E) else Color(0xFFE0E0E0),
                                 modifier = Modifier.size(28.dp)
                             )
@@ -394,7 +396,7 @@ fun GroovePlayer(
                         } else {
                             Icon(
                                 imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = "Play/Pause",
+                                contentDescription = stringResource(R.string.ui_a11y_play_pause),
                                 tint = Color.White,
                                 modifier = Modifier.size(36.dp)
                             )
@@ -413,7 +415,7 @@ fun GroovePlayer(
                     val repeatTint = if (repeatMode != Player.REPEAT_MODE_OFF) accentColor else Color(0xFF8A8F9E)
                     Icon(
                         painter = painterResource(repeatIcon),
-                        contentDescription = "Repeat",
+                        contentDescription = stringResource(R.string.ui_a11y_repeat),
                         tint = repeatTint,
                         modifier = Modifier.size(24.dp)
                     )
@@ -541,7 +543,7 @@ fun GroovePlayer(
                         // Actual thumbnail
                         AsyncImage(
                             model = window.mediaItem.mediaMetadata.artworkUri,
-                            contentDescription = "Queue Thumbnail",
+                            contentDescription = stringResource(R.string.ui_a11y_queue_thumbnail),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .fillMaxSize()

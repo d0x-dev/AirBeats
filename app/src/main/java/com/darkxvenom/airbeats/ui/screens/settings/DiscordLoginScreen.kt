@@ -89,7 +89,7 @@ fun DiscordLoginScreen(navController: NavController) {
                     IconButton(onClick = { devLoginSheet = true }) {
                         Icon(
                             painterResource(R.drawable.codigo),
-                            contentDescription = "Manual Token Login"
+                            contentDescription = stringResource(R.string.ui_a11y_manual_token_login)
                         )
                     }
                 }

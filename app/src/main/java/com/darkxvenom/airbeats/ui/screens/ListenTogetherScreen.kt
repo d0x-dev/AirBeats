@@ -693,7 +693,7 @@ fun ListenTogetherScreen(
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(MusicTogetherSpacing.xs))
-                        Text("Open Web Player (http://${activeSession.code})")
+                        Text(stringResource(R.string.ui_dynamic_open_web_player, activeSession.code))
                     }
                 }
 
@@ -1004,7 +1004,7 @@ private fun PlaybackCard(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.skip_previous),
-                            contentDescription = "Previous Track",
+                            contentDescription = stringResource(R.string.ui_a11y_previous_track),
                             tint = if (controlsEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                             modifier = Modifier.size(28.dp)
                         )
@@ -1037,7 +1037,7 @@ private fun PlaybackCard(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.skip_next),
-                            contentDescription = "Next Track",
+                            contentDescription = stringResource(R.string.ui_a11y_next_track),
                             tint = if (controlsEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                             modifier = Modifier.size(28.dp)
                         )
@@ -1500,7 +1500,7 @@ private fun SharedQueueCard(
             ) {
                 if (canManageQueue && queue.size > 1) {
                     Text(
-                        text = "Hold & drag handle or use arrows to reorder upcoming songs",
+                        text = stringResource(R.string.ui_sweep_hold_drag_handle_or_use_arrows_to_reorder_upcoming_songs),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
@@ -1568,7 +1568,7 @@ private fun SharedQueueCard(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.play),
-                                            contentDescription = "Play track",
+                                            contentDescription = stringResource(R.string.ui_a11y_play_track),
                                             modifier = Modifier.size(18.dp),
                                             tint = MaterialTheme.colorScheme.primary,
                                         )
@@ -1582,7 +1582,7 @@ private fun SharedQueueCard(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.arrow_upward),
-                                                contentDescription = "Move Up",
+                                                contentDescription = stringResource(R.string.ui_a11y_move_up),
                                                 modifier = Modifier.size(16.dp),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -1595,7 +1595,7 @@ private fun SharedQueueCard(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.arrow_downward),
-                                                contentDescription = "Move Down",
+                                                contentDescription = stringResource(R.string.ui_a11y_move_down),
                                                 modifier = Modifier.size(16.dp),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -1607,7 +1607,7 @@ private fun SharedQueueCard(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.close),
-                                            contentDescription = "Remove track",
+                                            contentDescription = stringResource(R.string.ui_a11y_remove_track),
                                             modifier = Modifier.size(18.dp),
                                             tint = MaterialTheme.colorScheme.error,
                                         )
@@ -1620,7 +1620,7 @@ private fun SharedQueueCard(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.drag_handle),
-                                            contentDescription = "Hold to drag",
+                                            contentDescription = stringResource(R.string.ui_a11y_hold_to_drag),
                                             modifier = Modifier.size(18.dp),
                                             tint = if (isItemDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                         )
@@ -1794,7 +1794,7 @@ private fun ParticipantRow(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "HOST",
+                            text = stringResource(R.string.ui_text_host),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,
@@ -1807,7 +1807,7 @@ private fun ParticipantRow(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "ADMIN",
+                            text = stringResource(R.string.ui_text_admin),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.secondary,

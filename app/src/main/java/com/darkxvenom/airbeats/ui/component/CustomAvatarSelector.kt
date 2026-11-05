@@ -414,7 +414,7 @@ fun AvatarSelector(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Avatars")
+                    Text(stringResource(R.string.avatars))
                 }
             }
 
@@ -523,7 +523,7 @@ private fun DiceBearAvatarDialog(
         ) {
             // Título
             Text(
-                text = "Selecciona un avatar",
+                text = stringResource(R.string.ui_text_select_an_avatar),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
@@ -552,7 +552,7 @@ private fun DiceBearAvatarDialog(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ia_icon),
-                        contentDescription = "Randomizar avatares"
+                        contentDescription = stringResource(R.string.ui_a11y_randomizar_avatares)
                     )
                 }
             }
@@ -588,7 +588,7 @@ private fun DiceBearAvatarDialog(
                         ) {
                             AsyncImage(
                                 model = url,
-                                contentDescription = "Avatar DiceBear",
+                                contentDescription = stringResource(R.string.ui_a11y_avatar_dicebear),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -616,7 +616,7 @@ private fun DiceBearAvatarDialog(
                         .padding(16.dp)
                 ) {
                     Text(
-                        text = "Elige un estilo",
+                        text = stringResource(R.string.ui_text_choose_a_style),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -682,7 +682,7 @@ private fun DiceBearAvatarItem(
                 .data(url)
                 .crossfade(true)
                 .build(),
-            contentDescription = "Avatar DiceBear",
+            contentDescription = stringResource(R.string.ui_a11y_avatar_dicebear),
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
@@ -697,7 +697,7 @@ private fun DiceBearAvatarItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Seleccionado",
+                    contentDescription = stringResource(R.string.ui_a11y_seleccionado),
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape),
@@ -761,7 +761,7 @@ private fun CurrentAvatarDisplay(
                         .error(R.drawable.person)
                         .placeholder(R.drawable.person)
                         .build(),
-                    contentDescription = "Avatar DiceBear",
+                    contentDescription = stringResource(R.string.ui_a11y_avatar_dicebear),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )

@@ -26,14 +26,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import com.darkxvenom.airbeats.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-enum class SearchTab(val title: String) {
-    RECENT_SEARCHES("Recent Searches"),
-    AIRBEATS_CHARTS("AirBeats Charts"),
-    BROWSE_ALL("Browse all")
+enum class SearchTab(val titleRes: Int) {
+    RECENT_SEARCHES(R.string.recent_searches),
+    AIRBEATS_CHARTS(R.string.airbeats_charts),
+    BROWSE_ALL(R.string.browse_all)
 }
 
 @Composable
@@ -97,7 +99,7 @@ fun SearchPillSwitcher(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = tab.title,
+                    text = stringResource(tab.titleRes),
                     color = itemTextColor,
                     fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,

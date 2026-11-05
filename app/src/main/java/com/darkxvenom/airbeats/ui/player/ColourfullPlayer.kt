@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.component.bottomSheetDraggable
 import android.graphics.drawable.BitmapDrawable
@@ -101,7 +103,7 @@ fun ColourfullPlayer(
                 IconButton(onClick = onCollapse) {
                     Image(
                         painter = painterResource(R.drawable.expand_more),
-                        contentDescription = "Collapse",
+                        contentDescription = stringResource(R.string.collapse),
                         colorFilter = ColorFilter.tint(textPrimary),
                         modifier = Modifier.size(28.dp)
                     )
@@ -109,7 +111,7 @@ fun ColourfullPlayer(
                 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "PLAYING NOW",
+                        text = stringResource(R.string.ui_text_playing_now),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
@@ -131,7 +133,7 @@ fun ColourfullPlayer(
                 IconButton(onClick = onMenuClick) {
                     Image(
                         painter = painterResource(R.drawable.more_horiz),
-                        contentDescription = "Menu",
+                        contentDescription = stringResource(R.string.ui_a11y_menu),
                         colorFilter = ColorFilter.tint(textPrimary),
                         modifier = Modifier.size(28.dp)
                     )
@@ -193,7 +195,7 @@ fun ColourfullPlayer(
                 ) {
                     Image(
                         painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
-                        contentDescription = "Like",
+                        contentDescription = stringResource(R.string.action_like),
                         colorFilter = ColorFilter.tint(textPrimary),
                         modifier = Modifier.size(28.dp)
                     )
@@ -294,7 +296,7 @@ fun ColourfullPlayer(
                 IconButton(onClick = onQueueClick) {
                     Image(
                         painter = painterResource(R.drawable.queue_music),
-                        contentDescription = "Queue",
+                        contentDescription = stringResource(R.string.queue),
                         colorFilter = ColorFilter.tint(textPrimary),
                         modifier = Modifier.size(26.dp)
                     )
@@ -303,7 +305,7 @@ fun ColourfullPlayer(
                 IconButton(onClick = onPrevious) {
                     Image(
                         painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.ui_a11y_previous),
                         colorFilter = ColorFilter.tint(if (canSkipPrevious) textPrimary else textPrimary.copy(alpha = 0.3f)),
                         modifier = Modifier.size(36.dp)
                     )
@@ -328,7 +330,7 @@ fun ColourfullPlayer(
                 IconButton(onClick = onNext) {
                     Image(
                         painter = painterResource(R.drawable.skip_next),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.ui_a11y_next),
                         colorFilter = ColorFilter.tint(if (canSkipNext) textPrimary else textPrimary.copy(alpha = 0.3f)),
                         modifier = Modifier.size(36.dp)
                     )
@@ -343,7 +345,7 @@ fun ColourfullPlayer(
                                 else -> R.drawable.repeat
                             }
                         ),
-                        contentDescription = "Repeat",
+                        contentDescription = stringResource(R.string.ui_a11y_repeat),
                         colorFilter = ColorFilter.tint(if (repeatMode == androidx.media3.common.Player.REPEAT_MODE_OFF) textPrimary.copy(alpha = 0.6f) else textPrimary),
                         modifier = Modifier.size(24.dp)
                     )

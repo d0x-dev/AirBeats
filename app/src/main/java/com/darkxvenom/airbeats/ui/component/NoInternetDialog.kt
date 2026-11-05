@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.component
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -104,7 +106,7 @@ fun NoInternetDialog(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_wifi_off),
-                        contentDescription = "No Internet Connection",
+                        contentDescription = stringResource(R.string.network_error_identify_title),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(36.dp)
                     )
@@ -114,7 +116,7 @@ fun NoInternetDialog(
 
                 // Title
                 Text(
-                    text = "No Internet Connection",
+                    text = stringResource(R.string.network_error_identify_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -125,7 +127,7 @@ fun NoInternetDialog(
 
                 // Subtitle / Description
                 Text(
-                    text = "You're currently offline. You can still listen to your cached and downloaded music seamlessly without an active connection.",
+                    text = stringResource(R.string.ui_sweep_you_re_currently_offline_you_can_still_listen_to_your_cached_and_),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -167,13 +169,13 @@ fun NoInternetDialog(
 
                         Column {
                             Text(
-                                text = "Offline Playback Ready",
+                                text = stringResource(R.string.ui_text_offline_playback_ready),
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Listen to your cached music offline anytime",
+                                text = stringResource(R.string.ui_text_listen_to_your_cached_music_offline_anytime),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -205,7 +207,7 @@ fun NoInternetDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Listen to Cached Songs",
+                            text = stringResource(R.string.ui_text_listen_to_cached_songs),
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelLarge
                         )
@@ -227,7 +229,7 @@ fun NoInternetDialog(
                             .height(44.dp)
                     ) {
                         Text(
-                            text = "Go to Library",
+                            text = stringResource(R.string.ui_text_go_to_library),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -240,7 +242,7 @@ fun NoInternetDialog(
                             .height(44.dp)
                     ) {
                         Text(
-                            text = "Dismiss",
+                            text = stringResource(R.string.dismiss),
                             style = MaterialTheme.typography.labelMedium
                         )
                     }

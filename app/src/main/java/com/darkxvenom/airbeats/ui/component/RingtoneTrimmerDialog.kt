@@ -113,7 +113,7 @@ fun RingtoneTrimmerDialog(
         },
         title = {
             Text(
-                "Trim Ringtone",
+                stringResource(R.string.ui_text_trim_ringtone),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -207,7 +207,7 @@ fun RingtoneTrimmerDialog(
                     onConfirm((rangeSec.start * 1000).toLong(), (rangeSec.endInclusive * 1000).toLong())
                 },
             ) {
-                Text("Set as Ringtone")
+                Text(stringResource(R.string.set_as_ringtone))
             }
         },
         dismissButton = {

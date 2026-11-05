@@ -214,7 +214,7 @@ fun SpotifyAccountContent(
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (!hasSpotifyCookie) {
             Button(onClick = { navController.navigate("spotify_login") }) {
-                Text("Connect to Spotify")
+                Text(stringResource(R.string.ui_text_connect_to_spotify))
             }
         } else if (isSpotifyLoading) {
             CircularProgressIndicator()

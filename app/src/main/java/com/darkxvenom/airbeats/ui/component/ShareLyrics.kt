@@ -356,7 +356,7 @@ fun LyricsImageCard(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Image will be saved in high resolution",
+            text = stringResource(R.string.ui_text_image_will_be_saved_in_high_resolution),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
@@ -388,7 +388,7 @@ private fun ModernControlsSection(
         ) {
             Column {
                 Text(
-                    text = "Share Lyrics",
+                    text = stringResource(R.string.ui_text_share_lyrics),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -410,7 +410,7 @@ private fun ModernControlsSection(
                 } else {
                     Icon(
                         painter = painterResource(id = R.drawable.image),
-                        contentDescription = "Save",
+                        contentDescription = stringResource(R.string.save),
                         modifier = Modifier.size(20.dp)
                     )
                 }

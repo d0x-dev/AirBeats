@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.component.bottomSheetDraggable
 import androidx.compose.foundation.Image
@@ -94,14 +96,14 @@ fun PopsyPlayer(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.expand_more),
-                            contentDescription = "Collapse",
+                            contentDescription = stringResource(R.string.collapse),
                             colorFilter = ColorFilter.tint(Color.White),
                             modifier = Modifier.size(24.dp)
                         )
                     }
 
                     Text(
-                        text = "N O W   P L A Y I N G",
+                        text = stringResource(R.string.ui_text_n_o_w_p_l_a_y_i_n_g),
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -118,7 +120,7 @@ fun PopsyPlayer(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.menu),
-                            contentDescription = "Menu",
+                            contentDescription = stringResource(R.string.ui_a11y_menu),
                             colorFilter = ColorFilter.tint(Color.White),
                             modifier = Modifier.size(20.dp)
                         )
@@ -144,7 +146,7 @@ fun PopsyPlayer(
                     ) {
                         Image(
                             painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
-                            contentDescription = "Like",
+                            contentDescription = stringResource(R.string.action_like),
                             colorFilter = ColorFilter.tint(popsyPurple),
                             modifier = Modifier.size(20.dp)
                         )
@@ -185,7 +187,7 @@ fun PopsyPlayer(
                     ) {
                         Image(
                             painter = painterResource(R.drawable.playlist_add),
-                            contentDescription = "Add to playlist",
+                            contentDescription = stringResource(R.string.add_to_playlist),
                             colorFilter = ColorFilter.tint(popsyPurple),
                             modifier = Modifier.size(20.dp)
                         )
@@ -239,7 +241,7 @@ fun PopsyPlayer(
             ) {
                 Image(
                     painter = painterResource(R.drawable.skip_previous),
-                    contentDescription = "Previous",
+                    contentDescription = stringResource(R.string.ui_a11y_previous),
                     colorFilter = ColorFilter.tint(popsyPurple.copy(alpha = if (canSkipPrevious) 1f else 0.4f)),
                     modifier = Modifier.size(24.dp)
                 )
@@ -266,7 +268,7 @@ fun PopsyPlayer(
                 } else {
                     Image(
                         painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                        contentDescription = "Play/Pause",
+                        contentDescription = stringResource(R.string.ui_a11y_play_pause),
                         colorFilter = ColorFilter.tint(popsyPurple),
                         modifier = Modifier.size(32.dp)
                     )
@@ -287,7 +289,7 @@ fun PopsyPlayer(
             ) {
                 Image(
                     painter = painterResource(R.drawable.skip_next),
-                    contentDescription = "Next",
+                    contentDescription = stringResource(R.string.ui_a11y_next),
                     colorFilter = ColorFilter.tint(popsyPurple.copy(alpha = if (canSkipNext) 1f else 0.4f)),
                     modifier = Modifier.size(24.dp)
                 )
@@ -306,7 +308,7 @@ fun PopsyPlayer(
             IconButton(onClick = onShuffleClick) {
                 Image(
                     painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.shuffle),
                     colorFilter = ColorFilter.tint(if (shuffleModeEnabled) popsyPurple else Color.Gray),
                     modifier = Modifier.size(24.dp)
                 )
@@ -314,7 +316,7 @@ fun PopsyPlayer(
             IconButton(onClick = onLyricsClick) {
                 Image(
                     painter = painterResource(R.drawable.lyrics),
-                    contentDescription = "Lyrics",
+                    contentDescription = stringResource(R.string.lyrics),
                     colorFilter = ColorFilter.tint(Color.Gray),
                     modifier = Modifier.size(24.dp)
                 )
@@ -322,7 +324,7 @@ fun PopsyPlayer(
             IconButton(onClick = onQueueClick) {
                 Image(
                     painter = painterResource(R.drawable.queue_music),
-                    contentDescription = "Queue",
+                    contentDescription = stringResource(R.string.queue),
                     colorFilter = ColorFilter.tint(Color.Gray),
                     modifier = Modifier.size(24.dp)
                 )
@@ -336,7 +338,7 @@ fun PopsyPlayer(
                             else -> R.drawable.repeat
                         }
                     ),
-                    contentDescription = "Repeat",
+                    contentDescription = stringResource(R.string.ui_a11y_repeat),
                     colorFilter = ColorFilter.tint(if (repeatMode == androidx.media3.common.Player.REPEAT_MODE_OFF) Color.Gray else popsyPurple),
                     modifier = Modifier.size(24.dp)
                 )

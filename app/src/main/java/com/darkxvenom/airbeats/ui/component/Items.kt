@@ -1806,7 +1806,7 @@ fun YouTubeListItem(
                     .padding(horizontal = 5.dp, vertical = 1.dp)
             ) {
                 Text(
-                    text = "YouTube",
+                    text = stringResource(R.string.ui_text_youtube),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium,
                         fontSize = 9.sp,

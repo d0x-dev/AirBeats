@@ -105,7 +105,7 @@ fun BoxScope.HomeFloatingActions(
         ) {
             Icon(
                 painter = painterResource(R.drawable.more_vert),
-                contentDescription = "Options",
+                contentDescription = stringResource(R.string.options),
                 modifier = Modifier.rotate(fabRotation),
             )
         }
@@ -159,7 +159,7 @@ fun BoxScope.HomeFloatingActions(
 
             // AirBeats Charts
             DropdownMenuItem(
-                text = { Text("AirBeats Charts") },
+                text = { Text(stringResource(R.string.airbeats_charts)) },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.trending_up),

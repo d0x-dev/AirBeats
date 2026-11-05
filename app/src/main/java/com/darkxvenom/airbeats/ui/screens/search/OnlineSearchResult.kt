@@ -238,7 +238,7 @@ fun OnlineSearchResult(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = "JioSaavn",
+                        text = stringResource(R.string.ui_text_jiosaavn),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,

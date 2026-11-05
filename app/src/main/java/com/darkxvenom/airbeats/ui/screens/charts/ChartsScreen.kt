@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.charts
 
+import androidx.compose.ui.res.stringResource
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -143,7 +145,7 @@ fun ChartsScreen(
                 title = {
                     Column {
                         Text(
-                            text = "AirBeats Charts",
+                            text = stringResource(R.string.airbeats_charts),
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = (-0.3).sp
@@ -177,7 +179,7 @@ fun ChartsScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -189,7 +191,7 @@ fun ChartsScreen(
                     }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
+                            contentDescription = stringResource(R.string.ui_text_refresh),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -292,7 +294,7 @@ fun ChartsScreen(
                         } else if (songs.isNullOrEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "No trending songs found on JioSaavn",
+                                    text = stringResource(R.string.ui_text_no_trending_songs_found_on_jiosaavn),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -344,7 +346,7 @@ fun ChartsScreen(
                         } else if (tracks.isNullOrEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "No Apple Music charts available",
+                                    text = stringResource(R.string.ui_text_no_apple_music_charts_available),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -384,7 +386,7 @@ fun ChartsScreen(
                         } else if (sections.isEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "No YouTube charts available",
+                                    text = stringResource(R.string.ui_text_no_youtube_charts_available),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -445,7 +447,7 @@ fun ChartsScreen(
                         } else if (albums.isNullOrEmpty()) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
-                                    text = "No new releases available",
+                                    text = stringResource(R.string.ui_text_no_new_releases_available),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -583,7 +585,7 @@ fun ChartSongRow(
             IconButton(onClick = onClick) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
+                    contentDescription = stringResource(R.string.music_recognition_overlay_play),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -653,7 +655,7 @@ fun ChartAlbumRow(
             IconButton(onClick = onPlayClick) {
                 Icon(
                     imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play Album",
+                    contentDescription = stringResource(R.string.ui_a11y_play_album),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )

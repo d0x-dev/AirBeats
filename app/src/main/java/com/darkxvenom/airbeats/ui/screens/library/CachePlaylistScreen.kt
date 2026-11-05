@@ -116,6 +116,8 @@ fun CachePlaylistScreen(
     viewModel: HistoryViewModel = hiltViewModel(),
     backupViewModel: BackupRestoreViewModel = hiltViewModel(),
 ) {
+    val cacheSongsQueueTitle = stringResource(R.string.ui_heading_cache_songs)
+
     val context = LocalContext.current
     val backupCacheLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
@@ -517,7 +519,7 @@ fun CachePlaylistScreen(
                                     onClick = {
                                         playerConnection.playQueue(
                                             ListQueue(
-                                                title = "Cache Songs",
+                                                title = cacheSongsQueueTitle,
                                                 items = filteredSongs.map { it.item.toMediaItem() },
                                             )
                                         )
@@ -538,7 +540,7 @@ fun CachePlaylistScreen(
                                     onClick = {
                                         playerConnection.playQueue(
                                             ListQueue(
-                                                title = "Cache Songs",
+                                                title = cacheSongsQueueTitle,
                                                 items = filteredSongs.shuffled()
                                                     .map { it.item.toMediaItem() },
                                             )
@@ -597,7 +599,7 @@ fun CachePlaylistScreen(
                                         } else {
                                             playerConnection.playQueue(
                                                 ListQueue(
-                                                    title = "Cache Songs",
+                                                    title = cacheSongsQueueTitle,
                                                     items = filteredSongs.map { it.item.toMediaItem() },
                                                     startIndex = index
                                                 )

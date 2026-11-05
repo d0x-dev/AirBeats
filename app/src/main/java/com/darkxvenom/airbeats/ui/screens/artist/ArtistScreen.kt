@@ -500,7 +500,7 @@ fun ArtistScreen(
 
                                 if (!isExpanded && description.length > 100) {
                                     Text(
-                                        text = "More",
+                                        text = stringResource(R.string.ui_text_more),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.Medium,
@@ -763,7 +763,7 @@ fun ArtistScreen(
                                         .padding(horizontal = 16.dp, vertical = 8.dp)
                                 ) {
                                     Text(
-                                        text = "View All",
+                                        text = stringResource(R.string.ui_text_view_all),
                                         style = MaterialTheme.typography.labelLarge,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier

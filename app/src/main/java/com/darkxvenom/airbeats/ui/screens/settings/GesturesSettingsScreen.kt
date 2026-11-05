@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FastForward
@@ -48,17 +50,17 @@ fun GesturesSettingsScreen(
     )
 
     SettingsPage(
-        title = "Gestures",
+        title = stringResource(R.string.ui_text_gestures),
         navController = navController,
         scrollBehavior = scrollBehavior
     ) {
         SettingsGeneralCategory(
-            title = "Navigation Gestures",
+            title = stringResource(R.string.ui_heading_navigation_gestures),
             items = listOf(
                 {
                     SwitchPreference(
-                        title = { Text("Swipe to Go Back") },
-                        description = "Slide from left edge towards the right. The screen follows your finger and returns to the previous screen",
+                        title = { Text(stringResource(R.string.ui_text_swipe_to_go_back)) },
+                        description = stringResource(R.string.ui_extra_slide_from_left_edge_towards_the_right_the_screen_follows_your_finge),
                         icon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) },
                         checked = enableSwipeBack,
                         onCheckedChange = setEnableSwipeBack
@@ -66,8 +68,8 @@ fun GesturesSettingsScreen(
                 },
                 {
                     SwitchPreference(
-                        title = { Text("Universal Tab Swipe") },
-                        description = "Swipe left or right across Home, Explore, and Library to switch screens easily",
+                        title = { Text(stringResource(R.string.ui_text_universal_tab_swipe)) },
+                        description = stringResource(R.string.ui_extra_swipe_left_or_right_across_home_explore_and_library_to_switch_screen),
                         icon = { Icon(Icons.Default.SwapHoriz, contentDescription = null) },
                         checked = enableTabSwipe,
                         onCheckedChange = setEnableTabSwipe
@@ -77,12 +79,12 @@ fun GesturesSettingsScreen(
         )
 
         SettingsGeneralCategory(
-            title = "Playback Gestures",
+            title = stringResource(R.string.ui_heading_playback_gestures),
             items = listOf(
                 {
                     SwitchPreference(
-                        title = { Text("Mini-Player Swipe to Skip") },
-                        description = "Slide left or right on the bottom mini-player bar to skip to the next or previous song",
+                        title = { Text(stringResource(R.string.ui_remaining_mini_player_swipe_to_skip)) },
+                        description = stringResource(R.string.ui_extra_slide_left_or_right_on_the_bottom_mini_player_bar_to_skip_to_the_nex),
                         icon = { Icon(Icons.Default.SkipNext, contentDescription = null) },
                         checked = enableMiniPlayerSwipe,
                         onCheckedChange = setEnableMiniPlayerSwipe
@@ -90,8 +92,8 @@ fun GesturesSettingsScreen(
                 },
                 {
                     SwitchPreference(
-                        title = { Text("Player Double Tap Seek") },
-                        description = "Double tap the left or right side of the now playing screen artwork to rewind or fast forward 10 seconds",
+                        title = { Text(stringResource(R.string.ui_text_player_double_tap_seek)) },
+                        description = stringResource(R.string.ui_extra_double_tap_the_left_or_right_side_of_the_now_playing_screen_artwork_),
                         icon = { Icon(Icons.Default.FastForward, contentDescription = null) },
                         checked = enableDoubleTapSeek,
                         onCheckedChange = setEnableDoubleTapSeek

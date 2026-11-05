@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.search
 
+import androidx.compose.ui.res.stringResource
+
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -196,13 +198,13 @@ fun AirBeatsChartsEmbedView(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "No charts available at the moment.",
+                        text = stringResource(R.string.ui_sweep_no_charts_available_at_the_moment),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedButton(onClick = { viewModel.refresh(regionCode, force = true) }) {
-                        Text("Refresh")
+                        Text(stringResource(R.string.ui_text_refresh))
                     }
                 }
             }
@@ -216,12 +218,12 @@ fun AirBeatsChartsEmbedView(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Data from Apple Music",
+                    text = stringResource(R.string.ui_text_data_from_apple_music),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
                 Text(
-                    text = "AirBeats",
+                    text = stringResource(R.string.ui_text_airbeats),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     fontWeight = FontWeight.Bold
@@ -258,7 +260,7 @@ fun TrendingAppleMusicSection(
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Apple Music Top 100",
+            text = stringResource(R.string.ui_sweep_apple_music_top_100),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -282,7 +284,7 @@ fun TrendingAppleMusicSection(
             Spacer(Modifier.width(4.dp))
             Icon(
                 painter = painterResource(R.drawable.globe_search),
-                contentDescription = "Select Region",
+                contentDescription = stringResource(R.string.ui_a11y_select_region),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
             )
@@ -342,7 +344,7 @@ fun TrendingAppleMusicSection(
                                 )
                                 Spacer(Modifier.width(12.dp))
                                 Text(
-                                    text = "View more on Apple Music",
+                                    text = stringResource(R.string.ui_text_view_more_on_apple_music),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold
@@ -475,7 +477,7 @@ fun TopArtistsSection(
     if (artists.isEmpty()) return
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Trending Artists",
+            text = stringResource(R.string.ui_text_trending_artists),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -561,7 +563,7 @@ fun TrendingAlbumsSection(
     if (albums.isEmpty()) return
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Trending Albums",
+            text = stringResource(R.string.ui_text_trending_albums),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -657,7 +659,7 @@ fun TrendingAlbumsSection(
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = "More",
+                        text = stringResource(R.string.ui_text_more),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
@@ -686,13 +688,13 @@ fun TrendingVideosSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Trending Music Videos",
+                text = stringResource(R.string.ui_text_trending_music_videos),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "More",
+                text = stringResource(R.string.ui_text_more),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,

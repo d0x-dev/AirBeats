@@ -49,8 +49,8 @@ android {
         versionName = "6.2.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Strip out third-party library languages that the app doesn't support while preserving English and French
-        resConfigs("en", "fr")
+        // Keep the app's supported languages while stripping unrelated third-party library locales
+        resConfigs("en", "fr", "pt-rBR")
     }
 
     signingConfigs {

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import com.darkxvenom.airbeats.utils.rememberEnumPreference
 import com.darkxvenom.airbeats.ui.component.PlayerSliderTrack
 import com.darkxvenom.airbeats.constants.SliderStyle
@@ -419,7 +421,7 @@ fun GalaxyPlayer(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.ui_a11y_previous),
                         tint = Color.White,
                         modifier = Modifier
                             .size(32.dp)
@@ -436,7 +438,7 @@ fun GalaxyPlayer(
                     ) {
                         Icon(
                             painter = painterResource(if (isPlaying && !isLoading) R.drawable.pause else R.drawable.play),
-                            contentDescription = "Play/Pause",
+                            contentDescription = stringResource(R.string.ui_a11y_play_pause),
                             tint = Color.Black,
                             modifier = Modifier.size(24.dp)
                         )
@@ -444,7 +446,7 @@ fun GalaxyPlayer(
 
                     Icon(
                         painter = painterResource(R.drawable.skip_next),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.ui_a11y_next),
                         tint = Color.White,
                         modifier = Modifier
                             .size(32.dp)
@@ -455,7 +457,7 @@ fun GalaxyPlayer(
 
                     Icon(
                         painter = painterResource(if (shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle),
-                        contentDescription = "Shuffle",
+                        contentDescription = stringResource(R.string.shuffle),
                         tint = if (shuffleModeEnabled) Color.Green else Color.White,
                         modifier = Modifier
                             .size(24.dp)
@@ -470,7 +472,7 @@ fun GalaxyPlayer(
                                 else -> R.drawable.repeat
                             }
                         ),
-                        contentDescription = "Repeat",
+                        contentDescription = stringResource(R.string.ui_a11y_repeat),
                         tint = if (repeatMode != Player.REPEAT_MODE_OFF) Color.Green else Color.White,
                         modifier = Modifier
                             .size(24.dp)
@@ -498,7 +500,7 @@ private fun GalaxyLyricsTab(
     ) {
         if (lines.isEmpty()) {
             Text(
-                text = "No lyrics available",
+                text = stringResource(R.string.ui_text_no_lyrics_available),
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium
@@ -797,19 +799,19 @@ private fun GalaxyTopPill(
         Row(verticalAlignment = Alignment.CenterVertically) {
             TopPillButton(
                 icon = R.drawable.lyrics,
-                text = "Lyrics",
+                text = stringResource(R.string.lyrics),
                 isSelected = selectedTab == 0,
                 onClick = { onSelectTab(0) }
             )
             TopPillButton(
                 icon = R.drawable.explore,
-                text = "Browse",
+                text = stringResource(R.string.ui_sweep_browse),
                 isSelected = selectedTab == 1,
                 onClick = { onSelectTab(1) }
             )
             TopPillButton(
                 icon = R.drawable.queue_music,
-                text = "Queue",
+                text = stringResource(R.string.queue),
                 isSelected = selectedTab == 2,
                 onClick = { onSelectTab(2) }
             )

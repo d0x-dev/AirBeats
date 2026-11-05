@@ -84,7 +84,7 @@ fun ExcludedSongsScreen(
         AlertDialog(
             onDismissRequest = { showClearAllDialog = false },
             title = { Text(text = stringResource(R.string.clear_all_exclusions)) },
-            text = { Text(text = "Are you sure you want to restore all excluded songs back to recommendations?") },
+            text = { Text(text = stringResource(R.string.ui_remaining_are_you_sure_you_want_to_restore_all_excluded_songs_back_to_recom)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -127,7 +127,7 @@ fun ExcludedSongsScreen(
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.back)
                         )
                     }
                 },

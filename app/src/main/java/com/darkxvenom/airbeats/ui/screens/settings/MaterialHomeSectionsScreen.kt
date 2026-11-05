@@ -1,5 +1,9 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import com.darkxvenom.airbeats.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.asPaddingValues
@@ -121,7 +125,7 @@ fun MaterialHomeSectionsScreen(
                         IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
@@ -130,7 +134,7 @@ fun MaterialHomeSectionsScreen(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Home Sections",
+                                text = stringResource(R.string.ui_text_home_sections),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -152,14 +156,14 @@ fun MaterialHomeSectionsScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(4.dp))
-                            Text("Show all")
+                            Text(stringResource(R.string.ui_text_show_all))
                         }
                     }
                 }
             }
 
             Text(
-                text = "Choose which sections to display on your Material Home screen. Changes apply instantly.",
+                text = stringResource(R.string.ui_sweep_choose_which_sections_to_display_on_your_material_home_screen_cha),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),

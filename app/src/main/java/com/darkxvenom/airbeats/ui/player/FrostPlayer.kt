@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import com.darkxvenom.airbeats.ui.component.BottomSheetState
 import com.darkxvenom.airbeats.ui.component.bottomSheetDraggable
 import android.annotation.SuppressLint
@@ -247,7 +249,7 @@ fun FrostPlayerScreen(
                 }
                 
                 Text(
-                    text = "Now Playing",
+                    text = stringResource(R.string.now_playing),
                     color = if (isDark) Color(0xFFDDDDDD) else Color(0xFF2E3D52),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
@@ -261,7 +263,7 @@ fun FrostPlayerScreen(
                 ) {
                     Icon(
                         painter = painterResource(if (isLiked) R.drawable.favorite else R.drawable.favorite_border),
-                        contentDescription = "Like",
+                        contentDescription = stringResource(R.string.action_like),
                         tint = if (isLiked) HeartOrange else iconColor,
                         modifier = Modifier.size(18.dp)
                     )
@@ -315,7 +317,7 @@ fun FrostPlayerScreen(
                     IconButton(onClick = onOpenMenu) {
                         Icon(
                             painter = painterResource(R.drawable.more_vert),
-                            contentDescription = "Options Menu",
+                            contentDescription = stringResource(R.string.ui_a11y_options_menu),
                             tint = iconColor,
                             modifier = Modifier.size(22.dp)
                         )
@@ -330,7 +332,7 @@ fun FrostPlayerScreen(
                     IconButton(onClick = onRepeat) {
                         Icon(
                             painter = painterResource(repeatIcon),
-                            contentDescription = "Repeat",
+                            contentDescription = stringResource(R.string.ui_a11y_repeat),
                             tint = if (repeatActive) AccentBlue else iconColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -339,7 +341,7 @@ fun FrostPlayerScreen(
                     IconButton(onClick = onOpenQueue) {
                         Icon(
                             painter = painterResource(R.drawable.queue_music),
-                            contentDescription = "Queue Music",
+                            contentDescription = stringResource(R.string.ui_a11y_queue_music),
                             tint = iconColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -348,7 +350,7 @@ fun FrostPlayerScreen(
                     IconButton(onClick = onOpenLyrics) {
                         Icon(
                             painter = painterResource(R.drawable.lyrics),
-                            contentDescription = "Lyrics Opener",
+                            contentDescription = stringResource(R.string.ui_a11y_lyrics_opener),
                             tint = iconColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -417,7 +419,7 @@ fun FrostPlayerScreen(
                 ) {
                     Icon(
                         painter = painterResource(deviceIcon),
-                        contentDescription = "Playback Device",
+                        contentDescription = stringResource(R.string.ui_a11y_playback_device),
                         tint = if (isDark) Color(0xFF888888) else Color(0xFF7A8A9E),
                         modifier = Modifier.size(13.dp)
                     )
@@ -452,7 +454,7 @@ fun FrostPlayerScreen(
                 FrostNeumorphicButton(onClick = onPrevious, size = 56.dp, isDark = isDark) {
                     Icon(
                         painter = painterResource(R.drawable.skip_previous),
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.ui_a11y_previous),
                         tint = AccentBlue,
                         modifier = Modifier.size(22.dp)
                     )
@@ -469,7 +471,7 @@ fun FrostPlayerScreen(
                 FrostNeumorphicButton(onClick = onNext, size = 56.dp, isDark = isDark) {
                     Icon(
                         painter = painterResource(R.drawable.skip_next),
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.ui_a11y_next),
                         tint = AccentBlue,
                         modifier = Modifier.size(22.dp)
                     )
@@ -496,7 +498,7 @@ fun FrostPlayerScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "NEXT",
+                    text = stringResource(R.string.ui_text_next),
                     color = if (isDark) Color(0xFF666666) else Color(0xFF9EABB8),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,

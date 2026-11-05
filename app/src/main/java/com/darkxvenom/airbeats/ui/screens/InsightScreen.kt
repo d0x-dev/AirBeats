@@ -147,7 +147,7 @@ fun InsightScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.close),
-                contentDescription = "Close",
+                contentDescription = stringResource(R.string.close),
                 tint = Color.White
             )
         }
@@ -224,13 +224,13 @@ fun IntroPage() {
                 modifier = Modifier.size(64.dp).padding(bottom = 16.dp)
             )
             Text(
-                text = "Your $currentYear",
+                text = stringResource(R.string.ui_dynamic_current_year, currentYear),
                 fontSize = 42.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.White
             )
             Text(
-                text = "Wrapped up.",
+                text = stringResource(R.string.ui_sweep_wrapped_up),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White.copy(alpha = 0.8f)
@@ -253,7 +253,7 @@ fun TopSongPage(song: Song?, songStats: SongWithStats?) {
                 modifier = Modifier.padding(32.dp)
             ) {
                 Text(
-                    text = "One song ruled them all...",
+                    text = stringResource(R.string.ui_sweep_one_song_ruled_them_all),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -318,7 +318,7 @@ fun TopArtistPage(artist: Artist?) {
                 modifier = Modifier.padding(32.dp)
             ) {
                 Text(
-                    text = "You couldn't get enough of",
+                    text = stringResource(R.string.ui_sweep_you_couldn_t_get_enough_of),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -374,7 +374,7 @@ fun TopAlbumPage(album: Album?) {
                 modifier = Modifier.padding(32.dp)
             ) {
                 Text(
-                    text = "Your album on repeat",
+                    text = stringResource(R.string.ui_text_your_album_on_repeat),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -430,7 +430,7 @@ fun ListeningTimePage(hours: Double) {
             modifier = Modifier.padding(32.dp)
         ) {
             Text(
-                text = "You spent",
+                text = stringResource(R.string.ui_text_you_spent),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White
@@ -442,14 +442,14 @@ fun ListeningTimePage(hours: Double) {
                 color = Color(0xFF1DB954)
             )
             Text(
-                text = "hours",
+                text = stringResource(R.string.ui_text_hours),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "listening to music on AirBeats.",
+                text = stringResource(R.string.ui_sweep_listening_to_music_on_airbeats),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Normal,
                 color = Color.White.copy(alpha = 0.8f),
@@ -474,7 +474,7 @@ fun SummaryPage(topSongs: List<Song>, navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Your Top 5 Songs",
+                text = stringResource(R.string.ui_sweep_your_top_5_songs),
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.White,

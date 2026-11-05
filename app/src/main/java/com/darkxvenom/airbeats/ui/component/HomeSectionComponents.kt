@@ -1,5 +1,9 @@
 package com.darkxvenom.airbeats.ui.component
 
+import com.darkxvenom.airbeats.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -263,7 +267,7 @@ fun UniversalHomeHeroBanner(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Infinite Radio",
+                        text = stringResource(R.string.ui_text_infinite_radio),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = accentColor
@@ -300,7 +304,7 @@ fun UniversalHomeHeroBanner(
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Play Radio",
+                    contentDescription = stringResource(R.string.play_radio),
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -389,7 +393,7 @@ fun UniversalArtistSpotlightCard(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "Artist Spotlight",
+                        text = stringResource(R.string.artist_spotlight),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor
@@ -407,7 +411,7 @@ fun UniversalArtistSpotlightCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Endless radio tuned to this artist",
+                    text = stringResource(R.string.ui_text_endless_radio_tuned_to_this_artist),
                     style = MaterialTheme.typography.bodySmall,
                     color = textColor.copy(alpha = 0.7f),
                     maxLines = 1,
@@ -434,7 +438,7 @@ fun UniversalArtistSpotlightCard(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = "Start Radio",
+                                text = stringResource(R.string.ui_text_start_radio),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (style == HomeThemeStyle.SPOTIFY) Color.Black else Color.White
@@ -449,7 +453,7 @@ fun UniversalArtistSpotlightCard(
                             modifier = Modifier.clickable(onClick = onOpenArtist)
                         ) {
                             Text(
-                                text = "View Artist",
+                                text = stringResource(R.string.ui_text_view_artist),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = textColor,
@@ -603,7 +607,7 @@ fun UniversalQuickAccessTiles(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             QuickAccessTileItem(
-                title = "Liked Songs",
+                title = stringResource(R.string.ui_heading_liked_songs),
                 icon = Icons.Filled.Favorite,
                 containerColor = when (style) {
                     HomeThemeStyle.SPOTIFY -> Color(0xFF282828)
@@ -639,7 +643,7 @@ fun UniversalQuickAccessTiles(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             QuickAccessTileItem(
-                title = "History",
+                title = stringResource(R.string.history),
                 icon = Icons.Filled.History,
                 containerColor = when (style) {
                     HomeThemeStyle.SPOTIFY -> Color(0xFF282828)
@@ -654,7 +658,7 @@ fun UniversalQuickAccessTiles(
                 modifier = Modifier.weight(1f)
             )
             QuickAccessTileItem(
-                title = "Stats",
+                title = stringResource(R.string.stats),
                 icon = Icons.Filled.TrendingUp,
                 containerColor = when (style) {
                     HomeThemeStyle.SPOTIFY -> Color(0xFF282828)

@@ -458,7 +458,7 @@ fun EnhancedRichPresence(
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.discord),
-                                contentDescription = "Discord",
+                                contentDescription = stringResource(R.string.discord),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -468,13 +468,13 @@ fun EnhancedRichPresence(
 
                         Column {
                             Text(
-                                text = "AirBeats",
+                                text = stringResource(R.string.ui_text_airbeats),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Listening on Discord",
+                                text = stringResource(R.string.ui_text_listening_on_discord),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -505,7 +505,7 @@ fun EnhancedRichPresence(
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text(
-                                    text = "LIVE",
+                                    text = stringResource(R.string.ui_text_live),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = FontWeight.Bold,
@@ -586,7 +586,7 @@ fun EnhancedRichPresence(
                                             if (artistAvatar != null) {
                                                 AsyncImage(
                                                     model = artistAvatar,
-                                                    contentDescription = "Artist",
+                                                    contentDescription = stringResource(R.string.sort_by_artist),
                                                     modifier = Modifier.fillMaxSize(),
                                                     contentScale = ContentScale.Crop
                                                 )
@@ -607,7 +607,7 @@ fun EnhancedRichPresence(
                                                 ) {
                                                     Image(
                                                         painter = painterResource(R.drawable.airbeats),
-                                                        contentDescription = "AirBeats",
+                                                        contentDescription = stringResource(R.string.ui_text_airbeats),
                                                         modifier = Modifier
                                                             .size(20.dp)
                                                             .alpha(0.9f),
@@ -696,11 +696,11 @@ fun EnhancedRichPresence(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.play),
-                            contentDescription = "YouTube Music",
+                            contentDescription = stringResource(R.string.ui_text_youtube_music),
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("YouTube Music", maxLines = 1, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.ui_text_youtube_music), maxLines = 1, fontWeight = FontWeight.Medium)
                     }
 
                     // Botón AirBeats mejorado
@@ -739,13 +739,13 @@ fun EnhancedRichPresence(
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.airbeats),
-                                contentDescription = "AirBeats",
+                                contentDescription = stringResource(R.string.ui_text_airbeats),
                                 modifier = Modifier.size(12.dp),
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
                             )
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("AirBeats", maxLines = 1, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.ui_text_airbeats), maxLines = 1, fontWeight = FontWeight.Medium)
                     }
                 }
             }

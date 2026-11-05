@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.material
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -184,7 +186,7 @@ fun MaterialSearchScreen(
                         com.darkxvenom.airbeats.ui.component.SearchTab.BROWSE_ALL -> {
                             item {
                                 Text(
-                                    text = "Explore Categories",
+                                    text = stringResource(R.string.ui_text_explore_categories),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground
@@ -310,7 +312,7 @@ fun MaterialSearchScreen(
                     onValueChange = { viewModel.query.value = it },
                     placeholder = {
                         Text(
-                            text = "Search songs, artists, albums...",
+                            text = stringResource(R.string.ui_sweep_search_songs_artists_albums_variant),
                             style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             softWrap = false,
@@ -330,7 +332,7 @@ fun MaterialSearchScreen(
                             IconButton(onClick = { viewModel.query.value = "" }) {
                                 Icon(
                                     imageVector = Icons.Filled.Clear,
-                                    contentDescription = "Clear",
+                                    contentDescription = stringResource(R.string.clear),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -338,7 +340,7 @@ fun MaterialSearchScreen(
                             IconButton(onClick = { showRegionSheet = true }) {
                                 Icon(
                                     painter = painterResource(R.drawable.globe_search),
-                                    contentDescription = "Select Region",
+                                    contentDescription = stringResource(R.string.ui_a11y_select_region),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }

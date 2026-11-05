@@ -33,10 +33,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkxvenom.airbeats.LocalDatabase
+import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.db.entities.SearchHistory
 
 fun LazyListScope.recentSearchesItems(
@@ -72,7 +74,7 @@ fun RecentSearchesView(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Recent Searches",
+                text = stringResource(R.string.recent_searches),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (itemTextColor != Color.Unspecified) itemTextColor else MaterialTheme.colorScheme.onSurface
@@ -90,7 +92,7 @@ fun RecentSearchesView(
                     )
                 ) {
                     Text(
-                        text = "Clear all",
+                        text = stringResource(R.string.clear_all),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -121,13 +123,13 @@ fun RecentSearchesView(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "No recent searches",
+                    text = stringResource(R.string.no_recent_searches),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (itemTextColor != Color.Unspecified) itemTextColor else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Searches you perform will show up here.",
+                    text = stringResource(R.string.recent_searches_empty_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -197,7 +199,7 @@ fun RecentSearchRow(
         ) {
             Icon(
                 imageVector = Icons.Filled.NorthWest,
-                contentDescription = "Fill query",
+                contentDescription = stringResource(R.string.ui_a11y_fill_query),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(16.dp)
             )
@@ -208,7 +210,7 @@ fun RecentSearchRow(
         ) {
             Icon(
                 imageVector = Icons.Filled.Clear,
-                contentDescription = "Remove",
+                contentDescription = stringResource(R.string.ui_text_remove),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(18.dp)
             )

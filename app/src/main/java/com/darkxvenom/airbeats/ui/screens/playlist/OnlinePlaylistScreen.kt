@@ -319,14 +319,14 @@ fun OnlinePlaylistScreen(
     if (isConvertingToYouTube) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = {},
-            title = { Text("Converting Spotify to YouTube") },
+            title = { Text(stringResource(R.string.ui_text_converting_spotify_to_youtube)) },
             text = {
                 Column {
                     androidx.compose.material3.LinearProgressIndicator(
                         progress = { if (convertProgress.second > 0) convertProgress.first.toFloat() / convertProgress.second.toFloat() else 0f },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     )
-                    Text("Matching tracks: ${convertProgress.first} of ${convertProgress.second}")
+                    Text(stringResource(R.string.ui_dynamic_matching_tracks, convertProgress.first, convertProgress.second))
                 }
             },
             confirmButton = {}
@@ -886,7 +886,7 @@ fun OnlinePlaylistScreen(
                                         ) {
                                             Icon(
                                                 painter = painterResource(R.drawable.youtube),
-                                                contentDescription = "Convert to YouTube",
+                                                contentDescription = stringResource(R.string.ui_a11y_convert_to_youtube),
                                                 tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(24.dp)
                                             )
@@ -945,7 +945,7 @@ fun OnlinePlaylistScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(R.drawable.radio),
-                                            contentDescription = "Start Radio",
+                                            contentDescription = stringResource(R.string.ui_text_start_radio),
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(modifier = Modifier.size(8.dp))

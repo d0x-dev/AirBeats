@@ -1,5 +1,9 @@
 package com.darkxvenom.airbeats.ui.screens.material
 
+import com.darkxvenom.airbeats.R
+
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -119,7 +123,7 @@ fun MaterialExploreScreen(
             item(key = "mood_chips") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Browse Categories",
+                        text = stringResource(R.string.ui_text_browse_categories),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -188,7 +192,7 @@ fun MaterialExploreScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = "New Releases",
+                                text = stringResource(R.string.ui_text_new_releases),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -219,7 +223,7 @@ fun MaterialExploreScreen(
                                 modifier = Modifier.size(24.dp)
                             )
                             Text(
-                                text = "Top Charts",
+                                text = stringResource(R.string.ui_text_top_charts),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
@@ -234,7 +238,7 @@ fun MaterialExploreScreen(
                 item(key = "new_releases_section") {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = "New Releases",
+                            text = stringResource(R.string.ui_text_new_releases),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground,
@@ -359,7 +363,7 @@ fun MaterialExploreScreen(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = "Discover",
+                    text = stringResource(R.string.ui_text_discover),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

@@ -99,7 +99,7 @@ class HomeViewModel @Inject constructor(
                         val songs = playlistSongs.map { it.song }
                         HeroPlaylistData(
                             title = topPlaylist.playlist.name,
-                            subtitle = "Based on your last listening habits and artists...",
+                            subtitle = context.getString(com.darkxvenom.airbeats.R.string.ui_heading_based_on_your_last_listening_habits_and_artis),
                             tag = "TOP PLAYLIST",
                             thumbnailUrl = topPlaylist.thumbnails.firstOrNull() ?: songs.firstOrNull()?.thumbnailUrl,
                             songs = songs,
@@ -197,7 +197,7 @@ class HomeViewModel @Inject constructor(
                     chips = null,
                     sections = listOf(
                         HomePage.Section(
-                            title = "Trending Songs",
+                            title = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_songs),
                             label = "JioSaavn",
                             thumbnail = null,
                             endpoint = null,
@@ -286,7 +286,7 @@ class HomeViewModel @Inject constructor(
                             val filteredSongs = songs.filter { it.id !in excludedSongIds }
                             if (filteredSongs.isNotEmpty()) {
                                 HomePage.Section(
-                                    title = "Trending on JioSaavn (320k)",
+                                    title = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_jiosaavn),
                                     label = "JioSaavn",
                                     thumbnail = null,
                                     endpoint = null,

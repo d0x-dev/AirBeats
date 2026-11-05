@@ -368,13 +368,29 @@ class LocaleManager private constructor(private val context: Context) {
             availableLocaleCodes.forEach { localeCode ->
                 try {
                     val locale = parseLocaleCode(localeCode)
-                    val displayName = locale.getDisplayLanguage(Locale.ENGLISH)
-                        .replaceFirstChar { it.uppercase() }
-                    val nativeName = locale.getDisplayLanguage(locale)
-                        .replaceFirstChar { it.uppercase() }
+                    val isBrazilianPortuguese = locale.language == "pt" && locale.country == "BR"
+                    val isPortugalPortuguese = locale.language == "pt" &&
+                        (locale.country == "PT" || locale.country.isEmpty())
+                    val displayName = when {
+                        isBrazilianPortuguese -> "Portuguese (Brazil)"
+                        isPortugalPortuguese -> "Portuguese (Portugal)"
+                        else -> locale.getDisplayLanguage(Locale.ENGLISH)
+                            .replaceFirstChar { it.uppercase() }
+                    }
+                    val nativeName = when {
+                        isBrazilianPortuguese -> "português (Brasil)"
+                        isPortugalPortuguese -> "português (Portugal)"
+                        else -> locale.getDisplayLanguage(locale)
+                            .replaceFirstChar { it.uppercase() }
+                    }
 
-                    // Obtener metadata (bandera y estado)
-                    val metadata = LANGUAGE_METADATA[localeCode]
+                    // Resource locales can be reported as pt_BR instead of pt-rBR.
+                    val metadataCode = when {
+                        isBrazilianPortuguese -> "pt-rBR"
+                        isPortugalPortuguese -> "pt"
+                        else -> localeCode
+                    }
+                    val metadata = LANGUAGE_METADATA[metadataCode]
                         ?: LanguageMetadata("🌍", CompletionStatus.COMPLETE)
 
                     languages.add(
@@ -773,7 +789,7 @@ private fun SearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Limpiar búsqueda",
+                        contentDescription = stringResource(R.string.ui_a11y_limpiar_busqueda),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp)
                     )
@@ -832,12 +848,12 @@ private fun EmptySearchResult(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Sin resultados",
+            text = stringResource(R.string.ui_empty_no_results),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Prueba con otro término",
+            text = stringResource(R.string.ui_empty_try_another_term),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = 4.dp)

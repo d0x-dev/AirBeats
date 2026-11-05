@@ -186,11 +186,11 @@ fun AiSettings(
 
         AlertDialog(
             onDismissRequest = { showApiKeyDialog = false },
-            title = { Text("$aiProvider API Key") },
+            title = { Text(stringResource(R.string.ui_dynamic_ai_provider_api_key, aiProvider)) },
             text = {
                 Column {
                     Text(
-                        text = "Enter your $aiProvider API key. It is stored securely on your device and only used for lyrics translation.",
+                        text = stringResource(R.string.ui_sweep_enter_your_aiprovider_api_key_it_is_stored_securely_on_your_devic, aiProvider),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -198,14 +198,14 @@ fun AiSettings(
                     OutlinedTextField(
                         value = keyInput,
                         onValueChange = { keyInput = it },
-                        label = { Text("API Key") },
+                        label = { Text(stringResource(R.string.ai_api_key)) },
                         singleLine = true,
                         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                                 Icon(
                                     painter = painterResource(if (isPasswordVisible) R.drawable.visibility else R.drawable.visibility_off),
-                                    contentDescription = "Toggle key visibility"
+                                    contentDescription = stringResource(R.string.ui_a11y_toggle_key_visibility)
                                 )
                             }
                         },
@@ -217,7 +217,7 @@ fun AiSettings(
                             onClick = { uriHandler.openUri(portalUrl) },
                             modifier = Modifier.align(Alignment.End)
                         ) {
-                            Text("Get $aiProvider Key")
+                            Text(stringResource(R.string.ui_remaining_get_aiprovider_key))
                         }
                     }
                 }
@@ -233,12 +233,12 @@ fun AiSettings(
                         showApiKeyDialog = false
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showApiKeyDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.visitor_data_reset_cancel))
                 }
             }
         )
@@ -248,18 +248,18 @@ fun AiSettings(
         var customModelInput by remember { mutableStateOf(openRouterModel) }
         AlertDialog(
             onDismissRequest = { showCustomModelDialog = false },
-            title = { Text("Custom Model Name") },
+            title = { Text(stringResource(R.string.ui_text_custom_model_name)) },
             text = {
                 Column {
                     Text(
-                        text = "Enter the exact model identifier (e.g. meta-llama/llama-3-8b-instruct).",
+                        text = stringResource(R.string.ui_sweep_enter_the_exact_model_identifier_e_g_meta_llama_llama_3_8b_instru),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = customModelInput,
                         onValueChange = { customModelInput = it },
-                        label = { Text("Model ID") },
+                        label = { Text(stringResource(R.string.ui_text_model_id)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -274,12 +274,12 @@ fun AiSettings(
                         showCustomModelDialog = false
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCustomModelDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.visitor_data_reset_cancel))
                 }
             }
         )
@@ -296,13 +296,13 @@ fun AiSettings(
 
         AlertDialog(
             onDismissRequest = { showLanguageSearchDialog = false },
-            title = { Text("Target Language") },
+            title = { Text(stringResource(R.string.ui_text_target_language)) },
             text = {
                 Column(modifier = Modifier.height(400.dp)) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
-                        placeholder = { Text("Search language...") },
+                        placeholder = { Text(stringResource(R.string.ui_remaining_search_language)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -339,23 +339,23 @@ fun AiSettings(
             },
             confirmButton = {
                 TextButton(onClick = { showLanguageSearchDialog = false }) {
-                    Text("Close")
+                    Text(stringResource(R.string.close))
                 }
             }
         )
     }
 
     SettingsPage(
-        title = "AI Integration",
+        title = stringResource(R.string.ai_integration),
         navController = navController,
         scrollBehavior = scrollBehavior
     ) {
         SettingsGeneralCategory(
-            title = "AI Provider & Model",
+            title = stringResource(R.string.ui_heading_ai_provider_model),
             items = listOf(
                 {
                     ListPreference(
-                        title = { Text("AI Provider") },
+                        title = { Text(stringResource(R.string.ai_provider)) },
                         icon = { Icon(painterResource(R.drawable.ic_gen_ai), contentDescription = null) },
                         selectedValue = aiProvider,
                         values = aiProviders,
@@ -419,7 +419,7 @@ fun AiSettings(
                     val currentKey = if (aiProvider == "DeepL") deeplApiKey else openRouterApiKey
                     val masked = if (currentKey.isNotBlank()) "••••••••" + currentKey.takeLast(4) else "Not configured"
                     PreferenceEntry(
-                        title = { Text("API Key") },
+                        title = { Text(stringResource(R.string.ai_api_key)) },
                         description = masked,
                         icon = { Icon(painterResource(R.drawable.lock), contentDescription = null) },
                         onClick = { showApiKeyDialog = true }
@@ -429,7 +429,7 @@ fun AiSettings(
                     if (aiProvider != "DeepL") {
                         val availableModels = modelsByProvider[aiProvider] ?: listOf("Custom")
                         ListPreference(
-                            title = { Text("Model") },
+                            title = { Text(stringResource(R.string.ui_text_model)) },
                             icon = { Icon(painterResource(R.drawable.tune), contentDescription = null) },
                             selectedValue = if (openRouterModel in availableModels) openRouterModel else "Custom",
                             values = availableModels,
@@ -447,7 +447,7 @@ fun AiSettings(
                 {
                     if (aiProvider == "Custom") {
                         EditTextPreference(
-                            title = { Text("Base URL") },
+                            title = { Text(stringResource(R.string.ui_text_base_url)) },
                             icon = { Icon(painterResource(R.drawable.language), contentDescription = null) },
                             value = openRouterBaseUrl,
                             onValueChange = { openRouterBaseUrl = it }
@@ -458,12 +458,12 @@ fun AiSettings(
         )
 
         SettingsGeneralCategory(
-            title = "Lyrics Translation",
+            title = stringResource(R.string.lyrics_translation),
             items = listOf(
                 {
                     val currentLangName: String = AiTranslationLanguages[translateLanguage] ?: translateLanguage
                     PreferenceEntry(
-                        title = { Text("Default Target Language") },
+                        title = { Text(stringResource(R.string.ui_text_default_target_language)) },
                         description = currentLangName,
                         icon = { Icon(painterResource(R.drawable.translate), contentDescription = null) },
                         onClick = { showLanguageSearchDialog = true }
@@ -471,7 +471,7 @@ fun AiSettings(
                 },
                 {
                     ListPreference(
-                        title = { Text("Translation Mode") },
+                        title = { Text(stringResource(R.string.ui_text_translation_mode)) },
                         icon = { Icon(painterResource(R.drawable.translate), contentDescription = null) },
                         selectedValue = translateMode,
                         values = listOf("Literal", "Romanized", "Transcribed", "Custom"),
@@ -489,7 +489,7 @@ fun AiSettings(
                 },
                 {
                     EditTextPreference(
-                        title = { Text("Custom Prompt Instructions") },
+                        title = { Text(stringResource(R.string.ui_text_custom_prompt_instructions)) },
                         icon = { Icon(painterResource(R.drawable.edit), contentDescription = null) },
                         value = customPrompt,
                         onValueChange = { customPrompt = it },
@@ -498,8 +498,8 @@ fun AiSettings(
                 },
                 {
                     SwitchPreference(
-                        title = { Text("Auto-Translate Lyrics") },
-                        description = "Automatically trigger AI translation when opening lyrics screen",
+                        title = { Text(stringResource(R.string.ui_remaining_auto_translate_lyrics)) },
+                        description = stringResource(R.string.ui_extra_automatically_trigger_ai_translation_when_opening_lyrics_screen),
                         icon = { Icon(painterResource(R.drawable.cached), contentDescription = null) },
                         checked = autoTranslate,
                         onCheckedChange = { autoTranslate = it }
@@ -507,8 +507,8 @@ fun AiSettings(
                 },
                 {
                     SwitchPreference(
-                        title = { Text("Replace Original Lyrics") },
-                        description = "Show translated lyrics directly with sync timing instead of subtitles",
+                        title = { Text(stringResource(R.string.ui_text_replace_original_lyrics)) },
+                        description = stringResource(R.string.replace_original_lyrics_desc),
                         icon = { Icon(painterResource(R.drawable.sync), contentDescription = null) },
                         checked = replaceOriginalLyrics,
                         onCheckedChange = { replaceOriginalLyrics = it }

@@ -336,11 +336,11 @@ fun StatsScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Total Time", style = MaterialTheme.typography.labelMedium)
+                            Text(text = stringResource(R.string.ui_text_total_time), style = MaterialTheme.typography.labelMedium)
                             Text(text = makeTimeString(totalTime), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Unique Songs", style = MaterialTheme.typography.labelMedium)
+                            Text(text = stringResource(R.string.ui_text_unique_songs), style = MaterialTheme.typography.labelMedium)
                             Text(text = "$totalSongs", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -601,7 +601,7 @@ fun StatsScreen(
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.stats),
-                        contentDescription = "AirBeats Insights",
+                        contentDescription = stringResource(R.string.ui_a11y_airbeats_insights),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -692,7 +692,7 @@ private fun GlobalStatsBoardCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Global Stats",
+                        text = stringResource(R.string.ui_text_global_stats),
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -717,12 +717,12 @@ private fun GlobalStatsBoardCard(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 GlobalStatPill(
-                    label = "Top listener",
+                    label = stringResource(R.string.top_listener),
                     value = topUser?.let { formatListenHours(it.totalListenMs) } ?: "--",
                     modifier = Modifier.weight(1f),
                 )
                 GlobalStatPill(
-                    label = "Your rank",
+                    label = stringResource(R.string.your_rank),
                     value = currentUser?.rank?.let { "#$it" } ?: "--",
                     modifier = Modifier.weight(1f),
                 )
@@ -889,7 +889,7 @@ private fun WeeklyGlobalStatsSheet(
         ) {
             Column {
                 Text(
-                    text = "Weekly Global Stats",
+                    text = stringResource(R.string.ui_text_weekly_global_stats),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Black,
                 )
@@ -1062,12 +1062,12 @@ fun InsightBottomSheetContent(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "AirBeats Insight",
+                    text = stringResource(R.string.ui_text_airbeats_insight),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Discover your musical year",
+                    text = stringResource(R.string.ui_text_discover_your_musical_year),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -1097,7 +1097,7 @@ fun InsightBottomSheetContent(
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Your Musical Year",
+                        text = stringResource(R.string.ui_text_your_musical_year),
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -1111,7 +1111,7 @@ fun InsightBottomSheetContent(
                             color = Color.White
                         )
                         Text(
-                            text = "Tap to view your full statistics",
+                            text = stringResource(R.string.ui_text_tap_to_view_your_full_statistics),
                             fontSize = 14.sp,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -1154,7 +1154,7 @@ fun InsightBottomSheetContent(
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
-                text = "View Full AirBeats Insight",
+                text = stringResource(R.string.ui_text_view_full_airbeats_insight),
                 modifier = Modifier.padding(8.dp),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
@@ -1231,7 +1231,7 @@ fun ArtistPieChart(
 
         Column {
             Text(
-                text = "Total Time Listened",
+                text = stringResource(R.string.ui_text_total_time_listened),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -1291,7 +1291,7 @@ fun StatsHighlightsSection(
     ) {
         if (topArtist != null) {
             StatsHighlightCard(
-                title = "Your Favourite Artist",
+                title = stringResource(R.string.ui_heading_your_favourite_artist),
                 mainText = topArtist.artist.name,
                 subText = "${topArtist.songCount} songs played • ${makeTimeString(topArtist.timeListened?.toLong())}",
                 imageUrl = topArtist.artist.thumbnailUrl,
@@ -1301,7 +1301,7 @@ fun StatsHighlightsSection(
 
         if (topSong != null && topSongEntity != null) {
             StatsHighlightCard(
-                title = "Your Favourite Song",
+                title = stringResource(R.string.ui_heading_your_favourite_song),
                 mainText = topSong.title,
                 subText = "${topSong.songCountListened} plays • ${makeTimeString(topSong.timeListened)}",
                 imageUrl = topSong.thumbnailUrl,
@@ -1518,7 +1518,7 @@ fun ScrobblerStatsHubCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Music Scrobbler",
+                            text = stringResource(R.string.ui_text_music_scrobbler),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -1678,7 +1678,7 @@ fun ScrobblerStatsHubCard(
                                 )
                                 Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Now Playing",
+                                    text = stringResource(R.string.now_playing),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFFF4081)
@@ -1706,7 +1706,7 @@ fun ScrobblerStatsHubCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Select Apps")
+                    Text(stringResource(R.string.ui_text_select_apps))
                 }
 
                 androidx.compose.material3.OutlinedButton(
@@ -1720,7 +1720,7 @@ fun ScrobblerStatsHubCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Settings")
+                    Text(stringResource(R.string.settings))
                 }
             }
 
@@ -1736,7 +1736,7 @@ fun ScrobblerStatsHubCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Recent Plays",
+                        text = stringResource(R.string.ui_text_recent_plays),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

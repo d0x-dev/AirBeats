@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens.settings
 
+import androidx.compose.ui.res.stringResource
+
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -37,14 +39,14 @@ fun LyricsSettings(navController: NavController, scrollBehavior: TopAppBarScroll
         LyricsProviderPreference("YouTube subtitles", EnableYouTubeSubtitleLyricsKey, R.drawable.lyrics_provider_youtube_subtitles),
         LyricsProviderPreference("YouTube Music", EnableYouTubeMusicLyricsKey, R.drawable.lyrics_provider_youtube_music),
     )
-    SettingsPage(title = "Lyrics", navController = navController, scrollBehavior = scrollBehavior) {
-        SettingsGeneralCategory(title = "Lyrics display", items = listOf(
-            { EnumListPreference(title = { Text("Text position") }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, selectedValue = position, onValueSelected = setPosition, valueText = { it.name.lowercase().replaceFirstChar(Char::uppercase) }) },
-            { SwitchPreference(title = { Text("Tap lyrics to seek") }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, checked = clickToSeek, onCheckedChange = setClickToSeek) },
-            { SwitchPreference(title = { Text("Animate lyrics") }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, checked = animate, onCheckedChange = setAnimate) },
+    SettingsPage(title = stringResource(R.string.lyrics), navController = navController, scrollBehavior = scrollBehavior) {
+        SettingsGeneralCategory(title = stringResource(R.string.ui_heading_lyrics_display), items = listOf(
+            { EnumListPreference(title = { Text(stringResource(R.string.ui_text_text_position)) }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, selectedValue = position, onValueSelected = setPosition, valueText = { it.name.lowercase().replaceFirstChar(Char::uppercase) }) },
+            { SwitchPreference(title = { Text(stringResource(R.string.ui_text_tap_lyrics_to_seek)) }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, checked = clickToSeek, onCheckedChange = setClickToSeek) },
+            { SwitchPreference(title = { Text(stringResource(R.string.animate_lyrics)) }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, checked = animate, onCheckedChange = setAnimate) },
             {
                 EnumListPreference(
-                    title = { Text("Lyrics Screen Style") },
+                    title = { Text(stringResource(R.string.ui_text_lyrics_screen_style)) },
                     icon = { Icon(painterResource(R.drawable.lyrics), null) },
                     selectedValue = lyricsScreenStyle,
                     onValueSelected = setLyricsScreenStyle,
@@ -57,11 +59,11 @@ fun LyricsSettings(navController: NavController, scrollBehavior: TopAppBarScroll
                 )
             },
         ))
-        SettingsGeneralCategory(title = "Lookup order", items = listOf(
-            { EnumListPreference(title = { Text("Prefer provider") }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, selectedValue = preferred, onValueSelected = setPreferred, valueText = { it.displayName() + " first" }) },
+        SettingsGeneralCategory(title = stringResource(R.string.ui_heading_lookup_order), items = listOf(
+            { EnumListPreference(title = { Text(stringResource(R.string.ui_text_prefer_provider)) }, icon = { Icon(painterResource(R.drawable.lyrics), null) }, selectedValue = preferred, onValueSelected = setPreferred, valueText = { it.displayName() + " first" }) },
         ))
         SettingsGeneralCategory(title = "Providers", items = providers.map { provider ->
-            { val (enabled, setEnabled) = rememberPreference(provider.key, true); SwitchPreference(title = { Text(provider.name) }, description = "Used automatically when earlier providers have no lyrics", icon = { Icon(painterResource(provider.icon), null) }, checked = enabled, onCheckedChange = setEnabled) }
+            { val (enabled, setEnabled) = rememberPreference(provider.key, true); SwitchPreference(title = { Text(provider.name) }, description = stringResource(R.string.ui_extra_used_automatically_when_earlier_providers_have_no_lyrics), icon = { Icon(painterResource(provider.icon), null) }, checked = enabled, onCheckedChange = setEnabled) }
         })
     }
 }

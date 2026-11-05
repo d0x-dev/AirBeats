@@ -157,7 +157,7 @@ fun MaterialLibraryScreen(
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            text = "Library",
+                            text = stringResource(R.string.android_auto_library),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -167,7 +167,7 @@ fun MaterialLibraryScreen(
                     IconButton(onClick = { navController.navigate("generator") }) {
                         Icon(
                             imageVector = Icons.Filled.AutoAwesome,
-                            contentDescription = "Generator",
+                            contentDescription = stringResource(R.string.generator),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -175,7 +175,7 @@ fun MaterialLibraryScreen(
                     IconButton(onClick = { showCreatePlaylistDialog = true }) {
                         Icon(
                             imageVector = Icons.Filled.Add,
-                            contentDescription = "Create Playlist",
+                            contentDescription = stringResource(R.string.ui_a11y_create_playlist),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.screens
 
+import androidx.compose.ui.res.stringResource
+
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.ViewGroup
@@ -76,7 +78,7 @@ fun SpotifyLoginScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Spotify Login") },
+                title = { Text(stringResource(R.string.ui_text_spotify_login)) },
                 navigationIcon = {
                     IconButton(onClick = navController::navigateUp) {
                         Icon(painterResource(R.drawable.arrow_back), contentDescription = null)
@@ -84,7 +86,7 @@ fun SpotifyLoginScreen(
                 },
                 actions = {
                     IconButton(onClick = { devLoginSheet = true }) {
-                        Icon(painterResource(R.drawable.codigo), contentDescription = "Manual Cookie Login")
+                        Icon(painterResource(R.drawable.codigo), contentDescription = stringResource(R.string.ui_a11y_manual_cookie_login))
                     }
                 }
             )

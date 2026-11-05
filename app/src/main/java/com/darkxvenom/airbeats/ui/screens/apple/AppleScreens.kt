@@ -237,7 +237,7 @@ fun AppleHeader(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.newspaper),
-                            contentDescription = "News from Developer",
+                            contentDescription = stringResource(R.string.ui_a11y_news_from_developer),
                             tint = AppleText,
                             modifier = Modifier.size(18.dp)
                         )
@@ -262,7 +262,7 @@ fun AppleHeader(
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.notification_on),
-                            contentDescription = "New Releases",
+                            contentDescription = stringResource(R.string.ui_text_new_releases),
                             tint = AppleText,
                             modifier = Modifier.size(18.dp)
                         )
@@ -285,7 +285,7 @@ fun AppleHeader(
                         is AvatarSelection.Custom -> {
                             AsyncImage(
                                 model = selection.uri.toUri(),
-                                contentDescription = "Profile",
+                                contentDescription = stringResource(R.string.ui_a11y_profile),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -293,7 +293,7 @@ fun AppleHeader(
                         is AvatarSelection.DiceBear -> {
                             AsyncImage(
                                 model = selection.url,
-                                contentDescription = "Profile",
+                                contentDescription = stringResource(R.string.ui_a11y_profile),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -302,14 +302,14 @@ fun AppleHeader(
                             if (profileUrl != null) {
                                 AsyncImage(
                                     model = profileImageRequest,
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.ui_a11y_profile),
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             } else {
                                 Icon(
                                     painter = painterResource(R.drawable.person),
-                                    contentDescription = "Profile",
+                                    contentDescription = stringResource(R.string.ui_a11y_profile),
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -445,6 +445,7 @@ fun AppleLocalRow(items: List<Song>, playerConnection: com.darkxvenom.airbeats.p
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(items) { song ->
+            val localSongsQueueTitle = stringResource(R.string.filter_local)
             AppleTile(
                 title = song.title,
                 subtitle = song.artists.joinToString { it.name },
@@ -452,7 +453,7 @@ fun AppleLocalRow(items: List<Song>, playerConnection: com.darkxvenom.airbeats.p
                 onClick = {
                     playerConnection.playQueue(
                         com.darkxvenom.airbeats.playback.queues.ListQueue(
-                            title = "Local",
+                            title = localSongsQueueTitle,
                             items = items.map { it.toMediaMetadata().toMediaItem() },
                             startIndex = items.indexOf(song)
                         )
@@ -555,7 +556,7 @@ fun AppleHomeScreen(
     }
     
     AppleScaffold(
-        title = "Listen Now",
+        title = stringResource(R.string.ui_heading_listen_now),
         navController = navController,
         profileUrl = url,
         isRefreshing = isRefreshing,
@@ -582,8 +583,8 @@ fun AppleHomeScreen(
         if (isSectionVisible(MaterialHomeSection.HERO)) {
             item(key = "apple_hero") {
                 UniversalHomeHeroBanner(
-                    title = "Listen Now",
-                    subtitle = "Curated radio tailored to your musical tastes",
+                    title = stringResource(R.string.ui_heading_listen_now),
+                    subtitle = stringResource(R.string.ui_heading_curated_radio_tailored_to_your_musical_tastes),
                     onPlayRadio = {
                         com.darkxvenom.airbeats.ui.component.InfiniteRadioHelper.playShuffledRadio(
                             playerConnection = playerConnection,
@@ -772,7 +773,7 @@ fun AppleExploreScreen(
     val isExploringLoading = (explorePage == null || explorePage?.newReleaseAlbums.isNullOrEmpty()) && moodAndGenres.isNullOrEmpty()
 
     AppleScaffold(
-        title = "Browse",
+        title = stringResource(R.string.ui_sweep_browse),
         navController = navController
     ) {
         if (isExploringLoading) {
@@ -931,7 +932,7 @@ fun AppleSearchScreen(
     val appleBgColor = AppleBg
 
     AppleScaffold(
-        title = "Search",
+        title = stringResource(R.string.search),
         navController = navController
     ) {
         item {
@@ -947,7 +948,7 @@ fun AppleSearchScreen(
                     IconButton(onClick = { navController.navigate(com.darkxvenom.airbeats.ui.screens.musicrecognition.MusicRecognitionRoute) }) {
                         Icon(
                             painter = painterResource(R.drawable.mic),
-                            contentDescription = "Music Recognition",
+                            contentDescription = stringResource(R.string.music_recognition),
                             tint = appleTextColor.copy(alpha = 0.5f)
                         )
                     }
@@ -1131,7 +1132,7 @@ fun AppleStatsScreen(
     val playerConnection = LocalPlayerConnection.current ?: return
 
     AppleScaffold(
-        title = "Stats",
+        title = stringResource(R.string.stats),
         navController = navController
     ) {
         val topUser = globalStats.board.users.firstOrNull()

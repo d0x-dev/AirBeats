@@ -148,7 +148,7 @@ fun UnifiedShapeBottomSheet(
                 .padding(bottom = 32.dp)
         ) {
             Text(
-                text = "Shape Selector",
+                text = stringResource(R.string.ui_text_shape_selector),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
@@ -156,7 +156,7 @@ fun UnifiedShapeBottomSheet(
             )
 
             Text(
-                text = "Customize shapes for all buttons",
+                text = stringResource(R.string.ui_text_customize_shapes_for_all_buttons),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -328,8 +328,8 @@ fun UnifiedShapeSelectorButton(
 
     // UN SOLO BOTÓN que muestra un resumen
     PreferenceEntry(
-        title = { Text("Shape Selector") },
-        description = "Customize button shapes",
+        title = { Text(stringResource(R.string.ui_text_shape_selector)) },
+        description = stringResource(R.string.ui_extra_customize_button_shapes),
         icon = {
             Icon(
                 painter = painterResource(R.drawable.scatter_plot),

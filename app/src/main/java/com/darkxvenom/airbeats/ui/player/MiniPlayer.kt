@@ -1,5 +1,7 @@
 package com.darkxvenom.airbeats.ui.player
 
+import androidx.compose.ui.res.stringResource
+
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.animation.animateColorAsState
@@ -483,7 +485,7 @@ fun MiniPlayer(
                                 exit = fadeOut(),
                             ) {
                                 Text(
-                                    text = "Error playing",
+                                    text = stringResource(R.string.ui_text_error_playing),
                                     color = MaterialTheme.colorScheme.error,
                                     fontSize = 10.sp,
                                     maxLines = 1,
@@ -835,7 +837,7 @@ fun ModernMiniPlayer(
 
                     AnimatedVisibility(visible = error != null, enter = fadeIn(), exit = fadeOut()) {
                         Text(
-                            text = "Error playing",
+                            text = stringResource(R.string.ui_text_error_playing),
                             color = MaterialTheme.colorScheme.error,
                             fontSize = 10.sp,
                             maxLines = 1,

@@ -133,7 +133,7 @@ fun SpotifyHeaderActions(navController: NavController) {
     androidx.compose.material3.IconButton(onClick = { navController.navigate("settings/developer_news") }) {
         androidx.compose.material3.Icon(
             painter = androidx.compose.ui.res.painterResource(R.drawable.newspaper),
-            contentDescription = "News from Developer",
+            contentDescription = stringResource(R.string.ui_a11y_news_from_developer),
             tint = SpotifyText,
             modifier = Modifier.size(24.dp)
         )
@@ -141,7 +141,7 @@ fun SpotifyHeaderActions(navController: NavController) {
     androidx.compose.material3.IconButton(onClick = { navController.navigate("new_release") }) {
         androidx.compose.material3.Icon(
             painter = androidx.compose.ui.res.painterResource(R.drawable.notification_on),
-            contentDescription = "New Releases",
+            contentDescription = stringResource(R.string.ui_text_new_releases),
             tint = SpotifyText,
             modifier = Modifier.size(24.dp)
         )
@@ -149,7 +149,7 @@ fun SpotifyHeaderActions(navController: NavController) {
     androidx.compose.material3.IconButton(onClick = { navController.navigate("settings") }) {
         androidx.compose.material3.Icon(
             painter = androidx.compose.ui.res.painterResource(R.drawable.settings),
-            contentDescription = "Settings",
+            contentDescription = stringResource(R.string.settings),
             tint = SpotifyText,
             modifier = Modifier.size(24.dp)
         )
@@ -237,8 +237,8 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.HERO)) {
                     item(key = "spotify_hero") {
                         UniversalHomeHeroBanner(
-                            title = "Smart Radio",
-                            subtitle = "Endless discovery tuned to your vibes",
+                            title = stringResource(R.string.smart_radio),
+                            subtitle = stringResource(R.string.smart_radio_desc),
                             onPlayRadio = {
                                 com.darkxvenom.airbeats.ui.component.InfiniteRadioHelper.playShuffledRadio(
                                     playerConnection = playerConnection,
@@ -271,7 +271,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.QUICK_PICKS)) {
                     quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
                         item {
-                            NavigationTitle(title = "Quick picks")
+                            NavigationTitle(title = stringResource(R.string.quick_picks))
                             SpotifyLocalRow(picks.take(12), playerConnection)
                         }
                     }
@@ -280,7 +280,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.FRESH_FINDS)) {
                     if (freshPicks.isNotEmpty()) {
                         item(key = "spotify_fresh_finds") {
-                            NavigationTitle(title = "Fresh Finds", label = "NEW")
+                            NavigationTitle(title = stringResource(R.string.fresh_finds), label = stringResource(R.string.new_badge))
                             SpotifyLocalRow(freshPicks, playerConnection)
                         }
                     }
@@ -289,7 +289,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.JUMP_BACK_IN)) {
                     keepListening?.filterIsInstance<Song>()?.takeIf { it.isNotEmpty() }?.let { items ->
                         item {
-                            NavigationTitle(title = "Keep listening")
+                            NavigationTitle(title = stringResource(R.string.keep_listening))
                             SpotifyLocalRow(items.take(12), playerConnection)
                         }
                     }
@@ -298,7 +298,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.MIXES)) {
                     accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
                         item {
-                            NavigationTitle(title = "$accountName's playlists")
+                            NavigationTitle(title = stringResource(R.string.account_playlists, accountName))
                             SpotifyYtRow(playlists.take(12), navController, playerConnection)
                         }
                     }
@@ -307,7 +307,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.HEAVY_ROTATION)) {
                     forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favorites ->
                         item {
-                            NavigationTitle(title = "Forgotten favorites")
+                            NavigationTitle(title = stringResource(R.string.forgotten_favorites))
                             SpotifyLocalRow(favorites.take(12), playerConnection)
                         }
                     }
@@ -340,7 +340,7 @@ fun SpotifyHomeScreen(
                 if (isSectionVisible(MaterialHomeSection.TOP_ARTISTS)) {
                     if (artistTriples.isNotEmpty()) {
                         item(key = "spotify_top_artists") {
-                            NavigationTitle(title = "Your Top Artists")
+                            NavigationTitle(title = stringResource(R.string.your_top_artists))
                             UniversalTopArtistsRow(
                                 artists = artistTriples,
                                 onArtistClick = { artistId ->
@@ -421,7 +421,7 @@ fun SpotifyHomeScreen(
         }
 
         SpotifyHeader(
-            title = "AirBeats",
+            title = stringResource(R.string.ui_text_airbeats),
             subtitle = greeting(accountName),
             isAtTop = isAtTop,
             hazeState = hazeState,
@@ -498,7 +498,7 @@ fun SpotifySearchScreen(
 
     SpotifyScaffold(
         title = stringResource(R.string.search),
-        subtitle = "Find your favorite music",
+        subtitle = stringResource(R.string.find_favorite_music),
         actions = {
             SpotifyHeaderActions(navController)
         }
@@ -580,7 +580,7 @@ fun SpotifySearchScreen(
             when (selectedTab) {
                 com.darkxvenom.airbeats.ui.component.SearchTab.BROWSE_ALL -> {
                     item {
-                        SpotifySectionTitle("Browse all")
+                        SpotifySectionTitle(stringResource(R.string.browse_all))
                         Spacer(modifier = Modifier.height(10.dp))
                         val genres = listOf(
                             "Pop" to Color(0xFFFF4632),
@@ -668,7 +668,7 @@ fun SpotifyExploreScreen(
 
     SpotifyScaffold(
         title = stringResource(R.string.explore),
-        subtitle = "Fresh music and moods",
+        subtitle = stringResource(R.string.fresh_music_moods),
         actions = {
             SpotifyHeaderActions(navController)
         }
@@ -798,7 +798,7 @@ fun SpotifyLibraryScreen(navController: NavController) {
 
         SpotifyHeader(
             title = stringResource(R.string.library),
-            subtitle = "Saved music in AirBeats",
+            subtitle = stringResource(R.string.saved_music_airbeats),
             modifier = Modifier.align(Alignment.TopCenter),
             actions = {
                 SpotifyHeaderActions(navController)
@@ -920,6 +920,7 @@ private fun SpotifyHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
+                    val isAirBeatsHome = title == "AirBeats"
                     androidx.compose.material3.Text(title, color = SpotifyText, fontSize = 22.sp, fontWeight = FontWeight.Black)
                     if (subtitle.isNotEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -933,7 +934,7 @@ private fun SpotifyHeader(
                                 color = SpotifyText.copy(alpha = 0.7f), 
                                 fontSize = 14.sp, 
                                 maxLines = 1,
-                                modifier = if (subtitle.startsWith("Good ")) Modifier.clickable { showNameDialog = true } else Modifier
+                                modifier = if (isAirBeatsHome) Modifier.clickable { showNameDialog = true } else Modifier
                             )
                             
                             if (showNameDialog) {
@@ -959,7 +960,7 @@ private fun SpotifyHeader(
                                     }
                                 )
                             }
-                            if (subtitle.startsWith("Good ")) {
+                            if (isAirBeatsHome) {
                                 val context = androidx.compose.ui.platform.LocalContext.current
                                 val statsViewModel = com.darkxvenom.airbeats.ui.utils.safeHiltViewModel<com.darkxvenom.airbeats.viewmodels.StatsViewModel>()
                                 val totalHours by (statsViewModel?.totalListenHours ?: kotlinx.coroutines.flow.flowOf(0.0)).collectAsState(initial = 0.0)
@@ -1042,7 +1043,7 @@ private fun SpotifySearchInput(
         singleLine = true,
         placeholder = { 
             Text(
-                text = "What do you want to listen to?", 
+                text = stringResource(R.string.ui_sweep_what_do_you_want_to_listen_to),
                 color = Color.Black.copy(alpha = 0.6f),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
@@ -1056,7 +1057,7 @@ private fun SpotifySearchInput(
             androidx.compose.material3.IconButton(onClick = onMicClick) {
                 Icon(
                     painter = painterResource(R.drawable.mic),
-                    contentDescription = "Music Recognition",
+                    contentDescription = stringResource(R.string.music_recognition),
                     tint = Color.Black
                 )
             }
@@ -1368,14 +1369,16 @@ private fun SpotifyPlaylistShimmer() {
     }
 }
 
+@Composable
 private fun greeting(name: String): String {
-    val cleanName = name.takeIf { it.isNotBlank() } ?: "there"
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
     val greetingText = when (hour) {
-        in 5..11 -> "Good Morning"
-        in 12..16 -> "Good Afternoon"
-        in 17..20 -> "Good Evening"
-        else -> "Good Night"
+        in 5..11 -> stringResource(R.string.greeting_morning)
+        in 12..16 -> stringResource(R.string.greeting_afternoon)
+        in 17..20 -> stringResource(R.string.greeting_evening)
+        else -> stringResource(R.string.greeting_night)
     }
-    return "$greetingText $cleanName"
+    return name.takeIf { it.isNotBlank() }?.let {
+        stringResource(R.string.greeting_with_name, greetingText, it)
+    } ?: greetingText
 }

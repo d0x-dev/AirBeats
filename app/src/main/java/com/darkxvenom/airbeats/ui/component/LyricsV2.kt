@@ -724,7 +724,7 @@ fun LyricsV2(
                 shape = RoundedCornerShape(24.dp),
             ) {
                 Text(
-                    text = "Resume",
+                    text = stringResource(R.string.ui_text_resume),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
