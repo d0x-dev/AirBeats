@@ -560,6 +560,7 @@
     <string name="visitor_data_reset_cancel">Cancelar</string>
 
     <string name="widget_title">Widget de Música</string>
+    <string name="widget_title_wide">Widget de música panorâmico</string>
     <string name="error_saving_image">Erro ao salvar imagem</string>
     <string name="processing">Processando</string>
     <string name="subscribed">Assinado</string>

@@ -9,15 +9,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.view.KeyEvent
 import android.widget.RemoteViews
 import android.util.TypedValue
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.Player
 import androidx.media3.session.MediaButtonReceiver
-import coil.ImageLoader
+import coil.imageLoader
 import coil.request.ImageRequest
 import com.darkxvenom.airbeats.models.MediaMetadata
 import com.darkxvenom.airbeats.models.PersistPlayerState
@@ -27,16 +26,11 @@ import com.darkxvenom.airbeats.playback.PlayerConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ObjectInputStream
 import java.util.concurrent.TimeUnit
 
 class MusicWidget : AppWidgetProvider() {
-
-    private val handler = Handler(Looper.getMainLooper())
-
-    // ✅ FIXED: nullable instead of lateinit
-    private var runnable: Runnable? = null
-    private var isUpdating = false
 
     override fun onUpdate(
         context: Context,
@@ -64,7 +58,7 @@ class MusicWidget : AppWidgetProvider() {
     }
 
     override fun onDisabled(context: Context) {
-        stopProgressUpdater()
+        MusicWidgetRefreshScheduler.stopIfNoWidgets(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -77,24 +71,22 @@ class MusicWidget : AppWidgetProvider() {
             }
 
             ACTION_PREV -> {
-                PlayerConnection.instance?.seekToPrevious()
-                    ?: sendMediaButton(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                skipToPrevious(context)
                 updateAllWidgets(context)
             }
 
             ACTION_NEXT -> {
-                PlayerConnection.instance?.seekToNext()
-                    ?: sendMediaButton(context, KeyEvent.KEYCODE_MEDIA_NEXT)
+                skipToNext(context)
                 updateAllWidgets(context)
             }
 
             ACTION_SHUFFLE -> {
-                PlayerConnection.instance?.toggleShuffle()
+                toggleShuffle(context)
                 updateAllWidgets(context)
             }
 
             ACTION_LIKE -> {
-                PlayerConnection.instance?.toggleLike()
+                toggleLike(context)
                 updateAllWidgets(context)
             }
 
@@ -126,32 +118,28 @@ class MusicWidget : AppWidgetProvider() {
     }
 
     private fun startProgressUpdater(context: Context) {
-        if (isUpdating) return
-
-        isUpdating = true
-
-        runnable = Runnable {
-            val playerConnection = PlayerConnection.instance
-            val player = playerConnection?.player
-
-            if (player != null && (player.isPlaying || player.playbackState == Player.STATE_READY)) {
-                updateAllWidgets(context)
-                runnable?.let { handler.postDelayed(it, 1000) }
-            } else {
-                updateAllWidgets(context)
-                runnable?.let { handler.postDelayed(it, 5000) }
-            }
-        }
-
-        runnable?.let { handler.post(it) }
+        MusicWidgetRefreshScheduler.start(context)
     }
 
-    private fun stopProgressUpdater() {
-        isUpdating = false
-        runnable?.let {
-            handler.removeCallbacks(it)
-        }
-        runnable = null
+    private fun toggleShuffle(context: Context) {
+        startMusicServiceAction(context, MusicService.ACTION_WIDGET_TOGGLE_SHUFFLE)
+    }
+
+    private fun toggleLike(context: Context) {
+        startMusicServiceAction(context, MusicService.ACTION_WIDGET_TOGGLE_LIKE)
+    }
+
+    private fun skipToPrevious(context: Context) {
+        startMusicServiceAction(context, MusicService.ACTION_WIDGET_SKIP_PREVIOUS)
+    }
+
+    private fun skipToNext(context: Context) {
+        startMusicServiceAction(context, MusicService.ACTION_WIDGET_SKIP_NEXT)
+    }
+
+    private fun startMusicServiceAction(context: Context, action: String) {
+        val intent = Intent(context, MusicService::class.java).setAction(action)
+        ContextCompat.startForegroundService(context, intent)
     }
 
     companion object {
@@ -165,7 +153,7 @@ class MusicWidget : AppWidgetProvider() {
         const val ACTION_STATE_CHANGED = "com.darkxvenom.airbeats.ACTION_STATE_CHANGED"
         const val ACTION_UPDATE_PROGRESS = "com.darkxvenom.airbeats.ACTION_UPDATE_PROGRESS"
 
-        private data class PersistedWidgetPlayback(
+        internal data class PersistedWidgetPlayback(
             val song: MediaMetadata,
             val positionMs: Long,
             val durationMs: Long,
@@ -188,6 +176,26 @@ class MusicWidget : AppWidgetProvider() {
             if (widgetIds.isNotEmpty()) {
                 widgetIds.forEach { updateWidget(context, appWidgetManager, it) }
             }
+            WideMusicWidget.updateAllWidgets(context)
+        }
+
+        internal fun isPlaybackActiveForWidget(player: Player): Boolean {
+            val service = MusicService.instance
+            if (service?.isCasting?.value == true) return service.isCastPlaying.value
+
+            return player.playWhenReady &&
+                (player.playbackState == Player.STATE_READY || player.playbackState == Player.STATE_BUFFERING)
+        }
+
+        internal fun isCurrentSongForWidget(context: Context, songId: String): Boolean {
+            val player = PlayerConnection.instance?.player
+                ?: MusicService.instance?.getPlayerIfInitialized()
+            val currentSongId = player
+                ?.takeIf { it.currentMediaItem != null && it.mediaItemCount > 0 }
+                ?.currentMediaItem
+                ?.mediaId
+                ?: readPersistedPlayback(context)?.song?.id
+            return currentSongId == songId
         }
 
         private fun updateWidget(
@@ -297,7 +305,7 @@ class MusicWidget : AppWidgetProvider() {
                 val artist = metadata?.artist?.toString()
                     ?: persistedPlayback?.song?.artists?.joinToString { it.name }
                     ?: context.getString(R.string.artist_name)
-                val isPlaying = livePlayer?.isPlaying ?: persistedPlayback!!.isPlaying
+                val isPlaying = livePlayer?.let(::isPlaybackActiveForWidget) ?: persistedPlayback!!.isPlaying
                 val shuffleEnabled = livePlayer?.shuffleModeEnabled ?: persistedPlayback!!.shuffleEnabled
                 val repeatMode = livePlayer?.repeatMode ?: persistedPlayback!!.repeatMode
                 val currentPos = livePlayer?.currentPosition ?: persistedPlayback!!.positionMs
@@ -314,7 +322,10 @@ class MusicWidget : AppWidgetProvider() {
                 views.setImageViewResource(R.id.widget_shuffle, shuffleIcon)
 
                 val likeIcon =
-                    if (playerConnection?.isCurrentSongLiked() ?: (persistedPlayback?.song?.liked == true))
+                    if (playerConnection?.isCurrentSongLiked()
+                        ?: MusicService.instance?.currentSongLikedState()
+                        ?: (persistedPlayback?.song?.liked == true)
+                    )
                         R.drawable.favorite else R.drawable.favorite_border
                 views.setImageViewResource(R.id.widget_like, likeIcon)
 
@@ -354,24 +365,32 @@ class MusicWidget : AppWidgetProvider() {
                 }
 
                 val thumbnailUrl = metadata?.artworkUri?.toString() ?: persistedPlayback?.song?.thumbnailUrl
+                val songId = livePlayer?.currentMediaItem?.mediaId ?: persistedPlayback?.song?.id
                 if (!thumbnailUrl.isNullOrEmpty()) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            val request = ImageRequest.Builder(context)
-                                .data(thumbnailUrl)
-                                .size(160, 160)
-                                .build()
-                            val drawable = ImageLoader(context).execute(request).drawable
-                            drawable?.let {
-                                val bitmap = it.toBitmap()
-                                views.setImageViewBitmap(R.id.widget_album_art, bitmap)
-                                views.setImageViewBitmap(R.id.widget_background_art, bitmap)
-                                appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
+                    val cachedArtwork = WidgetArtworkCache.get(thumbnailUrl, 160, 160)
+                    if (cachedArtwork != null) {
+                        views.setImageViewBitmap(R.id.widget_album_art, cachedArtwork)
+                        views.setImageViewBitmap(R.id.widget_background_art, cachedArtwork)
+                    } else {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            runCatching {
+                                val request = ImageRequest.Builder(context)
+                                    .data(thumbnailUrl)
+                                    .size(160, 160)
+                                    .build()
+                                context.imageLoader.execute(request).drawable?.toBitmap()
+                            }.getOrNull()?.let { bitmap ->
+                                WidgetArtworkCache.put(thumbnailUrl, 160, 160, bitmap)
+                                withContext(Dispatchers.Main) {
+                                    if (songId != null && isCurrentSongForWidget(context, songId)) {
+                                        val artworkViews = RemoteViews(context.packageName, R.layout.widget_music).apply {
+                                            setImageViewBitmap(R.id.widget_album_art, bitmap)
+                                            setImageViewBitmap(R.id.widget_background_art, bitmap)
+                                        }
+                                        appWidgetManager.partiallyUpdateAppWidget(appWidgetId, artworkViews)
+                                    }
+                                }
                             }
-                        } catch (e: Exception) {
-                            views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
-                            views.setImageViewResource(R.id.widget_background_art, R.drawable.music_note)
-                            appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                         }
                     }
                 } else {
@@ -391,8 +410,8 @@ class MusicWidget : AppWidgetProvider() {
 
         private fun setPendingIntents(context: Context, views: RemoteViews) {
             val playPausePendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
-            val prevPendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
-            val nextPendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_NEXT)
+            val prevPendingIntent = getBroadcastPendingIntent(context, ACTION_PREV)
+            val nextPendingIntent = getBroadcastPendingIntent(context, ACTION_NEXT)
             val shufflePendingIntent = getBroadcastPendingIntent(context, ACTION_SHUFFLE)
             val likePendingIntent = getBroadcastPendingIntent(context, ACTION_LIKE)
             val openAppPendingIntent = getBroadcastPendingIntent(context, ACTION_OPEN_APP)
@@ -431,7 +450,7 @@ class MusicWidget : AppWidgetProvider() {
         private fun dpToPx(context: Context, dp: Int): Int =
             (dp * context.resources.displayMetrics.density).toInt()
 
-        private fun readPersistedPlayback(context: Context): PersistedWidgetPlayback? {
+        internal fun readPersistedPlayback(context: Context): PersistedWidgetPlayback? {
             val queueFile = context.filesDir.resolve(MusicService.PERSISTENT_QUEUE_FILE)
             if (!queueFile.exists()) {
                 cachedPersistedPlayback = null
@@ -458,7 +477,9 @@ class MusicWidget : AppWidgetProvider() {
                     song = song,
                     positionMs = queue.position.coerceAtLeast(0L),
                     durationMs = durationMs,
-                    isPlaying = playerState?.playWhenReady == true,
+                    // The service intentionally restores the persisted queue paused. A saved
+                    // playWhenReady value describes the previous process and is stale here.
+                    isPlaying = false,
                     shuffleEnabled = playerState?.shuffleModeEnabled == true,
                     repeatMode = playerState?.repeatMode ?: Player.REPEAT_MODE_OFF,
                 )

@@ -244,6 +244,12 @@ class PlayerConnection(
         }
     }
 
+    fun setCurrentSongLikedFromService(songId: String, isLiked: Boolean) {
+        if (_mediaMetadata.value?.id != songId) return
+        _isLiked.value = isLiked
+        scheduleWidgetUpdate()
+    }
+
     private fun handlePlayerEvents(player: Player, events: Player.Events) {
         var shouldUpdateWidget = false
 
