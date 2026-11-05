@@ -146,6 +146,7 @@ import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
 import com.darkxvenom.airbeats.constants.SkipUncachedPartKey
 import com.darkxvenom.airbeats.constants.StopMusicOnTaskClearKey
+import com.darkxvenom.airbeats.MusicWidget
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.Event
 import com.darkxvenom.airbeats.db.entities.SongEntity
@@ -184,6 +185,7 @@ import com.darkxvenom.airbeats.utils.reportException
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -207,6 +209,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
@@ -380,6 +383,7 @@ class MusicService :
     )
 
     private var currentQueue: Queue = EmptyQueue
+    private val persistentQueueRestoration = CompletableDeferred<Unit>()
     var queueTitle: String? = null
 
     val currentMediaMetadata = MutableStateFlow<com.darkxvenom.airbeats.models.MediaMetadata?>(null)
@@ -1017,53 +1021,48 @@ class MusicService :
 
         if (dataStore.get(PersistentQueueKey, true)) {
             scope.launch(SilentHandler) {
-            runCatching {
-                filesDir.resolve(PERSISTENT_QUEUE_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistQueue
-                    }
-                }
-            }.onSuccess { queue ->
-                // Convertir de vuelta al tipo de cola apropiado
-                val restoredQueue = queue.toQueue()
-                playQueue(
-                    queue = restoredQueue,
-                    playWhenReady = false,
-                )
-            }
-            runCatching {
-                filesDir.resolve(PERSISTENT_AUTOMIX_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistQueue
-                    }
-                }
-            }.onSuccess { queue ->
-                automixItems.value = queue.items.map { it.toMediaItem() }
-            }
+                try {
+                    val savedQueue = runCatching {
+                        filesDir.resolve(PERSISTENT_QUEUE_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistQueue }
+                        }
+                    }.getOrNull()
 
-            // Restaurar estado del reproductor
-            runCatching {
-                filesDir.resolve(PERSISTENT_PLAYER_STATE_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistPlayerState
+                    val restoredQueue = savedQueue?.takeIf { it.items.isNotEmpty() }
+                    if (restoredQueue != null) {
+                        playQueue(restoredQueue.toQueue(), playWhenReady = false)
+                        // Wait for the asynchronous queue loader before acknowledging a media
+                        // resumption request. Otherwise its playWhenReady=false can race the
+                        // request and leave the restored track paused.
+                        withTimeoutOrNull(5_000L) {
+                            while (player.mediaItemCount == 0) delay(25L)
+                        }
                     }
-                }
-            }.onSuccess { playerState ->
-                // Restaurar configuración del reproductor después de cargar la cola
-                scope.launch {
-                    delay(1000) // Esperar a que la cola se cargue
-                    player.shuffleModeEnabled = playerState.shuffleModeEnabled
-                    player.volume = playerState.volume
 
-                    // Restaurar posición si sigue siendo válida
-                    if (playerState.currentMediaItemIndex < player.mediaItemCount) {
-                        player.seekTo(playerState.currentMediaItemIndex, playerState.currentPosition)
+                    runCatching {
+                        filesDir.resolve(PERSISTENT_AUTOMIX_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistQueue }
+                        }
+                    }.onSuccess { queue -> automixItems.value = queue.items.map { it.toMediaItem() } }
+
+                    runCatching {
+                        filesDir.resolve(PERSISTENT_PLAYER_STATE_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistPlayerState }
+                        }
+                    }.onSuccess { playerState ->
+                        player.shuffleModeEnabled = playerState.shuffleModeEnabled
+                        player.repeatMode = playerState.repeatMode
+                        player.volume = playerState.volume
+                        if (playerState.currentMediaItemIndex in 0 until player.mediaItemCount) {
+                            player.seekTo(playerState.currentMediaItemIndex, playerState.currentPosition.coerceAtLeast(0L))
+                        }
                     }
+                } finally {
+                    persistentQueueRestoration.complete(Unit)
                 }
             }
-        }
-
-        // Guardar cola periódicamente para prevenir pérdida por crash o force kill
+        } else {
+            persistentQueueRestoration.complete(Unit)
         }
 
         scope.launch {
@@ -1828,6 +1827,12 @@ class MusicService :
             }
         }
     }
+
+    suspend fun awaitPersistentQueueRestoration() {
+        persistentQueueRestoration.await()
+    }
+
+    fun getPlayerIfInitialized(): ExoPlayer? = if (::player.isInitialized) player else null
 
     fun triggerEndlessQueueIfNeeded() {
         if (!dataStore.get(AutoLoadMoreKey, true)) return
@@ -2896,6 +2901,7 @@ class MusicService :
                 saveQueueToDisk()
             }
         }
+        MusicWidget.updateAllWidgets(this)
     }
 
     override fun onPlaybackStateChanged(
@@ -3018,6 +3024,7 @@ class MusicService :
             scheduleCrossfade()
         }
         updateAudiblePlaybackRecovery()
+        MusicWidget.updateAllWidgets(this)
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {

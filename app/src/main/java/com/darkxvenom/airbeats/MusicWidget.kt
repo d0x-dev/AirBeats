@@ -10,15 +10,22 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.view.KeyEvent
 import android.widget.RemoteViews
 import androidx.core.graphics.drawable.toBitmap
 import androidx.media3.common.Player
+import androidx.media3.session.MediaButtonReceiver
 import coil.ImageLoader
 import coil.request.ImageRequest
+import com.darkxvenom.airbeats.models.MediaMetadata
+import com.darkxvenom.airbeats.models.PersistPlayerState
+import com.darkxvenom.airbeats.models.PersistQueue
+import com.darkxvenom.airbeats.playback.MusicService
 import com.darkxvenom.airbeats.playback.PlayerConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.ObjectInputStream
 import java.util.concurrent.TimeUnit
 
 class MusicWidget : AppWidgetProvider() {
@@ -53,16 +60,19 @@ class MusicWidget : AppWidgetProvider() {
         when (intent.action) {
             ACTION_PLAY_PAUSE -> {
                 PlayerConnection.instance?.togglePlayPause()
+                    ?: sendMediaButton(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 updateAllWidgets(context)
             }
 
             ACTION_PREV -> {
                 PlayerConnection.instance?.seekToPrevious()
+                    ?: sendMediaButton(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
                 updateAllWidgets(context)
             }
 
             ACTION_NEXT -> {
                 PlayerConnection.instance?.seekToNext()
+                    ?: sendMediaButton(context, KeyEvent.KEYCODE_MEDIA_NEXT)
                 updateAllWidgets(context)
             }
 
@@ -143,6 +153,21 @@ class MusicWidget : AppWidgetProvider() {
         const val ACTION_STATE_CHANGED = "com.darkxvenom.airbeats.ACTION_STATE_CHANGED"
         const val ACTION_UPDATE_PROGRESS = "com.darkxvenom.airbeats.ACTION_UPDATE_PROGRESS"
 
+        private data class PersistedWidgetPlayback(
+            val song: MediaMetadata,
+            val positionMs: Long,
+            val durationMs: Long,
+            val isPlaying: Boolean,
+            val shuffleEnabled: Boolean,
+            val repeatMode: Int,
+        )
+
+        @Volatile
+        private var cachedPersistedPlayback: PersistedWidgetPlayback? = null
+
+        @Volatile
+        private var cachedQueueModifiedAt = Long.MIN_VALUE
+
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val widgetIds = appWidgetManager.getAppWidgetIds(
@@ -160,33 +185,38 @@ class MusicWidget : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_music)
             val playerConnection = PlayerConnection.instance
-            val player = playerConnection?.player
+            val player = playerConnection?.player ?: MusicService.instance?.getPlayerIfInitialized()
+            val livePlayer = player?.takeIf { it.currentMediaItem != null && it.mediaItemCount > 0 }
+            val persistedPlayback = if (livePlayer == null) readPersistedPlayback(context) else null
 
             setPendingIntents(context, views)
 
-            player?.let { player ->
-                val songTitle = player.mediaMetadata.title?.toString()
+            if (livePlayer != null || persistedPlayback != null) {
+                val metadata = livePlayer?.mediaMetadata
+                val songTitle = metadata?.title?.toString()
+                    ?: persistedPlayback?.song?.title
                     ?: context.getString(R.string.song_title)
-                val artist = player.mediaMetadata.artist?.toString()
+                val artist = metadata?.artist?.toString()
+                    ?: persistedPlayback?.song?.artists?.joinToString { it.name }
                     ?: context.getString(R.string.artist_name)
+                val isPlaying = livePlayer?.isPlaying ?: persistedPlayback!!.isPlaying
+                val shuffleEnabled = livePlayer?.shuffleModeEnabled ?: persistedPlayback!!.shuffleEnabled
+                val repeatMode = livePlayer?.repeatMode ?: persistedPlayback!!.repeatMode
+                val currentPos = livePlayer?.currentPosition ?: persistedPlayback!!.positionMs
+                val duration = livePlayer?.duration ?: persistedPlayback!!.durationMs
 
                 views.setTextViewText(R.id.widget_song_title, songTitle)
                 views.setTextViewText(R.id.widget_artist, artist)
-
-                val playPauseIcon = if (player.isPlaying) R.drawable.pause else R.drawable.play
+                val playPauseIcon = if (isPlaying) R.drawable.pause else R.drawable.play
                 views.setImageViewResource(R.id.widget_play_pause, playPauseIcon)
 
-                val shuffleIcon =
-                    if (player.shuffleModeEnabled) R.drawable.shuffle_on else R.drawable.shuffle
+                val shuffleIcon = if (shuffleEnabled) R.drawable.shuffle_on else R.drawable.shuffle
                 views.setImageViewResource(R.id.widget_shuffle, shuffleIcon)
 
                 val likeIcon =
-                    if (playerConnection.isCurrentSongLiked())
+                    if (playerConnection?.isCurrentSongLiked() ?: (persistedPlayback?.song?.liked == true))
                         R.drawable.favorite else R.drawable.favorite_border
                 views.setImageViewResource(R.id.widget_like, likeIcon)
-
-                val currentPos = player.currentPosition
-                val duration = player.duration
 
                 val currentTimeText = formatTime(currentPos)
                 val durationText = formatTime(duration)
@@ -211,8 +241,8 @@ class MusicWidget : AppWidgetProvider() {
                 }
 
                 val playbackStateText = when {
-                    player.repeatMode == Player.REPEAT_MODE_ONE -> context.getString(R.string.repeat_mode_one)
-                    player.repeatMode == Player.REPEAT_MODE_ALL -> context.getString(R.string.repeat_mode_all)
+                    repeatMode == Player.REPEAT_MODE_ONE -> context.getString(R.string.repeat_mode_one)
+                    repeatMode == Player.REPEAT_MODE_ALL -> context.getString(R.string.repeat_mode_all)
                     else -> ""
                 }
 
@@ -223,7 +253,7 @@ class MusicWidget : AppWidgetProvider() {
                     views.setViewVisibility(R.id.widget_playback_state, android.view.View.GONE)
                 }
 
-                val thumbnailUrl = player.mediaMetadata.artworkUri?.toString()
+                val thumbnailUrl = metadata?.artworkUri?.toString() ?: persistedPlayback?.song?.thumbnailUrl
                 if (!thumbnailUrl.isNullOrEmpty()) {
                     CoroutineScope(Dispatchers.IO).launch {
                         try {
@@ -233,7 +263,8 @@ class MusicWidget : AppWidgetProvider() {
                                 .build()
                             val drawable = ImageLoader(context).execute(request).drawable
                             drawable?.let {
-                                views.setImageViewBitmap(R.id.widget_album_art, it.toBitmap())
+                                val bitmap = it.toBitmap()
+                                views.setImageViewBitmap(R.id.widget_album_art, bitmap)
                                 appWidgetManager.partiallyUpdateAppWidget(appWidgetId, views)
                             }
                         } catch (e: Exception) {
@@ -244,13 +275,7 @@ class MusicWidget : AppWidgetProvider() {
                 } else {
                     views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
                 }
-
-                if (player.mediaItemCount == 0) {
-                    views.setTextViewText(R.id.widget_song_title, context.getString(R.string.app_name))
-                    views.setTextViewText(R.id.widget_artist, context.getString(R.string.tap_to_open))
-                    views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
-                }
-            } ?: run {
+            } else {
                 views.setTextViewText(R.id.widget_song_title, context.getString(R.string.app_name))
                 views.setTextViewText(R.id.widget_artist, context.getString(R.string.tap_to_open))
                 views.setImageViewResource(R.id.widget_album_art, R.drawable.music_note)
@@ -260,9 +285,9 @@ class MusicWidget : AppWidgetProvider() {
         }
 
         private fun setPendingIntents(context: Context, views: RemoteViews) {
-            val playPausePendingIntent = getBroadcastPendingIntent(context, ACTION_PLAY_PAUSE)
-            val prevPendingIntent = getBroadcastPendingIntent(context, ACTION_PREV)
-            val nextPendingIntent = getBroadcastPendingIntent(context, ACTION_NEXT)
+            val playPausePendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+            val prevPendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            val nextPendingIntent = getMediaButtonPendingIntent(context, KeyEvent.KEYCODE_MEDIA_NEXT)
             val shufflePendingIntent = getBroadcastPendingIntent(context, ACTION_SHUFFLE)
             val likePendingIntent = getBroadcastPendingIntent(context, ACTION_LIKE)
             val openAppPendingIntent = getBroadcastPendingIntent(context, ACTION_OPEN_APP)
@@ -277,6 +302,63 @@ class MusicWidget : AppWidgetProvider() {
             views.setOnClickPendingIntent(R.id.widget_song_title, openAppPendingIntent)
             views.setOnClickPendingIntent(R.id.widget_artist, openAppPendingIntent)
             views.setOnClickPendingIntent(R.id.widget_progress_bar, openAppPendingIntent)
+        }
+
+        private fun getMediaButtonPendingIntent(context: Context, keyCode: Int): PendingIntent {
+            val intent = createMediaButtonIntent(context, keyCode)
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
+            return PendingIntent.getBroadcast(context, keyCode, intent, flags)
+        }
+
+        private fun sendMediaButton(context: Context, keyCode: Int) {
+            context.sendBroadcast(createMediaButtonIntent(context, keyCode))
+        }
+
+        private fun createMediaButtonIntent(context: Context, keyCode: Int) =
+            Intent(Intent.ACTION_MEDIA_BUTTON).apply {
+                component = ComponentName(context, MediaButtonReceiver::class.java)
+                putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+            }
+
+        private fun readPersistedPlayback(context: Context): PersistedWidgetPlayback? {
+            val queueFile = context.filesDir.resolve(MusicService.PERSISTENT_QUEUE_FILE)
+            if (!queueFile.exists()) {
+                cachedPersistedPlayback = null
+                cachedQueueModifiedAt = 0L
+                return null
+            }
+
+            val modifiedAt = queueFile.lastModified()
+            if (modifiedAt == cachedQueueModifiedAt) return cachedPersistedPlayback
+
+            val playback = runCatching {
+                val queue = queueFile.inputStream().use { input ->
+                    ObjectInputStream(input).use { it.readObject() as PersistQueue }
+                }
+                if (queue.items.isEmpty()) return@runCatching null
+                val song = queue.items[queue.mediaItemIndex.coerceIn(0, queue.items.lastIndex)]
+                val playerState = runCatching {
+                    context.filesDir.resolve(MusicService.PERSISTENT_PLAYER_STATE_FILE).inputStream().use { input ->
+                        ObjectInputStream(input).use { it.readObject() as PersistPlayerState }
+                    }
+                }.getOrNull()
+                val durationMs = song.duration.takeIf { it > 0 }?.times(1000L) ?: 0L
+                PersistedWidgetPlayback(
+                    song = song,
+                    positionMs = queue.position.coerceAtLeast(0L),
+                    durationMs = durationMs,
+                    isPlaying = playerState?.playWhenReady == true,
+                    shuffleEnabled = playerState?.shuffleModeEnabled == true,
+                    repeatMode = playerState?.repeatMode ?: Player.REPEAT_MODE_OFF,
+                )
+            }.getOrNull()
+
+            if (playback != null) {
+                cachedPersistedPlayback = playback
+                cachedQueueModifiedAt = modifiedAt
+            }
+            return playback
         }
 
         private fun getBroadcastPendingIntent(context: Context, action: String): PendingIntent {
