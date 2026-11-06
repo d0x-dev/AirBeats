@@ -154,6 +154,12 @@ constructor(
     suspend fun resolvePlaybackResumption(
         player: Player?,
     ): MediaSession.MediaItemsWithStartPosition = withContext(Dispatchers.IO) {
+        if (player != null && player.mediaItemCount == 0) {
+            // Let MusicService finish loading its disk snapshot before deciding which queue to
+            // resume. This also prevents the startup queue load from racing the media button.
+            MusicService.instance?.awaitPersistentQueueRestoration()
+        }
+
         // A. If the authoritative player already has media items loaded, resume them
         if (player != null && player.mediaItemCount > 0) {
             val safeIndex = player.currentMediaItemIndex.coerceIn(0, player.mediaItemCount - 1)

@@ -146,6 +146,8 @@ import com.darkxvenom.airbeats.constants.SimilarContent
 import com.darkxvenom.airbeats.constants.SkipSilenceKey
 import com.darkxvenom.airbeats.constants.SkipUncachedPartKey
 import com.darkxvenom.airbeats.constants.StopMusicOnTaskClearKey
+import com.darkxvenom.airbeats.MusicWidget
+import com.darkxvenom.airbeats.MusicWidgetRefreshScheduler
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.Event
 import com.darkxvenom.airbeats.db.entities.SongEntity
@@ -184,6 +186,7 @@ import com.darkxvenom.airbeats.utils.reportException
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -207,6 +210,7 @@ import kotlinx.coroutines.plus
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import timber.log.Timber
@@ -380,7 +384,10 @@ class MusicService :
     )
 
     private var currentQueue: Queue = EmptyQueue
+    private val persistentQueueRestoration = CompletableDeferred<Unit>()
     var queueTitle: String? = null
+    @Volatile
+    private var currentSongLikedOverride: Pair<String, Boolean>? = null
 
     val currentMediaMetadata = MutableStateFlow<com.darkxvenom.airbeats.models.MediaMetadata?>(null)
     private val currentSong =
@@ -536,6 +543,8 @@ class MusicService :
     val castDeviceName = MutableStateFlow<String?>(null)
     val castPositionMs = MutableStateFlow(0L)
     val castDurationMs = MutableStateFlow(0L)
+    @Volatile
+    private var foregroundPromotionRequestedByUserAction = false
 
     override fun onCreate() {
         super.onCreate()
@@ -1017,53 +1026,48 @@ class MusicService :
 
         if (dataStore.get(PersistentQueueKey, true)) {
             scope.launch(SilentHandler) {
-            runCatching {
-                filesDir.resolve(PERSISTENT_QUEUE_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistQueue
-                    }
-                }
-            }.onSuccess { queue ->
-                // Convertir de vuelta al tipo de cola apropiado
-                val restoredQueue = queue.toQueue()
-                playQueue(
-                    queue = restoredQueue,
-                    playWhenReady = false,
-                )
-            }
-            runCatching {
-                filesDir.resolve(PERSISTENT_AUTOMIX_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistQueue
-                    }
-                }
-            }.onSuccess { queue ->
-                automixItems.value = queue.items.map { it.toMediaItem() }
-            }
+                try {
+                    val savedQueue = runCatching {
+                        filesDir.resolve(PERSISTENT_QUEUE_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistQueue }
+                        }
+                    }.getOrNull()
 
-            // Restaurar estado del reproductor
-            runCatching {
-                filesDir.resolve(PERSISTENT_PLAYER_STATE_FILE).inputStream().use { fis ->
-                    ObjectInputStream(fis).use { oos ->
-                        oos.readObject() as PersistPlayerState
+                    val restoredQueue = savedQueue?.takeIf { it.items.isNotEmpty() }
+                    if (restoredQueue != null) {
+                        playQueue(restoredQueue.toQueue(), playWhenReady = false)
+                        // Wait for the asynchronous queue loader before acknowledging a media
+                        // resumption request. Otherwise its playWhenReady=false can race the
+                        // request and leave the restored track paused.
+                        withTimeoutOrNull(5_000L) {
+                            while (player.mediaItemCount == 0) delay(25L)
+                        }
                     }
-                }
-            }.onSuccess { playerState ->
-                // Restaurar configuración del reproductor después de cargar la cola
-                scope.launch {
-                    delay(1000) // Esperar a que la cola se cargue
-                    player.shuffleModeEnabled = playerState.shuffleModeEnabled
-                    player.volume = playerState.volume
 
-                    // Restaurar posición si sigue siendo válida
-                    if (playerState.currentMediaItemIndex < player.mediaItemCount) {
-                        player.seekTo(playerState.currentMediaItemIndex, playerState.currentPosition)
+                    runCatching {
+                        filesDir.resolve(PERSISTENT_AUTOMIX_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistQueue }
+                        }
+                    }.onSuccess { queue -> automixItems.value = queue.items.map { it.toMediaItem() } }
+
+                    runCatching {
+                        filesDir.resolve(PERSISTENT_PLAYER_STATE_FILE).inputStream().use { input ->
+                            ObjectInputStream(input).use { it.readObject() as PersistPlayerState }
+                        }
+                    }.onSuccess { playerState ->
+                        player.shuffleModeEnabled = playerState.shuffleModeEnabled
+                        player.repeatMode = playerState.repeatMode
+                        player.volume = playerState.volume
+                        if (playerState.currentMediaItemIndex in 0 until player.mediaItemCount) {
+                            player.seekTo(playerState.currentMediaItemIndex, playerState.currentPosition.coerceAtLeast(0L))
+                        }
                     }
+                } finally {
+                    persistentQueueRestoration.complete(Unit)
                 }
             }
-        }
-
-        // Guardar cola periódicamente para prevenir pérdida por crash o force kill
+        } else {
+            persistentQueueRestoration.complete(Unit)
         }
 
         scope.launch {
@@ -1086,6 +1090,7 @@ class MusicService :
         }
 
         initializeCast()
+        MusicWidgetRefreshScheduler.start(this)
     }
 
 
@@ -1829,6 +1834,111 @@ class MusicService :
         }
     }
 
+    suspend fun awaitPersistentQueueRestoration() {
+        persistentQueueRestoration.await()
+    }
+
+    fun getPlayerIfInitialized(): ExoPlayer? = if (::player.isInitialized) player else null
+
+    fun toggleShuffleFromWidget() {
+        getPlayerIfInitialized()?.let { currentPlayer ->
+            currentPlayer.shuffleModeEnabled = !currentPlayer.shuffleModeEnabled
+        }
+    }
+
+    fun currentSongLikedState(): Boolean? {
+        val currentSongId = currentMediaMetadata.value?.id
+            ?: getPlayerIfInitialized()?.currentMediaItem?.mediaId
+        currentSongLikedOverride?.takeIf { it.first == currentSongId }?.let { return it.second }
+        return currentSong.value?.song?.liked
+    }
+
+    fun skipToNextFromWidget() {
+        val widgetPlayer = getPlayerIfInitialized() ?: return
+        try {
+            val session = com.darkxvenom.airbeats.utils.ListenTogetherSync.session.value
+            val isHost = com.darkxvenom.airbeats.utils.ListenTogetherSync.isHost.value
+            if (session != null && !isHost) {
+                if (!session.settings.allowGuestsToControlPlayback) {
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.notifyDisallowedAction(
+                        "Playback controls are disabled by the host"
+                    )
+                    return
+                }
+                if (widgetPlayer.hasNextMediaItem()) {
+                    val nextItem = widgetPlayer.getMediaItemAt(widgetPlayer.currentMediaItemIndex + 1)
+                    val data = org.json.JSONObject().put("songId", nextItem.mediaId)
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.sendGuestAction("skip_next", extraData = data)
+                    widgetPlayer.seekToNext()
+                    widgetPlayer.play()
+                } else {
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.sendGuestAction("skip_next")
+                }
+                return
+            }
+
+            when {
+                widgetPlayer.hasNextMediaItem() -> widgetPlayer.seekToNext()
+                widgetPlayer.mediaItemCount == 0 -> return
+                widgetPlayer.repeatMode == Player.REPEAT_MODE_ALL || widgetPlayer.shuffleModeEnabled ->
+                    widgetPlayer.seekToDefaultPosition(0)
+                widgetPlayer.repeatMode == Player.REPEAT_MODE_ONE -> widgetPlayer.seekTo(0)
+                else -> {
+                    val seedId = widgetPlayer.currentMediaItem?.mediaId
+                    if (!seedId.isNullOrBlank()) extendInfiniteQueue(seedId, autoPlayIfEnded = true)
+                    return
+                }
+            }
+            widgetPlayer.prepare()
+            widgetPlayer.playWhenReady = true
+        } catch (e: Exception) {
+            reportException(e)
+        }
+    }
+
+    fun skipToPreviousFromWidget() {
+        val widgetPlayer = getPlayerIfInitialized() ?: return
+        try {
+            val session = com.darkxvenom.airbeats.utils.ListenTogetherSync.session.value
+            val isHost = com.darkxvenom.airbeats.utils.ListenTogetherSync.isHost.value
+            if (session != null && !isHost) {
+                if (!session.settings.allowGuestsToControlPlayback) {
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.notifyDisallowedAction(
+                        "Playback controls are disabled by the host"
+                    )
+                    return
+                }
+                if (widgetPlayer.hasPreviousMediaItem() && widgetPlayer.currentPosition < 3000) {
+                    val previousItem = widgetPlayer.getMediaItemAt(widgetPlayer.currentMediaItemIndex - 1)
+                    val data = org.json.JSONObject().put("songId", previousItem.mediaId)
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.sendGuestAction(
+                        "skip_previous",
+                        extraData = data,
+                    )
+                    widgetPlayer.seekToPreviousMediaItem()
+                } else {
+                    com.darkxvenom.airbeats.utils.ListenTogetherSync.sendGuestAction("skip_previous")
+                    widgetPlayer.seekTo(0)
+                }
+                widgetPlayer.play()
+                return
+            }
+
+            when {
+                widgetPlayer.hasPreviousMediaItem() && widgetPlayer.currentPosition < 3000 ->
+                    widgetPlayer.seekToPreviousMediaItem()
+                widgetPlayer.currentPosition > 3000 -> widgetPlayer.seekTo(0)
+                widgetPlayer.repeatMode == Player.REPEAT_MODE_ALL && widgetPlayer.mediaItemCount > 0 ->
+                    widgetPlayer.seekToDefaultPosition(widgetPlayer.mediaItemCount - 1)
+                else -> widgetPlayer.seekTo(0)
+            }
+            widgetPlayer.prepare()
+            widgetPlayer.playWhenReady = true
+        } catch (e: Exception) {
+            reportException(e)
+        }
+    }
+
     fun triggerEndlessQueueIfNeeded() {
         if (!dataStore.get(AutoLoadMoreKey, true)) return
         val remaining = player.mediaItemCount - player.currentMediaItemIndex
@@ -2180,9 +2290,17 @@ class MusicService :
 
     fun toggleLike() {
         database.query {
-            currentSong.value?.let {
+            val songWithInfo = currentSong.value
+                ?: (currentMediaMetadata.value?.id ?: player.currentMediaItem?.mediaId)
+                    ?.let { getSongById(it) }
+            songWithInfo?.let {
                 val updated = it.song.toggleLike()
                 update(updated)
+                currentSongLikedOverride = updated.id to updated.liked
+                PlayerConnection.instance?.setCurrentSongLikedFromService(updated.id, updated.liked)
+                scope.launch(Dispatchers.Main) {
+                    MusicWidget.updateAllWidgets(this@MusicService)
+                }
                 val artistName = it.artists.joinToString { a -> a.name }.ifBlank { null }
                 val trackTitle = it.song.title
                 if (!artistName.isNullOrBlank() && trackTitle.isNotBlank()) {
@@ -2896,12 +3014,16 @@ class MusicService :
                 saveQueueToDisk()
             }
         }
+        MusicWidgetRefreshScheduler.refreshNow(this)
     }
 
     override fun onPlaybackStateChanged(
         @Player.State playbackState: Int,
     ) {
         offlineBufferingJob?.cancel()
+        if (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY) {
+            MusicWidgetRefreshScheduler.refreshNow(this)
+        }
         if (playbackState == Player.STATE_BUFFERING) {
             val isDeviceOffline = !isNetworkAvailable()
             val isSkipUncached = dataStore.get(SkipUncachedPartKey, false)
@@ -3018,6 +3140,7 @@ class MusicService :
             scheduleCrossfade()
         }
         updateAudiblePlaybackRecovery()
+        MusicWidgetRefreshScheduler.refreshNow(this)
     }
 
     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -3075,6 +3198,7 @@ class MusicService :
             delay(300)
             updateNotification()
         }
+        MusicWidgetRefreshScheduler.refreshNow(this)
     }
 
     override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
@@ -4607,10 +4731,45 @@ class MusicService :
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            Intent.ACTION_MEDIA_BUTTON,
+            android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH,
+            ACTION_WIDGET_TOGGLE_SHUFFLE,
+            ACTION_WIDGET_TOGGLE_LIKE,
+            ACTION_WIDGET_SKIP_PREVIOUS,
+            ACTION_WIDGET_SKIP_NEXT,
+            -> foregroundPromotionRequestedByUserAction = true
+        }
         if (intent?.action == android.provider.MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) {
             handleVoiceSearchIntent(intent)
         }
-        return super.onStartCommand(intent, flags, startId)
+        val startResult = super.onStartCommand(intent, flags, startId)
+        when (intent?.action) {
+            ACTION_WIDGET_TOGGLE_SHUFFLE -> scope.launch {
+                awaitPersistentQueueRestoration()
+                toggleShuffleFromWidget()
+                MusicWidget.updateAllWidgets(this@MusicService)
+            }
+
+            ACTION_WIDGET_TOGGLE_LIKE -> scope.launch {
+                awaitPersistentQueueRestoration()
+                toggleLike()
+                MusicWidget.updateAllWidgets(this@MusicService)
+            }
+
+            ACTION_WIDGET_SKIP_PREVIOUS -> scope.launch {
+                awaitPersistentQueueRestoration()
+                skipToPreviousFromWidget()
+                MusicWidget.updateAllWidgets(this@MusicService)
+            }
+
+            ACTION_WIDGET_SKIP_NEXT -> scope.launch {
+                awaitPersistentQueueRestoration()
+                skipToNextFromWidget()
+                MusicWidget.updateAllWidgets(this@MusicService)
+            }
+        }
+        return startResult
     }
 
     private fun handleVoiceSearchIntent(intent: Intent) {
@@ -4667,13 +4826,20 @@ class MusicService :
     }
 
     override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) {
-        // Android 12+: only promote to foreground while actively playing, blocks background FGS crash
+        // Keep idle background controller updates out of the foreground, but honor explicit
+        // user playback actions. MediaButtonReceiver starts this service as an FGS before the
+        // persistent queue has finished restoring; suppressing that promotion causes an ANR.
         val activelyPlaying = player.playbackState == Player.STATE_READY ||
             player.playbackState == Player.STATE_BUFFERING
         val hasPlaybackToPromote = player.currentMediaItem != null && player.playWhenReady && activelyPlaying
-        val requiresForeground = !isCasting.value && startInForegroundRequired && hasPlaybackToPromote
+        val promoteForUserAction = foregroundPromotionRequestedByUserAction
+        val requiresForeground = startInForegroundRequired &&
+            (promoteForUserAction || (!isCasting.value && hasPlaybackToPromote))
         try {
             super.onUpdateNotification(session, requiresForeground)
+            if (requiresForeground && promoteForUserAction) {
+                foregroundPromotionRequestedByUserAction = false
+            }
         } catch (e: Exception) {
             Timber.e(e, "Suppressed onUpdateNotification error")
         }
@@ -5455,6 +5621,10 @@ class MusicService :
         const val CHUNK_LENGTH = 512 * 1024L
         const val PERSISTENT_QUEUE_FILE = "persistent_queue.data"
         const val PERSISTENT_AUTOMIX_FILE = "persistent_automix.data"
+        const val ACTION_WIDGET_TOGGLE_SHUFFLE = "com.darkxvenom.airbeats.action.WIDGET_TOGGLE_SHUFFLE"
+        const val ACTION_WIDGET_TOGGLE_LIKE = "com.darkxvenom.airbeats.action.WIDGET_TOGGLE_LIKE"
+        const val ACTION_WIDGET_SKIP_PREVIOUS = "com.darkxvenom.airbeats.action.WIDGET_SKIP_PREVIOUS"
+        const val ACTION_WIDGET_SKIP_NEXT = "com.darkxvenom.airbeats.action.WIDGET_SKIP_NEXT"
 
         // Constants for audio normalization
         private const val MAX_GAIN_MB = 800 // Maximum gain in millibels (8 dB)
