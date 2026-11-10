@@ -82,10 +82,117 @@ private class NewPipeDownloaderImpl(proxy: Proxy?) : Downloader() {
 
 }
 
+private class PipePipeDownloaderImpl(proxy: Proxy?) :
+    dev.maxrave.pipepipe.extractor.downloader.Downloader() {
+
+    private val client = OkHttpClient.Builder()
+        .proxy(proxy)
+        .retryOnConnectionFailure(true)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .callTimeout(45, TimeUnit.SECONDS)
+        .build()
+
+    override fun execute(
+        request: dev.maxrave.pipepipe.extractor.downloader.Request,
+    ): dev.maxrave.pipepipe.extractor.downloader.Response {
+        val response = client.newCall(buildRequest(request)).execute()
+        if (response.code == 429) {
+            response.close()
+            throw dev.maxrave.pipepipe.extractor.exceptions.ReCaptchaException(
+                "reCaptcha Challenge requested",
+                request.url(),
+            )
+        }
+        return toPipePipeResponse(response)
+    }
+
+    override fun executeAsync(
+        request: dev.maxrave.pipepipe.extractor.downloader.Request,
+        callback: dev.maxrave.pipepipe.extractor.downloader.Downloader.AsyncCallback,
+    ): dev.maxrave.pipepipe.extractor.downloader.CancellableCall {
+        val call = client.newCall(buildRequest(request))
+        val cancellableCall = dev.maxrave.pipepipe.extractor.downloader.CancellableCall(call)
+        call.enqueue(
+            object : okhttp3.Callback {
+                override fun onFailure(call: okhttp3.Call, e: IOException) {
+                    cancellableCall.setFinished()
+                    callback.onError(e)
+                }
+
+                override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                    try {
+                        if (response.code == 429) {
+                            callback.onError(
+                                dev.maxrave.pipepipe.extractor.exceptions.ReCaptchaException(
+                                    "reCaptcha Challenge requested",
+                                    request.url(),
+                                ),
+                            )
+                        } else {
+                            callback.onSuccess(toPipePipeResponse(response))
+                        }
+                    } catch (e: Exception) {
+                        callback.onError(e)
+                    } finally {
+                        response.close()
+                        cancellableCall.setFinished()
+                    }
+                }
+            },
+        )
+        return cancellableCall
+    }
+
+    private fun buildRequest(
+        request: dev.maxrave.pipepipe.extractor.downloader.Request,
+    ): okhttp3.Request {
+        val builder = okhttp3.Request.Builder()
+            .method(request.httpMethod(), request.dataToSend()?.toRequestBody())
+            .url(request.url())
+
+        var hasUserAgent = false
+        request.headers().forEach { (headerName, values) ->
+            if (headerName.equals("User-Agent", ignoreCase = true) && values.isNotEmpty()) {
+                hasUserAgent = true
+            }
+            when (values.size) {
+                0 -> Unit
+                1 -> builder.header(headerName, values.first())
+                else -> {
+                    builder.removeHeader(headerName)
+                    values.forEach { value -> builder.addHeader(headerName, value) }
+                }
+            }
+        }
+
+        if (!hasUserAgent) {
+            builder.header("User-Agent", YouTubeClient.USER_AGENT_WEB)
+        }
+        return builder.build()
+    }
+
+    private fun toPipePipeResponse(
+        response: okhttp3.Response,
+    ): dev.maxrave.pipepipe.extractor.downloader.Response {
+        val body = response.body.bytes()
+        return dev.maxrave.pipepipe.extractor.downloader.Response(
+            response.code,
+            response.message,
+            response.headers.toMultimap(),
+            String(body, Charsets.UTF_8),
+            body,
+            response.request.url.toString(),
+        )
+    }
+}
+
 object NewPipeUtils {
 
     init {
         NewPipe.init(NewPipeDownloaderImpl(YouTube.proxy))
+        dev.maxrave.pipepipe.extractor.NewPipe.init(PipePipeDownloaderImpl(YouTube.proxy))
     }
 
     @Volatile private var cachedSignatureTimestamp: Pair<Long, Int>? = null
@@ -169,6 +276,43 @@ object NewPipeUtils {
                 authState = authState,
             )
         }
+
+    /**
+     * Secondary decoder for ciphered streams when NewPipe's local player-script parser fails.
+     * PipePipe's decoder service is only contacted by this explicit fallback path.
+     */
+    fun getStreamUrlWithPipePipeDecoder(
+        format: PlayerResponse.StreamingData.Format,
+        videoId: String,
+        client: YouTubeClient? = null,
+        authState: PlaybackAuthState = YouTube.currentPlaybackAuthState(),
+    ): Result<String> = runCatching {
+        val cipherString = format.signatureCipher ?: format.cipher
+            ?: throw ParsingException("Could not find ciphered format url")
+        val params = parseQueryString(cipherString)
+        val obfuscatedSignature = params["s"]
+            ?: throw ParsingException("Could not parse cipher signature")
+        val signatureParam = params["sp"]
+            ?: throw ParsingException("Could not parse cipher signature parameter")
+        val url = params["url"]?.let(::URLBuilder)
+            ?: throw ParsingException("Could not parse cipher url")
+
+        url.parameters[signatureParam] =
+            dev.maxrave.pipepipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager
+                .deobfuscateSignature(videoId, obfuscatedSignature)
+
+        val signedUrl = url.toString()
+        val resolvedUrl = runCatching {
+            dev.maxrave.pipepipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager
+                .getUrlWithThrottlingParameterDeobfuscated(videoId, signedUrl)
+        }.getOrElse { signedUrl }
+
+        YouTube.appendGvsPoToken(
+            url = resolvedUrl,
+            client = client,
+            authState = authState,
+        )
+    }
 
     private inline fun <T> retryWithBackoff(
         maxAttempts: Int,

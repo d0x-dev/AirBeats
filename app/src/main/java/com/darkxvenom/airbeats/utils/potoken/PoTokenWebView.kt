@@ -107,7 +107,7 @@ class PoTokenWebView private constructor(
         Log.d(TAG, "downloadAndRunBotguard() called")
 
         makeBotguardServiceRequest(
-            "https://www.youtube.com/api/jnn/v1/Create",
+            "$INTEGRITY_API/Create",
             "[ \"$REQUEST_KEY\" ]",
         ) { responseBody ->
             val parsedChallengeData = parseChallengeData(responseBody)
@@ -149,7 +149,7 @@ class PoTokenWebView private constructor(
     fun onRunBotguardResult(botguardResponse: String) {
         Log.d(TAG, "botguardResponse: $botguardResponse")
         makeBotguardServiceRequest(
-            "https://www.youtube.com/api/jnn/v1/GenerateIT",
+            "$INTEGRITY_API/GenerateIT",
             "[ \"$REQUEST_KEY\", \"$botguardResponse\" ]",
         ) { responseBody ->
             Log.d(TAG, "GenerateIT response: $responseBody")
@@ -283,6 +283,7 @@ class PoTokenWebView private constructor(
                         "Accept" to "application/json",
                         "Content-Type" to "application/json+protobuf",
                         "x-user-agent" to "grpc-web-javascript/0.1",
+                        "x-goog-api-key" to INTEGRITY_API_KEY,
                     ).toHeaders()
                 )
                 .url(url)
@@ -331,6 +332,8 @@ class PoTokenWebView private constructor(
     companion object {
         private const val TAG = "PoTokenWebView"
         private const val REQUEST_KEY = "O43z0dpjhgX20SCx4KAo"
+        private const val INTEGRITY_API = "https://jnn-pa.googleapis.com/\$rpc/google.internal.waa.v1.Waa"
+        private const val INTEGRITY_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw"
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.3"
         private const val JS_INTERFACE = "PoTokenWebView"
