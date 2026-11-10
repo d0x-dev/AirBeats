@@ -54,6 +54,16 @@ data class PlaybackAuthState(
             poTokenPlayer = poTokenPlayer.normalizeAuthValue(),
         )
 
+    /** Refresh browser cookies without restoring a logout or selecting another login. */
+    fun withRefreshedCookie(candidate: String?): PlaybackAuthState {
+        if (!hasLoginCookie || candidate.isNullOrBlank()) return this
+        val saved = parseCookieString(cookie.orEmpty())
+        val refreshed = parseCookieString(candidate)
+        if (saved["SAPISID"] != refreshed["SAPISID"]) return this
+        if (saved["LOGIN_INFO"] != null && saved["LOGIN_INFO"] != refreshed["LOGIN_INFO"]) return this
+        return copy(cookie = candidate.trim())
+    }
+
     fun resolvePlayerPoToken(
         client: YouTubeClient,
         explicitPoToken: String? = null,

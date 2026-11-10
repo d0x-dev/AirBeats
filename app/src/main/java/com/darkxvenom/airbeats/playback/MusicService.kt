@@ -1945,7 +1945,7 @@ class MusicService :
         if (remaining <= 2) {
             val seedId = player.currentMediaItem?.mediaId ?: player.mediaItems.lastOrNull()?.mediaId
             if (!seedId.isNullOrBlank()) {
-                extendInfiniteQueue(seedId, autoPlayIfEnded = (player.playbackState == Player.STATE_ENDED || !player.isPlaying))
+                extendInfiniteQueue(seedId, autoPlayIfEnded = (player.playbackState == Player.STATE_ENDED))
             }
         }
     }
@@ -2073,7 +2073,7 @@ class MusicService :
 
             if (newMediaItems.isNotEmpty() && player.playbackState != STATE_IDLE) {
                 val previousCount = player.mediaItemCount
-                val wasEnded = player.playbackState == Player.STATE_ENDED || !player.isPlaying
+                val wasEnded = player.playbackState == Player.STATE_ENDED
                 player.addMediaItems(newMediaItems)
                 Log.d(TAG, "Endless Queue: Added ${newMediaItems.size} new songs to queue")
                 if (autoPlayIfEnded || wasEnded) {

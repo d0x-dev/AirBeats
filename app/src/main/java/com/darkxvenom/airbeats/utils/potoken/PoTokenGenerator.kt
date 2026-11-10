@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 class PoTokenGenerator {
     private val TAG = "PoTokenGenerator"
@@ -16,6 +17,7 @@ class PoTokenGenerator {
     private var webViewBadImpl = false // whether the system has a bad WebView implementation
 
     private val webPoTokenGenLock = Mutex()
+    private val requestLock = Mutex()
     private var webPoTokenSessionId: String? = null
     private var webPoTokenStreamingPot: String? = null
     private var webPoTokenGenerator: PoTokenWebView? = null
@@ -26,7 +28,13 @@ class PoTokenGenerator {
         }
 
         return try {
-            runBlocking { getWebClientPoToken(videoId, sessionId, forceRecreate = false) }
+            runBlocking {
+                withTimeout(20_000L) {
+                    requestLock.withLock {
+                        getWebClientPoToken(videoId, sessionId, forceRecreate = false)
+                    }
+                }
+            }
         } catch (e: Exception) {
             when (e) {
                 is BadWebViewException -> {
@@ -100,7 +108,7 @@ class PoTokenGenerator {
             }
         }
 
-        Log.d(TAG, "[$videoId] playerPot=$playerPot, streamingPot=$streamingPot")
+        Log.d(TAG, "[$videoId] Playback integrity tokens generated")
 
         return PoTokenResult(playerPot, streamingPot)
     }
