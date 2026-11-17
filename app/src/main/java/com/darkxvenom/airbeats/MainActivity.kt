@@ -330,6 +330,7 @@ class MainActivity : FragmentActivity() {
                 service: IBinder?,
             ) {
                 if (service is MusicBinder) {
+                    playerConnection?.dispose()
                     playerConnection =
                         PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                 }
@@ -406,6 +407,7 @@ class MainActivity : FragmentActivity() {
         if (stopOnTaskClear && playerConnection?.isPlaying?.value == true && isFinishing) {
             stopService(Intent(this, MusicService::class.java))
         }
+        playerConnection?.dispose()
         playerConnection = null
     }
 

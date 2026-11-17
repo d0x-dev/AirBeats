@@ -49,7 +49,7 @@ object AppForegroundTracker {
             field = value
             notifyListeners()
         }
-    private val listeners = mutableListOf<(Boolean, Boolean) -> Unit>()
+    private val listeners = java.util.concurrent.CopyOnWriteArrayList<(Boolean, Boolean) -> Unit>()
     fun addListener(listener: (Boolean, Boolean) -> Unit) {
         listeners.add(listener)
     }

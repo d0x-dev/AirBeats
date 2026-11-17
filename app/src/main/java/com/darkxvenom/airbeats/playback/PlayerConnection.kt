@@ -49,11 +49,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlayerConnection(
-    private val context: Context,
+    context: Context,
     binder: MusicBinder,
     val database: MusicDatabase,
     private val scope: CoroutineScope,
 ) : Player.Listener {
+    private val context: Context = context.applicationContext
 
     companion object {
         private const val TAG = "PlayerConnection"
