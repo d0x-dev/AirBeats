@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Spacer
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.LaunchedEffect
 import com.darkxvenom.airbeats.BuildConfig
 import com.darkxvenom.airbeats.checkForUpdates
@@ -1224,6 +1225,23 @@ fun ModernHomeTopBarInline(
     navController: NavController,
     onSearchClick: () -> Unit
 ) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+    val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screens.Home.route || currentRoute == "home") {
+            isSettingsOpen = false
+        }
+    }
+    val gearRotation by animateFloatAsState(
+        targetValue = if (isSettingsOpen) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "classicSettingsGearRotation"
+    )
+
     val context = LocalContext.current
     val avatarManager = remember { AvatarPreferenceManager(context) }
     val currentSelection by avatarManager
@@ -1366,7 +1384,11 @@ fun ModernHomeTopBarInline(
                         R.drawable.update
                     else
                         R.drawable.settings,
-                    onClick = { navController.navigate("settings") }
+                    onClick = {
+                        isSettingsOpen = true
+                        navController.navigate("settings")
+                    },
+                    iconModifier = Modifier.graphicsLayer { rotationZ = gearRotation }
                 )
             }
         }
