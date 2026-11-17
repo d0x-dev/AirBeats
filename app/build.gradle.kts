@@ -13,6 +13,39 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+val googleServicesFile = file("google-services.json")
+if (!googleServicesFile.exists()) {
+    googleServicesFile.writeText(
+        """
+        {
+          "project_info": {
+            "project_number": "000000000000",
+            "project_id": "airbeats-dummy",
+            "storage_bucket": "airbeats-dummy.appspot.com"
+          },
+          "client": [
+            {
+              "client_info": {
+                "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+                "android_client_info": {
+                  "package_name": "com.darkxvenom.airbeats"
+                }
+              },
+              "oauth_client": [],
+              "api_key": [
+                {
+                  "current_key": "dummy_api_key"
+                }
+              ],
+              "services": {}
+            }
+          ],
+          "configuration_version": "1"
+        }
+        """.trimIndent()
+    )
+}
+
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
@@ -182,7 +215,6 @@ configurations.all {
 }
 
 dependencies {
-    implementation("dev.chrisbanes.haze:haze:0.7.3")
     implementation(libs.guava)
     implementation(libs.coroutines.guava)
     implementation(libs.concurrent.futures)
