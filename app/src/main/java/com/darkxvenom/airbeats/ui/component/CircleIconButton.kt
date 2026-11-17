@@ -37,7 +37,8 @@ fun CircleIconButton(
     icon: Int,
     onClick: () -> Unit,
     scrollOffset: Float = 0f,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier
 ) {
     val isFrosted = isFrostedGlassUiEnabled()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -88,7 +89,7 @@ fun CircleIconButton(
         Icon(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(24.dp - (4 * scrollOffset).dp),
+            modifier = Modifier.size(24.dp - (4 * scrollOffset).dp).then(iconModifier),
             tint = contentColor
         )
     }
@@ -101,7 +102,8 @@ fun CircleIconButton(
 fun CircleIconButton(
     icon: Int,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier
 ) {
     val isFrosted = isFrostedGlassUiEnabled()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -148,7 +150,7 @@ fun CircleIconButton(
         Icon(
             painter = painterResource(icon),
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(24.dp).then(iconModifier),
             tint = contentColor
         )
     }

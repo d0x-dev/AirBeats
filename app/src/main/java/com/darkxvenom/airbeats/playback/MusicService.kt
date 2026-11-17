@@ -3724,6 +3724,64 @@ class MusicService :
         return null
     }
 
+    private fun getMediaMetadataSafely(mediaId: String): com.darkxvenom.airbeats.models.MediaMetadata? {
+        val current = currentMediaMetadata.value
+        if (current?.id == mediaId) return current
+
+        val dbSong = runCatching {
+            kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                database.song(mediaId).firstOrNull()?.toMediaMetadata()
+            }
+        }.getOrNull()
+        if (dbSong != null) return dbSong
+
+        return if (Looper.myLooper() == Looper.getMainLooper()) {
+            player.mediaItems.find { it.mediaId == mediaId }?.metadata
+                ?: (if (player.currentMediaItem?.mediaId == mediaId) player.currentMediaItem?.metadata else null)
+        } else {
+            runCatching {
+                kotlinx.coroutines.runBlocking(Dispatchers.Main) {
+                    player.mediaItems.find { it.mediaId == mediaId }?.metadata
+                        ?: (if (player.currentMediaItem?.mediaId == mediaId) player.currentMediaItem?.metadata else null)
+                }
+            }.getOrNull()
+        }
+    }
+
+    private fun getMediaItemTitleSafely(mediaId: String): String? {
+        val meta = getMediaMetadataSafely(mediaId)
+        if (!meta?.title.isNullOrBlank()) return meta?.title
+        return if (Looper.myLooper() == Looper.getMainLooper()) {
+            player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.title?.toString()
+                ?: player.currentMediaItem?.mediaMetadata?.title?.toString()
+        } else {
+            runCatching {
+                kotlinx.coroutines.runBlocking(Dispatchers.Main) {
+                    player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.title?.toString()
+                        ?: player.currentMediaItem?.mediaMetadata?.title?.toString()
+                }
+            }.getOrNull()
+        }
+    }
+
+    private fun getMediaItemArtistSafely(mediaId: String): String {
+        val meta = getMediaMetadataSafely(mediaId)
+        val artist = meta?.artists?.firstOrNull()?.name
+        if (!artist.isNullOrBlank()) return artist
+        val fromPlayer = if (Looper.myLooper() == Looper.getMainLooper()) {
+            player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.artist?.toString()
+                ?: player.currentMediaItem?.mediaMetadata?.artist?.toString()
+        } else {
+            runCatching {
+                kotlinx.coroutines.runBlocking(Dispatchers.Main) {
+                    player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.artist?.toString()
+                        ?: player.currentMediaItem?.mediaMetadata?.artist?.toString()
+                }
+            }.getOrNull()
+        }
+        return fromPlayer.orEmpty()
+    }
+
     private fun resolvePlaybackDataSpec(dataSpec: DataSpec): DataSpec {
         if (dataSpec.uri.shouldBypassPlayerCache()) {
             return dataSpec
@@ -3873,24 +3931,10 @@ class MusicService :
 
                 // Seamless Fallback: JioSaavn stream failed or null -> find matching YouTube song
                 Timber.w("JioSaavn stream unavailable for $mediaId, falling back to YouTube")
-                val mediaMetadata = kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                    player.mediaItems.find { it.mediaId == mediaId }?.metadata
-                        ?: (if (player.currentMediaItem?.mediaId == mediaId) player.currentMediaItem?.metadata else null)
-                        ?: (if (currentMediaMetadata.value?.id == mediaId) currentMediaMetadata.value else null)
-                } ?: runBlocking(Dispatchers.IO) {
-                    database.song(mediaId).firstOrNull()?.toMediaMetadata()
-                }
+                val mediaMetadata = getMediaMetadataSafely(mediaId)
 
-                val songTitle = mediaMetadata?.title?.takeIf { it.isNotBlank() }
-                    ?: kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                        player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.title?.toString()
-                            ?: player.currentMediaItem?.mediaMetadata?.title?.toString()
-                    }
-                val artistName = mediaMetadata?.artists?.firstOrNull()?.name
-                    ?: kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                        player.mediaItems.find { it.mediaId == mediaId }?.mediaMetadata?.artist?.toString()
-                            ?: player.currentMediaItem?.mediaMetadata?.artist?.toString()
-                    }.orEmpty()
+                val songTitle = mediaMetadata?.title?.takeIf { it.isNotBlank() } ?: getMediaItemTitleSafely(mediaId)
+                val artistName = mediaMetadata?.artists?.firstOrNull()?.name ?: getMediaItemArtistSafely(mediaId)
 
                 if (!songTitle.isNullOrBlank()) {
                     val query = "$songTitle $artistName".trim()
@@ -3922,13 +3966,7 @@ class MusicService :
                 if (matchedId != null) {
                     actualMediaId = matchedId
                 } else {
-                    val mediaMetadata = kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                        player.mediaItems.find { it.mediaId == mediaId }?.metadata
-                            ?: (if (player.currentMediaItem?.mediaId == mediaId) player.currentMediaItem?.metadata else null)
-                            ?: (if (currentMediaMetadata.value?.id == mediaId) currentMediaMetadata.value else null)
-                    } ?: runBlocking(Dispatchers.IO) {
-                        database.song(mediaId).firstOrNull()?.toMediaMetadata()
-                    }
+                    val mediaMetadata = getMediaMetadataSafely(mediaId)
                     if (mediaMetadata != null) {
                         val artistName = mediaMetadata.artists.firstOrNull()?.name ?: ""
                         val query = "${mediaMetadata.title} $artistName"
@@ -3959,9 +3997,7 @@ class MusicService :
             // When JioSaavn integration is enabled, prioritize JioSaavn 320kbps streams first
             if (enableJioSaavn && !mediaId.startsWith("JS:") && !mediaId.startsWith("local:") && !jioSaavnFailedSongs.contains(mediaId)) {
                 try {
-                    val mediaMetadata = kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                        player.mediaItems.find { it.mediaId == mediaId }?.metadata
-                    }
+                    val mediaMetadata = getMediaMetadataSafely(mediaId)
                     if (mediaMetadata != null && mediaMetadata.title.isNotBlank()) {
                         val artistName = mediaMetadata.artists.firstOrNull()?.name ?: ""
                         val jsStreamUrl: String? = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
@@ -4094,9 +4130,7 @@ class MusicService :
 
                 if (enableJioSaavnFallback && !mediaId.startsWith("JS:")) {
                     try {
-                        val mediaMetadata = kotlinx.coroutines.runBlocking(Dispatchers.Main) {
-                            player.mediaItems.find { it.mediaId == mediaId }?.metadata
-                        }
+                        val mediaMetadata = getMediaMetadataSafely(mediaId)
                         if (mediaMetadata != null) {
                             val artistName = mediaMetadata.artists.firstOrNull()?.name ?: ""
                             val jsStreamUrl = kotlinx.coroutines.runBlocking(Dispatchers.IO) {

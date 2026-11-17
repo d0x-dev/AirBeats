@@ -1,7 +1,9 @@
 package com.darkxvenom.airbeats.ui.screens.material
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -76,12 +78,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -251,6 +255,21 @@ fun MaterialHomeScreen(
     }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+    val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screens.Home.route || currentRoute == "home") {
+            isSettingsOpen = false
+        }
+    }
+    val gearRotation by animateFloatAsState(
+        targetValue = if (isSettingsOpen) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "materialSettingsGearRotation"
+    )
     val scrollToTop = backStackEntry?.savedStateHandle?.getStateFlow("scrollToTop", false)?.collectAsState()
     LaunchedEffect(scrollToTop?.value) {
         if (scrollToTop?.value == true) {
@@ -824,7 +843,11 @@ fun MaterialHomeScreen(
         MaterialTopHeader(
             onNewReleasesClick = { navController.navigate("new_release") },
             onDevNewsClick = { navController.navigate("settings/developer_news") },
-            onSettingsClick = { navController.navigate("settings") },
+            onSettingsClick = {
+                isSettingsOpen = true
+                navController.navigate("settings")
+            },
+            gearRotation = gearRotation,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .onSizeChanged { headerHeightPx = it.height }
@@ -843,6 +866,7 @@ private fun MaterialTopHeader(
     onNewReleasesClick: () -> Unit,
     onDevNewsClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    gearRotation: Float = 0f,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -908,7 +932,8 @@ private fun MaterialTopHeader(
                     Icon(
                         imageVector = Icons.Filled.Settings,
                         contentDescription = stringResource(R.string.settings),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.graphicsLayer { rotationZ = gearRotation }
                     )
                 }
             }

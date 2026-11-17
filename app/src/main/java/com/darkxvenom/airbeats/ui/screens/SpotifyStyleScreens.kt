@@ -130,6 +130,23 @@ private val SpotifyText @Composable get() = if (isAppInDarkTheme()) Color.White 
 
 @Composable
 fun SpotifyHeaderActions(navController: NavController) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    var isSettingsOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val currentRoute = backStackEntry?.destination?.route
+    androidx.compose.runtime.LaunchedEffect(currentRoute) {
+        if (currentRoute == Screens.Home.route || currentRoute == "home") {
+            isSettingsOpen = false
+        }
+    }
+    val gearRotation by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isSettingsOpen) 360f else 0f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+        ),
+        label = "spotifySettingsGearRotation"
+    )
+
     androidx.compose.material3.IconButton(onClick = { navController.navigate("settings/developer_news") }) {
         androidx.compose.material3.Icon(
             painter = androidx.compose.ui.res.painterResource(R.drawable.newspaper),
@@ -146,12 +163,17 @@ fun SpotifyHeaderActions(navController: NavController) {
             modifier = Modifier.size(24.dp)
         )
     }
-    androidx.compose.material3.IconButton(onClick = { navController.navigate("settings") }) {
+    androidx.compose.material3.IconButton(onClick = {
+        isSettingsOpen = true
+        navController.navigate("settings")
+    }) {
         androidx.compose.material3.Icon(
             painter = androidx.compose.ui.res.painterResource(R.drawable.settings),
             contentDescription = stringResource(R.string.settings),
             tint = SpotifyText,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier
+                .size(24.dp)
+                .graphicsLayer { rotationZ = gearRotation }
         )
     }
 }

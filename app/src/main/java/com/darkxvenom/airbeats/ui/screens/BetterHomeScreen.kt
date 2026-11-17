@@ -2,7 +2,9 @@ package com.darkxvenom.airbeats.ui.screens
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -26,6 +28,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -157,6 +161,21 @@ fun BetterHomeScreen(
 
     val listState = rememberLazyListState()
     val backStackEntry by navController.currentBackStackEntryAsState()
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+    val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screens.Home.route || currentRoute == "home") {
+            isSettingsOpen = false
+        }
+    }
+    val gearRotation by animateFloatAsState(
+        targetValue = if (isSettingsOpen) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "betterSettingsGearRotation"
+    )
     val scrollToTop = backStackEntry?.savedStateHandle?.getStateFlow("scrollToTop", false)?.collectAsState()
 
     LaunchedEffect(scrollToTop?.value) {
@@ -273,7 +292,11 @@ fun BetterHomeScreen(
                     onProfileClick = { navController.navigate("settings/account") },
                     onNewReleaseClick = { navController.navigate("new_release") },
                     onDeveloperNewsClick = { navController.navigate("settings/developer_news") },
-                    onSettingsClick = { navController.navigate("settings") },
+                    onSettingsClick = {
+                        isSettingsOpen = true
+                        navController.navigate("settings")
+                    },
+                    gearRotation = gearRotation,
                     onPlayNowClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (effectiveHero.songs.isNotEmpty()) {
@@ -592,7 +615,8 @@ private fun BetterHeroSection(
     onDeveloperNewsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onPlayNowClick: () -> Unit,
-    onLikeClick: () -> Unit,
+    onLikeClick: () -> Unit = {},
+    gearRotation: Float = 0f,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -820,7 +844,9 @@ private fun BetterHeroSection(
                         painter = painterResource(R.drawable.settings),
                         contentDescription = stringResource(R.string.settings),
                         tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer { rotationZ = gearRotation }
                     )
                 }
             }

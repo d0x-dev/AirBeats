@@ -53,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -65,6 +66,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
@@ -169,6 +171,21 @@ fun NewClassicHomeScreen(
 
     val listState = rememberLazyListState()
     val backStackEntry by navController.currentBackStackEntryAsState()
+    var isSettingsOpen by rememberSaveable { mutableStateOf(false) }
+    val currentRoute = backStackEntry?.destination?.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == Screens.Home.route || currentRoute == "home") {
+            isSettingsOpen = false
+        }
+    }
+    val gearRotation by animateFloatAsState(
+        targetValue = if (isSettingsOpen) 360f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "newClassicSettingsGearRotation"
+    )
     val scrollToTop = backStackEntry?.savedStateHandle?.getStateFlow("scrollToTop", false)?.collectAsState()
 
     LaunchedEffect(scrollToTop?.value) {
@@ -241,7 +258,11 @@ fun NewClassicHomeScreen(
                     heroData = effectiveHero,
                     onNewReleaseClick = { navController.navigate("new_release") },
                     onDeveloperNewsClick = { navController.navigate("settings/developer_news") },
-                    onSettingsClick = { navController.navigate("settings") },
+                    onSettingsClick = {
+                        isSettingsOpen = true
+                        navController.navigate("settings")
+                    },
+                    gearRotation = gearRotation,
                     onPlayNowClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (effectiveHero.songs.isNotEmpty()) {
@@ -770,6 +791,7 @@ private fun NewClassicHeroSection(
     onDeveloperNewsClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onPlayNowClick: () -> Unit,
+    gearRotation: Float = 0f,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -907,7 +929,9 @@ private fun NewClassicHeroSection(
                         painter = painterResource(R.drawable.settings),
                         contentDescription = stringResource(R.string.settings),
                         tint = buttonTint,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer { rotationZ = gearRotation }
                     )
                 }
             }
