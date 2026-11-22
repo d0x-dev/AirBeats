@@ -24,6 +24,8 @@ import com.darkxvenom.airbeats.constants.ArtistSortDescendingKey
 import com.darkxvenom.airbeats.constants.ArtistSortType
 import com.darkxvenom.airbeats.constants.ArtistSortTypeKey
 import com.darkxvenom.airbeats.constants.LibraryFilter
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
+import com.darkxvenom.airbeats.constants.YtmSyncKey
 import com.darkxvenom.airbeats.constants.PlaylistSortDescendingKey
 import com.darkxvenom.airbeats.constants.PlaylistSortType
 import com.darkxvenom.airbeats.constants.PlaylistSortTypeKey
@@ -41,6 +43,7 @@ import com.darkxvenom.airbeats.playback.DownloadUtil
 import com.darkxvenom.airbeats.utils.SyncUtils
 import com.darkxvenom.airbeats.utils.dataStore
 import com.darkxvenom.airbeats.utils.reportException
+import com.darkxvenom.airbeats.innertube.utils.parseCookieString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -264,11 +267,28 @@ constructor(
     }
 
     init {
+        // A successful YouTube login must immediately refresh the Library.
+        // The account screen can finish before this ViewModel is created, so observe
+        // the persisted cookie rather than relying on a one-time login callback.
         viewModelScope.launch(Dispatchers.IO) {
             context.dataStore.data
-                .map { it[SpotifyCookieKey] }
+                .map { preferences ->
+                    Triple(
+                        preferences[InnerTubeCookieKey].orEmpty(),
+                        preferences[YtmSyncKey] ?: true,
+                        preferences[SpotifyCookieKey]
+                    )
+                }
                 .distinctUntilChanged()
-                .collect { spDc ->
+                .collect { (cookie, syncEnabled, spDc) ->
+                    if (syncEnabled && cookie.isNotBlank() &&
+                        parseCookieString(cookie)["SAPISID"].isNullOrBlank().not()
+                    ) {
+                        YouTube.cookie = cookie
+                        YouTube.useLoginForBrowse = true
+                        runCatching { syncUtils.syncSavedPlaylists() }
+                            .onFailure { reportException(it) }
+                    }
                     if (!spDc.isNullOrBlank()) {
                         syncUtils.syncSpotifyPlaylists()
                     }

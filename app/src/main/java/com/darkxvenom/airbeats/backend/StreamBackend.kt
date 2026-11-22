@@ -49,12 +49,25 @@ object StreamBackend {
         quality: AudioQuality = AudioQuality.AUTO,
         avoidCodecs: Set<String> = emptySet(),
         force: Boolean = false,
+        jioSaavnEnabled: Boolean = true,
     ): Result<Resolved> = withContext(Dispatchers.IO) {
         val key = "$id|$quality"
-        if (!force) cache[key]?.let { (at, r) -> if (System.currentTimeMillis() - at < TTL_MS) return@withContext Result.success(r) }
+        val cached = cache[key]
+        if (!force && cached != null && System.currentTimeMillis() - cached.first < TTL_MS) {
+            if (cached.second.source != "JioSaavn" || jioSaavnEnabled) {
+                return@withContext Result.success(cached.second)
+            }
+            // A disabled provider must never leak through the stream cache.
+            cache.remove(key)
+        }
         runCatching {
-            if (id.startsWith("JS:")) saavn(id.removePrefix("JS:"))
-            else youtube(id, quality, avoidCodecs)
+            if (id.startsWith("JS:")) {
+                check(jioSaavnEnabled) { "JioSaavn is disabled in Settings; this track has no YouTube video ID." }
+                saavn(id.removePrefix("JS:"))
+            } else {
+                // YouTube errors are returned unchanged. Do not silently switch providers.
+                youtube(id, quality, avoidCodecs)
+            }
         }.onSuccess { cache[key] = System.currentTimeMillis() to it }
           .onFailure { Log.e(TAG, "Stream resolve failed for $id: ${it.message}", it) }
     }
