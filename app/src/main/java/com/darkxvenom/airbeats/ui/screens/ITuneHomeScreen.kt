@@ -25,10 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import com.darkxvenom.airbeats.extensions.toMediaItem
 import com.darkxvenom.airbeats.playback.queues.ListQueue
 import androidx.compose.runtime.Composable
@@ -80,7 +77,6 @@ import com.darkxvenom.airbeats.data.model.itune.HomeShelfGroup
 import com.darkxvenom.airbeats.ui.component.itune.rememberSpringOverscrollState
 import com.darkxvenom.airbeats.ui.component.itune.springOverscroll
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ITuneHomeScreen(
     navController: NavHostController,
@@ -95,7 +91,6 @@ fun ITuneHomeScreen(
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val pullRefreshState = rememberPullToRefreshState()
 
     val accountName by rememberPreference(AccountNameKey, "")
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
@@ -234,6 +229,19 @@ fun ITuneHomeScreen(
 
     val listState = rememberLazyListState()
     val overscrollState = rememberSpringOverscrollState()
+
+    // Match iTune's original spring-pull refresh gesture: refresh only when the list
+    // is at the very top and the overscroll exceeds its pull threshold.
+    LaunchedEffect(overscrollState.offset.value, isRefreshing) {
+        if (
+            listState.firstVisibleItemIndex == 0 &&
+            overscrollState.offset.value > 25f &&
+            !isRefreshing &&
+            !isLoading
+        ) {
+            viewModel.refresh()
+        }
+    }
     var selectedTab by remember { mutableStateOf<NavTab?>(NavTab.HOME) }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -289,12 +297,7 @@ fun ITuneHomeScreen(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .springOverscroll(overscrollState)
-                .pullToRefresh(
-                    state = pullRefreshState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = viewModel::refresh,
-                ),
+                .springOverscroll(overscrollState),
             contentPadding = PaddingValues(top = 4.dp, bottom = 158.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
