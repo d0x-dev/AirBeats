@@ -11,9 +11,7 @@
 
 package com.darkxvenom.airbeats.ui.component.itune
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -22,24 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
-import com.darkxvenom.itune.data.repository.AvatarManager
+import com.darkxvenom.airbeats.ui.component.AvatarDisplay
 
 /**
  * Renders the user profile avatar with Apple iOS styling:
@@ -55,9 +42,6 @@ fun AppleMemojiAvatar(
     onLongClick: (() -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
-    val currentId = avatarId ?: AvatarManager.currentAvatarId.value
-    val avatarUrl = remember(currentId) { AvatarManager.getAvatarUrl(currentId) }
-    val context = LocalContext.current
 
     Box(
         modifier = modifier
@@ -90,20 +74,11 @@ fun AppleMemojiAvatar(
             ),
         contentAlignment = Alignment.Center
     ) {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(avatarUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = "User Profile Avatar",
-            contentScale = ContentScale.Crop,
+        AvatarDisplay(
+            size = size,
+            showBorder = false,
             modifier = Modifier.fillMaxSize(),
-            loading = {
-                AppleMemojiFallback(size = size)
-            },
-            error = {
-                AppleMemojiFallback(size = size)
-            }
+            contentDescription = "User Profile Avatar",
         )
     }
 }
