@@ -129,7 +129,7 @@ fun ITuneHomeScreen(
                         isExplicit = item.explicit,
                     )
                     is PlaylistItem -> HomeFeedItem(
-                        kind = FeedItemKind.PLAYLIST,
+                        kind = HomeItemKind.PLAYLIST,
                         title = item.title,
                         subtitle = item.author?.name.orEmpty().ifBlank { item.songCountText.orEmpty() },
                         thumbnailUrl = item.thumbnail,
@@ -138,7 +138,7 @@ fun ITuneHomeScreen(
                         artistName = item.author?.name.orEmpty(),
                     )
                     is ArtistItem -> HomeFeedItem(
-                        kind = FeedItemKind.ARTIST,
+                        kind = HomeItemKind.ARTIST,
                         title = item.title,
                         thumbnailUrl = item.thumbnail,
                         browseId = item.id,
@@ -155,11 +155,11 @@ fun ITuneHomeScreen(
                     group = when {
                         section.title.contains("personal", ignoreCase = true) ||
                             section.title.contains("listen", ignoreCase = true) -> HomeShelfGroup.PERSONAL
-                        section.title.contains("chart", ignoreCase = true) -> FeedShelfGroup.CHARTS
-                        section.title.contains("podcast", ignoreCase = true) -> FeedShelfGroup.PODCASTS
+                        section.title.contains("chart", ignoreCase = true) -> HomeShelfGroup.CHARTS
+                        section.title.contains("podcast", ignoreCase = true) -> HomeShelfGroup.PODCASTS
                         section.title.contains("release", ignoreCase = true) ||
-                            section.title.contains("trending", ignoreCase = true) -> FeedShelfGroup.TRENDING
-                        else -> FeedShelfGroup.FEED
+                            section.title.contains("trending", ignoreCase = true) -> HomeShelfGroup.TRENDING
+                        else -> HomeShelfGroup.FEED
                     },
                     moreBrowseId = section.endpoint?.browseId,
                 )
@@ -168,7 +168,7 @@ fun ITuneHomeScreen(
 
         val playlists = accountPlaylists.orEmpty().map { item ->
             HomeFeedItem(
-                kind = FeedItemKind.PLAYLIST,
+                kind = HomeItemKind.PLAYLIST,
                 title = item.title,
                 subtitle = item.author?.name.orEmpty().ifBlank { item.songCountText.orEmpty() },
                 thumbnailUrl = item.thumbnail,
@@ -183,7 +183,7 @@ fun ITuneHomeScreen(
                 title = "Your YouTube Music Playlists",
                 strapline = "YOUR LIBRARY",
                 items = playlists,
-                group = FeedShelfGroup.PERSONAL,
+                group = HomeShelfGroup.PERSONAL,
             )
         } else {
             remote
@@ -250,14 +250,14 @@ fun ITuneHomeScreen(
                     )
                 )
             }
-            item.kind == FeedItemKind.ALBUM -> {
+            item.kind == HomeItemKind.ALBUM -> {
                 item.browseId?.let { navController.navigate("album/$it") }
             }
-            item.kind == FeedItemKind.PLAYLIST -> {
+            item.kind == HomeItemKind.PLAYLIST -> {
                 val playlistId = item.watchPlaylistId ?: item.browseId ?: return
                 navController.navigate("online_playlist/$playlistId")
             }
-            item.kind == FeedItemKind.ARTIST -> {
+            item.kind == HomeItemKind.ARTIST -> {
                 item.browseId?.let { navController.navigate("artist/$it") }
             }
             else -> Unit
