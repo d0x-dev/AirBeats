@@ -192,11 +192,12 @@ fun NewClassicHomeScreen(
     val emptyHeroTitle = stringResource(R.string.ui_heading_90s_hiphop_soundtracks)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_based_on_your_last_listening_habits_and_artis)
     val recommendedByAiQueueTitle = stringResource(R.string.recommended_by_ai)
-    val effectiveHero: HeroPlaylistData = remember(homePage) {
+    val midnightAirTitle = stringResource(R.string.ui_heading_midnight_air)
+    val effectiveHero: HeroPlaylistData = remember(homePage, midnightAirTitle) {
         val firstSection = homePage?.sections?.firstOrNull()
         val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
         HeroPlaylistData(
-            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            title = firstSection?.title ?: midnightAirTitle,
             subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
             tag = "YOUTUBE MUSIC",
             thumbnailUrl = firstSong?.thumbnail,
