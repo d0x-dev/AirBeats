@@ -181,11 +181,12 @@ fun BetterHomeScreen(
 
     val emptyHeroTitle = stringResource(R.string.ui_heading_midnight_air)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_editorial_12_tracks_41_min)
-    val effectiveHero: HeroPlaylistData = remember(homePage) {
+    val midnightAirTitle = stringResource(R.string.ui_heading_midnight_air)
+    val effectiveHero: HeroPlaylistData = remember(homePage, midnightAirTitle) {
         val firstSection = homePage?.sections?.firstOrNull()
         val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
         HeroPlaylistData(
-            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            title = firstSection?.title ?: midnightAirTitle,
             subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
             tag = "YOUTUBE MUSIC",
             thumbnailUrl = firstSong?.thumbnail,
@@ -323,11 +324,9 @@ fun BetterHomeScreen(
                     ?: trendingSongs.firstOrNull()?.title
                     ?: "Glasshouse"
                 val displayArtist = currentPlayingMedia?.artists?.joinToString { it.name }
-                    ?: (firstKeepSong as? Song)?.artists?.joinToString { it.name }
                     ?: trendingSongs.firstOrNull()?.artists?.joinToString { it.name }
                     ?: "Nova Sirens · AirBeats Sessions"
                 val displayThumb = currentPlayingMedia?.thumbnailUrl
-                    ?: (firstKeepSong as? Song)?.thumbnailUrl
                     ?: trendingSongs.firstOrNull()?.thumbnailUrl
                     ?: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400"
 
