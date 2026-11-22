@@ -19,8 +19,7 @@ okhttp = "5.0.0-alpha.14"
 loggingInterceptor = "5.0.0-alpha.14"
 blurry = "4.0.1"
 materialRipple = "1.9.4"
-brave-newpipe = "0fcaf19ecc"
-pipepipe = "f8982ca9e7"
+newpipe-extractor = "v0.26.5"
 composeReorderable = "3.0.0"
 uiAndroid = "1.9.2"
 materialIconsExtended = "1.7.6"
@@ -102,8 +101,7 @@ junit = { group = "junit", name = "junit", version = "4.13.2" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version = "5.0.1" }
 
-brave-extractor = { module = "com.github.maxrave-dev:BravePipeExtractor", version.ref = "brave-newpipe" }
-pipepipe-extractor = { module = "com.github.maxrave-dev:PipePipeExtractor", version.ref = "pipepipe" }
+newpipe-extractor = { module = "com.github.TeamNewPipe:NewPipeExtractor", version.ref = "newpipe-extractor" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }

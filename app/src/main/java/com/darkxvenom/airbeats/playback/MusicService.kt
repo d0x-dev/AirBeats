@@ -2932,6 +2932,13 @@ class MusicService :
         reason: Int,
     ) {
         offlineBufferingJob?.cancel()
+        mediaItem?.mediaId?.let { startedId ->
+            if (!dataStore.get(booleanPreferencesKey("pauseRemoteListenHistory"), false)) {
+                scope.launch(Dispatchers.IO) {
+                    runCatching { com.darkxvenom.airbeats.backend.YtHistoryTracker.onTrackStarted(startedId) }
+                }
+            }
+        }
         val isDeviceOffline = !isNetworkAvailable()
         val isSkipUncached = dataStore.get(SkipUncachedPartKey, false)
         if (isDeviceOffline && isSkipUncached && reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
@@ -4353,20 +4360,6 @@ class MusicService :
                         durationMs = songDurationMs,
                         playTimeMs = playbackStats.totalPlayTimeMs
                     )
-                }
-            }
-            val PauseRemoteListenHistoryKey = booleanPreferencesKey("pauseRemoteListenHistory")
-            if (!dataStore.get(PauseRemoteListenHistoryKey, false)) {
-                scope.launch(Dispatchers.IO) {
-                    val playbackUrl = database.format(mediaItem.mediaId).first()?.playbackUrl
-                        ?: YTPlayerUtils.playerResponseForMetadata(mediaItem.mediaId, null)
-                            .getOrNull()?.playbackTracking?.videostatsPlaybackUrl?.baseUrl
-                    playbackUrl?.let {
-                        YouTube.registerPlayback(null, playbackUrl)
-                            .onFailure {
-                                reportException(it)
-                            }
-                    }
                 }
             }
         }

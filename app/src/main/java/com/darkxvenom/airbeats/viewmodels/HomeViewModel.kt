@@ -249,16 +249,12 @@ class HomeViewModel @Inject constructor(
                 forgottenFavorites.value = favs.takeIf { it.isNotEmpty() }
             }
 
-            // 4. Remote items snapshot (YouTube)
+            // 4. Remote items snapshot (YouTube) - account playlists load for every provider
+            if (isJioSaavn) launch(Dispatchers.IO) {
+                com.darkxvenom.airbeats.backend.HomeBackend.accountPlaylists().takeIf { it.isNotEmpty() }
+                    ?.let { accountPlaylists.value = it }
+            }
             if (!isJioSaavn) {
-                launch(Dispatchers.IO) {
-                    if (YouTube.cookie?.contains("SAPISID=") == true) {
-                        YouTube.library("FEmusic_liked_playlists").completedLibraryPage().onSuccess {
-                            accountPlaylists.value = it.items.filterIsInstance<PlaylistItem>().filterNot { it.id == "SE" }
-                        }.onFailure { reportException(it) }
-                    }
-                }
-
                 launch(Dispatchers.IO) {
                     val recentArtistsList = runCatching { database.recentArtists(limit = 10).first() }.getOrDefault(emptyList())
                     val artistRecs = recentArtistsList.filter { it.artist.isYouTubeArtist }.shuffled(homeRandom).take(3).mapNotNull {
@@ -280,54 +276,22 @@ class HomeViewModel @Inject constructor(
                 }
 
                 launch(Dispatchers.IO) {
-                    val enableJioSaavn = context.dataStore.get(com.darkxvenom.airbeats.constants.EnableJioSaavnKey, true)
-                    val jioSection = if (enableJioSaavn) {
-                        com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.getTrendingSongs().getOrNull()?.let { songs ->
-                            val filteredSongs = songs.filter { it.id !in excludedSongIds }
-                            if (filteredSongs.isNotEmpty()) {
-                                HomePage.Section(
-                                    title = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_jiosaavn),
-                                    label = "JioSaavn",
-                                    thumbnail = null,
-                                    endpoint = null,
-                                    items = filteredSongs
-                                )
-                            } else null
-                        }
-                    } else null
-
-                    YouTube.home().onSuccess { page ->
-                        val filteredSections = page.sections.mapNotNull { sec ->
-                            val filteredItems = sec.items.filter { it.id !in excludedSongIds }
-                            if (filteredItems.isNotEmpty()) sec.copy(items = filteredItems) else null
-                        }
-                        val allSections = listOfNotNull(jioSection) + filteredSections
-                        homePage.value = page.copy(sections = allSections)
-
-                        // Dynamic fallback for fresh installs or empty local history
-                        val onlineSongs = allSections.flatMap { it.items }.filterIsInstance<SongItem>()
+                    val remote = com.darkxvenom.airbeats.backend.HomeBackend.load(
+                        excluded = excludedSongIds,
+                        saavnEnabled = context.dataStore.get(com.darkxvenom.airbeats.constants.EnableJioSaavnKey, true),
+                        saavnTitle = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_jiosaavn),
+                    )
+                    remote.page?.let { page ->
+                        homePage.value = page
+                        val onlineSongs = page.sections.flatMap { it.items }.filterIsInstance<SongItem>()
                         if (quickPicks.value.isNullOrEmpty() && onlineSongs.isNotEmpty()) {
                             quickPicks.value = onlineSongs.map(::mapToSong).distinctBy { it.id }.shuffled(homeRandom).take(20)
                         }
                         if (forgottenFavorites.value.isNullOrEmpty() && onlineSongs.size > 10) {
                             forgottenFavorites.value = onlineSongs.drop(10).map(::mapToSong).distinctBy { it.id }.take(20)
                         }
-                        if (accountPlaylists.value.isNullOrEmpty()) {
-                            val onlinePlaylists = allSections.flatMap { it.items }.filterIsInstance<PlaylistItem>()
-                            if (onlinePlaylists.isNotEmpty()) {
-                                accountPlaylists.value = onlinePlaylists.distinctBy { it.id }.take(15)
-                            }
-                        }
-                    }.onFailure {
-                        if (jioSection != null) {
-                            homePage.value = HomePage(chips = null, sections = listOf(jioSection))
-                            val onlineSongs = jioSection.items.filterIsInstance<SongItem>()
-                            if (quickPicks.value.isNullOrEmpty() && onlineSongs.isNotEmpty()) {
-                                quickPicks.value = onlineSongs.map(::mapToSong).distinctBy { it.id }.shuffled(homeRandom).take(20)
-                            }
-                        }
-                        reportException(it)
                     }
+                    if (remote.playlists.isNotEmpty()) accountPlaylists.value = remote.playlists
                 }
 
                 launch(Dispatchers.IO) {

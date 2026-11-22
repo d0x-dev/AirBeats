@@ -164,6 +164,7 @@ fun YouTubeLoginScreen(navController: NavController) {
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
                             if (url != null && url.startsWith(YOUTUBE_MUSIC_URL)) {
+                                runCatching { CookieManager.getInstance().flush() }
                                 val youTubeCookieString = CookieManager.getInstance().getCookie(url)
                                 val parsedCookies = parseCookieString(youTubeCookieString)
 
@@ -185,6 +186,9 @@ fun YouTubeLoginScreen(navController: NavController) {
                     }
                     settings.apply {
                         javaScriptEnabled = true
+                        domStorageEnabled = true
+                        // Google rejects embedded WebViews ("; wv" marker) -> strip it like iTune does.
+                        userAgentString = userAgentString.replace("; wv", "")
                         setSupportZoom(true)
                         builtInZoomControls = true
                     }
@@ -207,7 +211,7 @@ fun YouTubeLoginScreen(navController: NavController) {
                     )
                     webView = this
                     loadUrl(
-                        "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&passive=true&continue=$YOUTUBE_MUSIC_URL",
+                        "https://accounts.google.com/ServiceLogin?ltmpl=music&service=youtube&prompt=select_account&continue=$YOUTUBE_MUSIC_URL",
                     )
                 }
             },

@@ -97,6 +97,10 @@ object JioSaavnApi {
         val mappedId = if (id.startsWith("JS:")) id else "JS:$id"
         streamUrlCache[mappedId]?.let { return@withContext it }
         val originalId = mappedId.removePrefix("JS:")
+        com.darkxvenom.airbeats.backend.StreamBackend.saavnStreamUrl(originalId)?.let {
+            streamUrlCache[mappedId] = it
+            return@withContext it
+        }
 
         try {
             val request = Request.Builder()

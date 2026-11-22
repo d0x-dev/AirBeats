@@ -15,10 +15,7 @@ dependencies {
     implementation(libs.ktor.serialization.json)
     implementation(libs.ktor.client.encoding)
     implementation(libs.brotli)
-    implementation(libs.pipepipe.extractor) {
-        exclude(group = "com.google.protobuf", module = "protobuf-java")
-    }
-    implementation(libs.brave.extractor)
+    implementation(libs.newpipe.extractor)
     implementation(libs.re2j)
     implementation(libs.rhino)
     implementation(libs.okhttp.dnsoverhttps)

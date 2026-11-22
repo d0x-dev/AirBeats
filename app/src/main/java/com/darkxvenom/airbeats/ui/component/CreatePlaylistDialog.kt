@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,6 +22,9 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.LocalDatabase
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
+import com.darkxvenom.airbeats.innertube.utils.parseCookieString
+import com.darkxvenom.airbeats.utils.rememberPreference
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.db.entities.PlaylistEntity
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +39,10 @@ fun CreatePlaylistDialog(
 ) {
     val database = LocalDatabase.current
     val coroutineScope = rememberCoroutineScope()
-    var syncedPlaylist by remember { mutableStateOf(false) }
+    val cookie by rememberPreference(InnerTubeCookieKey, "")
+    val loggedIn = "SAPISID" in parseCookieString(cookie)
+    // Signed in: default to Google (YouTube) so the playlist shows up everywhere; user can pick Local.
+    var syncedPlaylist by remember(loggedIn) { mutableStateOf(loggedIn) }
     TextFieldDialog(
         icon = { Icon(painter = painterResource(R.drawable.add), contentDescription = null) },
         title = { Text(text = stringResource(R.string.create_playlist)) },
@@ -60,7 +66,7 @@ fun CreatePlaylistDialog(
             }
         },
         extraContent = {
-            if (allowSyncing) {
+            if (allowSyncing && loggedIn) {
                 Row(
                     modifier = Modifier.padding(vertical = 16.dp, horizontal = 40.dp)
                 ) {
@@ -77,14 +83,11 @@ fun CreatePlaylistDialog(
                     }
                     Row(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.End,
                     ) {
-                        Switch(
-                            checked = syncedPlaylist,
-                            onCheckedChange = {
-                                syncedPlaylist = !syncedPlaylist
-                            },
-                        )
+                        FilterChip(selected = !syncedPlaylist, onClick = { syncedPlaylist = false }, label = { Text("Local") })
+                        FilterChip(selected = syncedPlaylist, onClick = { syncedPlaylist = true }, label = { Text("Google") },
+                            modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
