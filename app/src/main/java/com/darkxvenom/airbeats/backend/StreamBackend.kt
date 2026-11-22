@@ -37,18 +37,6 @@ object StreamBackend {
 
     private const val TAG = "StreamBackend"
     private const val TTL_MS = 20 * 60_000L
-    @Volatile private var newPipeInitialized = false
-
-    private fun ensureNewPipe() {
-        if (newPipeInitialized) return
-        synchronized(this) {
-            if (newPipeInitialized) return
-            runCatching {
-                org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor.setFetchIosClient(true)
-            }.onFailure { Log.w(TAG, "Could not enable iOS extractor fallback", it) }
-            newPipeInitialized = true
-        }
-    }
     private val cache = ConcurrentHashMap<String, Pair<Long, Resolved>>()
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
@@ -73,7 +61,6 @@ object StreamBackend {
 
     // ── YouTube (NewPipeExtractor, same as iTune) ───────────────────────────
     private fun youtube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
-        ensureNewPipe()
         val info = NewPipeUtils.streamInfo(id)
         val all = info.audioStreams.orEmpty().filter {
             it.isUrl && !it.content.isNullOrBlank() &&
