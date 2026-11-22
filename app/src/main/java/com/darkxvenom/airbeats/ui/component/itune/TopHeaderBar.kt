@@ -64,13 +64,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.darkxvenom.itune.R
-import com.darkxvenom.itune.data.account.MultiAccountManager
-import com.darkxvenom.itune.data.festival.FestivalManager
-import com.darkxvenom.itune.data.repository.AvatarManager
-import com.darkxvenom.itune.ui.theme.AppleTextPrimary
-import kotlinx.coroutines.delay
 
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
@@ -82,11 +75,6 @@ fun TopHeaderBar(
     onProfileClick: () -> Unit = {},
     onProfileLongClick: (() -> Unit)? = null,
 ) {
-    val activeAccount by MultiAccountManager.activeAccount.collectAsStateWithLifecycle()
-    val resolvedAvatarId = activeAccount?.avatarId ?: AvatarManager.currentAvatarId.value
-    val festivalConfig by FestivalManager.config.collectAsStateWithLifecycle()
-    val festivalActive = festivalConfig.enabled && festivalConfig.color != Color.Unspecified && festivalConfig.text.isNotBlank()
-    val festivalColor = festivalConfig.color
 
     var iconBounds by remember { mutableStateOf<Rect?>(null) }
     var titleBounds by remember { mutableStateOf<Rect?>(null) }
@@ -96,60 +84,6 @@ fun TopHeaderBar(
         val tb = titleBounds
         if (ib != null && tb != null) {
             onBrandBoundsChanged?.invoke(ib, tb)
-        }
-    }
-
-    var displayedText by remember(festivalActive, festivalConfig.text) {
-        mutableStateOf("iTune")
-    }
-
-    // Execute the festival animation sequence only after the splash-to-top-bar transition has finished
-    // Keeps typing and erasing iTune and the festival text infinitely while festival mode is active.
-    // The ic_itune_waves XML icon is NEVER hidden once reached.
-    LaunchedEffect(showBrandLogoAndTitle, festivalActive, festivalConfig.text) {
-        if (!showBrandLogoAndTitle) return@LaunchedEffect
-
-        if (!festivalActive) {
-            displayedText = "iTune"
-            return@LaunchedEffect
-        }
-
-        while (true) {
-            val festText = festivalConfig.text.trim().ifEmpty { "iTune" }
-
-            // 1. Display iTune in JSON colour with subtle glow
-            displayedText = "iTune"
-            delay(2000L)
-
-            // 2. Delete iTune character by character
-            for (i in ("iTune".length - 1) downTo 0) {
-                displayedText = "iTune".substring(0, i)
-                delay(60L)
-            }
-            displayedText = ""
-            delay(180L)
-
-            // 3. Type the Festival Message character by character
-            for (i in 1..festText.length) {
-                displayedText = festText.substring(0, i)
-                delay(75L)
-            }
-            delay(2400L)
-
-            // 4. Clear the Festival Message character by character
-            for (i in (festText.length - 1) downTo 0) {
-                displayedText = festText.substring(0, i)
-                delay(50L)
-            }
-            displayedText = ""
-            delay(180L)
-
-            // 5. Type iTune again character by character
-            for (i in 1.."iTune".length) {
-                displayedText = "iTune".substring(0, i)
-                delay(75L)
-            }
-            delay(200L)
         }
     }
 
@@ -177,53 +111,28 @@ fun TopHeaderBar(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .drawBehind {
-                        if (festivalActive) {
-                            drawCircle(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        festivalColor.copy(alpha = 0.40f),
-                                        festivalColor.copy(alpha = 0.12f),
-                                        Color.Transparent
-                                    ),
-                                    center = center,
-                                    radius = size.maxDimension * 0.75f
-                                )
-                            )
-                        }
-                    }
                     .onGloballyPositioned { coords ->
                         iconBounds = coords.boundsInRoot()
                         publishBounds()
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_itune_waves),
-                    contentDescription = "iTune Brand Waves",
-                    modifier = Modifier.fillMaxSize(),
-                    colorFilter = ColorFilter.tint(if (festivalActive) festivalColor else Color.White)
+                Text(
+                    text = "♫",
+                    color = Color.White,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.Bold,
                 )
             }
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = displayedText,
-                color = if (festivalActive) festivalColor else AppleTextPrimary,
+                text = "iTune",
+                color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = (-0.5).sp,
-                style = if (festivalActive) {
-                    LocalTextStyle.current.copy(
-                        shadow = Shadow(
-                            color = festivalColor.copy(alpha = 0.52f),
-                            offset = Offset(0f, 0f),
-                            blurRadius = 14f
-                        )
-                    )
-                } else {
-                    LocalTextStyle.current
-                },
+                style = LocalTextStyle.current,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.onGloballyPositioned { coords ->
@@ -266,7 +175,6 @@ fun TopHeaderBar(
                 )
                 AppleMemojiAvatar(
                     size = 32.dp,
-                    avatarId = resolvedAvatarId,
                     onClick = onProfileClick,
                     onLongClick = onProfileLongClick,
                 )
