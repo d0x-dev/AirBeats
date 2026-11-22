@@ -269,10 +269,12 @@ fun CachePlaylistScreen(
         }
     }
 
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
+
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        if (gradientColors.isNotEmpty() && gradientAlpha > 0f) {
+        if (!isBlurDisabled && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

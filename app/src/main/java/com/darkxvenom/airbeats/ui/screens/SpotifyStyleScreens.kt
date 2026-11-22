@@ -220,16 +220,27 @@ fun SpotifyHomeScreen(
         }
     }
 
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val hazeState = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }
     val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
-    fun isSectionVisible(section: MaterialHomeSection): Boolean = section.id !in hiddenSections
+    fun isSectionVisible(section: MaterialHomeSection): Boolean {
+        if (isLiteMode) {
+            if (section == MaterialHomeSection.FRESH_FINDS ||
+                section == MaterialHomeSection.SPOTLIGHT ||
+                section == MaterialHomeSection.TOP_ARTISTS) {
+                return false
+            }
+        }
+        return section.id !in hiddenSections
+    }
 
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(SpotifyBg)
-                .haze(state = hazeState)
+                .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier)
         ) {
             AirBeatsMeshBackground()
 
@@ -757,7 +768,7 @@ fun SpotifyLibraryScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(SpotifyBg)
-                .haze(state = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }),
+                .then(if (!com.darkxvenom.airbeats.utils.isBlurDisabled()) Modifier.haze(state = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }) else Modifier),
         ) {
             AirBeatsMeshBackground()
             androidx.compose.runtime.CompositionLocalProvider(
@@ -846,13 +857,14 @@ private fun SpotifyScaffold(
 ) {
     val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val hazeState = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(SpotifyBg)
-                .haze(state = hazeState)
+                .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier)
         ) {
             AirBeatsMeshBackground()
             LazyColumn(

@@ -48,7 +48,7 @@ fun TopFadeBlur(
     height: Dp = defaultTopFadeBlurHeight(),
     alpha: Float = 1f,
 ) {
-    if (alpha <= 0.001f) return
+    if (com.darkxvenom.airbeats.utils.isBlurDisabled() || alpha <= 0.001f) return
 
     val hazeStyle = if (pageColor == Color.Transparent || pageColor.alpha <= 0.001f) {
         dev.chrisbanes.haze.HazeStyle(

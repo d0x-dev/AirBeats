@@ -819,22 +819,14 @@ fun LyricsMenu(
         }
     }
 
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(bottom = 16.dp + WindowInsets.systemBars.asPaddingValues().calculateBottomPadding())
     ) {
-        // Drag handle indicator
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(vertical = 10.dp)
-                .size(width = 36.dp, height = 4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
-        )
-
         val mediaMetadata = mediaMetadataProvider()
         val currentLyricsEntity = lyricsProvider()
         val isSynced = currentLyricsEntity?.lyrics?.startsWith("[") == true
@@ -912,7 +904,7 @@ fun LyricsMenu(
         }
 
         // Active Translation Banner with Quick Clear
-        if (isCurrentSongTranslated) {
+        if (!isLiteMode && isCurrentSongTranslated) {
             Surface(
                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                 shape = RoundedCornerShape(14.dp),
@@ -972,36 +964,48 @@ fun LyricsMenu(
             }
         }
 
-        // Modern 2x2 Action Cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            EnhancedMenuActionCard(
-                title = stringResource(R.string.Translate),
-                subtitle = if (isCurrentSongTranslated) "Retranslate" else "AI Translation",
-                icon = R.drawable.translate,
-                isPrimary = true,
-                badge = if (isCurrentSongTranslated) "Active" else "AI",
-                modifier = Modifier.weight(1f),
-                onClick = { showTranslateDialog = true }
-            )
+        // Action Cards
+        if (!isLiteMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                EnhancedMenuActionCard(
+                    title = stringResource(R.string.Translate),
+                    subtitle = if (isCurrentSongTranslated) "Retranslate" else "AI Translation",
+                    icon = R.drawable.translate,
+                    isPrimary = true,
+                    badge = if (isCurrentSongTranslated) "Active" else "AI",
+                    modifier = Modifier.weight(1f),
+                    onClick = { showTranslateDialog = true }
+                )
 
-            EnhancedMenuActionCard(
-                title = stringResource(R.string.search),
-                subtitle = stringResource(R.string.search_online),
-                icon = R.drawable.search,
-                modifier = Modifier.weight(1f),
-                onClick = { showSearchDialog = true }
-            )
+                EnhancedMenuActionCard(
+                    title = stringResource(R.string.search),
+                    subtitle = stringResource(R.string.search_online),
+                    icon = R.drawable.search,
+                    modifier = Modifier.weight(1f),
+                    onClick = { showSearchDialog = true }
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
         }
 
-        Spacer(Modifier.height(10.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (isLiteMode) {
+                EnhancedMenuActionCard(
+                    title = stringResource(R.string.search),
+                    subtitle = stringResource(R.string.search_online),
+                    icon = R.drawable.search,
+                    modifier = Modifier.weight(1f),
+                    onClick = { showSearchDialog = true }
+                )
+            }
+
             EnhancedMenuActionCard(
                 title = stringResource(R.string.refetch),
                 subtitle = stringResource(R.string.ui_heading_reload_lyrics),

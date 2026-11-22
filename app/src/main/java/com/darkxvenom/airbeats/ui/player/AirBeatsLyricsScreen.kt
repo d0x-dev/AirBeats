@@ -142,6 +142,7 @@ fun AirBeatsLyricsScreen(
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
     val rawRotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
     val rotateBackground = if (com.darkxvenom.airbeats.utils.isLiteModeActive()) false else rawRotateBackground
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
 
     val infiniteTransition = rememberInfiniteTransition(label = "backgroundRotation")
     val rotation by infiniteTransition.animateFloat(
@@ -242,32 +243,34 @@ fun AirBeatsLyricsScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clipToBounds()
-        ) {
-            coil.compose.AsyncImage(
-                model = mediaMetadata.thumbnailUrl,
-                contentDescription = null,
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(48.dp)
-                    .graphicsLayer {
-                        if (rotateBackground) {
-                            scaleX = 2.5f
-                            scaleY = 2.5f
-                            rotationZ = rotation
-                            transformOrigin = TransformOrigin.Center
-                        }
-                    }
-            )
+        if (!isBlurDisabled) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f))
-            )
+                    .clipToBounds()
+            ) {
+                coil.compose.AsyncImage(
+                    model = mediaMetadata.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(48.dp)
+                        .graphicsLayer {
+                            if (rotateBackground) {
+                                scaleX = 2.5f
+                                scaleY = 2.5f
+                                rotationZ = rotation
+                                transformOrigin = TransformOrigin.Center
+                            }
+                        }
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f))
+                )
+            }
         }
 
         // Check orientation and layout accordingly

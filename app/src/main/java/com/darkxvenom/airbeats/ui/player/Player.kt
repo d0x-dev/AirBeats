@@ -1160,7 +1160,7 @@ fun BottomSheetPlayer(
                             },
                             label = "blurBackground"
                         ) { thumbnailUrl ->
-                            if (thumbnailUrl != null) {
+                            if (!isLiteMode && thumbnailUrl != null) {
                                 Box(modifier = Modifier.alpha(backgroundAlpha)) {
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
@@ -3140,17 +3140,20 @@ private fun SpotifyPlayerBackdrop(
     thumbnailUrl: String?,
     modifier: Modifier = Modifier,
 ) {
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     Box(modifier = modifier.background(Color.Black)) {
-        AsyncImage(
-            model = thumbnailUrl?.highQualityThumbnail(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(110.dp)
-                .alpha(0.42f)
-                .scale(1.14f)
-        )
+        if (!isBlurDisabled) {
+            AsyncImage(
+                model = thumbnailUrl?.highQualityThumbnail(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(110.dp)
+                    .alpha(0.42f)
+                    .scale(1.14f)
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -3873,36 +3876,39 @@ private fun ImmersivePlayerBackdrop(
                             }
                     )
 
-                    AsyncImage(
-                        model = artworkUrl.highQualityThumbnail(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .blur(90.dp)
-                            .graphicsLayer {
-                                compositingStrategy = CompositingStrategy.Offscreen
-                            }
-                            .drawWithCache {
-                                val blurMask = Brush.verticalGradient(
-                                    colorStops = arrayOf(
-                                        0f to Color.Transparent,
-                                        0.46f to Color.Transparent,
-                                        0.58f to Color.Black.copy(alpha = 0.6f),
-                                        0.72f to Color.Black,
-                                        1f to Color.Black,
-                                    )
-                                )
-
-                                onDrawWithContent {
-                                    drawContent()
-                                    drawRect(
-                                        brush = blurMask,
-                                        blendMode = BlendMode.DstIn,
-                                    )
+                    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
+                    if (!isBlurDisabled) {
+                        AsyncImage(
+                            model = artworkUrl.highQualityThumbnail(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .blur(90.dp)
+                                .graphicsLayer {
+                                    compositingStrategy = CompositingStrategy.Offscreen
                                 }
-                            }
-                    )
+                                .drawWithCache {
+                                    val blurMask = Brush.verticalGradient(
+                                        colorStops = arrayOf(
+                                            0f to Color.Transparent,
+                                            0.46f to Color.Transparent,
+                                            0.58f to Color.Black.copy(alpha = 0.6f),
+                                            0.72f to Color.Black,
+                                            1f to Color.Black,
+                                        )
+                                    )
+
+                                    onDrawWithContent {
+                                        drawContent()
+                                        drawRect(
+                                            brush = blurMask,
+                                            blendMode = BlendMode.DstIn,
+                                        )
+                                    }
+                                }
+                        )
+                    }
                 }
             }
         }

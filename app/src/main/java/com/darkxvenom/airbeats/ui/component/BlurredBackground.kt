@@ -29,6 +29,14 @@ fun BlurredBackground(
     modifier: Modifier = Modifier,
     blurRadius: androidx.compose.ui.unit.Dp = 90.dp
 ) {
+    if (com.darkxvenom.airbeats.utils.isBlurDisabled()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        )
+        return
+    }
     if (model != null) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             AsyncImage(
@@ -57,6 +65,15 @@ fun LibraryMeshBackground(
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val surfaceColor = if (isDark) Color(0xFF050505) else Color(0xFFF9F9F9)
+
+    if (com.darkxvenom.airbeats.utils.isBlurDisabled()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(surfaceColor)
+        )
+        return
+    }
 
     Box(
         modifier = modifier
@@ -131,10 +148,10 @@ fun ScreenAdaptiveBackground(
     artworkUrl: String?,
     modifier: Modifier = Modifier,
 ) {
-    val isLite = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val isBlurOff = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val (dynamicBackground, _) = rememberPreference(DynamicBackgroundKey, defaultValue = true)
 
-    if (isLite || !dynamicBackground) {
+    if (isBlurOff || !dynamicBackground) {
         Box(
             modifier = modifier
                 .fillMaxSize()

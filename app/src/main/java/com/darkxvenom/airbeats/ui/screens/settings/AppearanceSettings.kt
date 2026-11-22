@@ -229,8 +229,8 @@ fun AppearanceSettings(
         }
     }
 
-    LaunchedEffect(frostedGlassCardsButtons) {
-        if (frostedGlassCardsButtons && darkMode != DarkMode.ON) {
+    LaunchedEffect(frostedGlassCardsButtons, isLiteMode) {
+        if (!isLiteMode && frostedGlassCardsButtons && darkMode != DarkMode.ON) {
             onDarkModeChange(DarkMode.ON)
         }
     }
@@ -686,26 +686,30 @@ fun AppearanceSettings(
                                 )
                             }
                         ) else emptyArray()),
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.dark_theme)) },
-                            icon = { Icon(painterResource(R.drawable.dark_mode), null) },
-                            selectedValue = if (enableLiquidGlass || frostedGlassCardsButtons) DarkMode.ON else if (isPlayful) DarkMode.OFF else darkMode,
-                            onValueSelected = onDarkModeChange,
-                            valueText = {
-                                if (enableLiquidGlass || frostedGlassCardsButtons) {
-                                    stringResource(R.string.dark_theme_on)
-                                } else if (isPlayful) {
-                                    stringResource(R.string.dark_theme_off)
-                                } else {
-                                    when (it) {
-                                        DarkMode.ON -> stringResource(R.string.dark_theme_on)
-                                        DarkMode.OFF -> stringResource(R.string.dark_theme_off)
-                                        DarkMode.AUTO -> stringResource(R.string.dark_theme_follow_system)
+                        {
+                            val effectiveFrosted = if (isLiteMode) false else frostedGlassCardsButtons
+                            val effectiveLiquid = if (isLiteMode) false else enableLiquidGlass
+                            EnumListPreference(
+                                title = { Text(stringResource(R.string.dark_theme)) },
+                                icon = { Icon(painterResource(R.drawable.dark_mode), null) },
+                                selectedValue = if (effectiveLiquid || effectiveFrosted) DarkMode.ON else if (isPlayful) DarkMode.OFF else darkMode,
+                                onValueSelected = onDarkModeChange,
+                                valueText = {
+                                    if (effectiveLiquid || effectiveFrosted) {
+                                        stringResource(R.string.dark_theme_on)
+                                    } else if (isPlayful) {
+                                        stringResource(R.string.dark_theme_off)
+                                    } else {
+                                        when (it) {
+                                            DarkMode.ON -> stringResource(R.string.dark_theme_on)
+                                            DarkMode.OFF -> stringResource(R.string.dark_theme_off)
+                                            DarkMode.AUTO -> stringResource(R.string.dark_theme_follow_system)
+                                        }
                                     }
-                                }
-                            },
-                            isEnabled = !enableLiquidGlass && !frostedGlassCardsButtons && !isPlayful
-                        )},
+                                },
+                                isEnabled = isLiteMode || (!enableLiquidGlass && !frostedGlassCardsButtons && !isPlayful)
+                            )
+                        },
                         *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
                             {
                                 PreferenceEntry(

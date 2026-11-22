@@ -112,8 +112,15 @@ fun PlayfulHomeScreen(
     
     var selectedTab by remember { mutableStateOf("history") }
     val hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
-    val isSectionVisible: (MaterialHomeSection) -> Boolean = remember(hiddenSections) {
-        { section -> section.id !in hiddenSections }
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val isSectionVisible: (MaterialHomeSection) -> Boolean = remember(hiddenSections, isLiteMode) {
+        { section ->
+            if (isLiteMode && (section == MaterialHomeSection.FRESH_FINDS || section == MaterialHomeSection.SPOTLIGHT || section == MaterialHomeSection.TOP_ARTISTS)) {
+                false
+            } else {
+                section.id !in hiddenSections
+            }
+        }
     }
 
     val ytGridItem: @Composable (YTItem) -> Unit = { item ->
@@ -263,6 +270,7 @@ fun PlayfulHomeScreen(
             Scaffold(
                 containerColor = Color(0xFFFFD54F) // Bright yellow background
             ) { padding ->
+                val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
                 val playfulListState = androidx.compose.foundation.lazy.rememberLazyListState()
                 val hazeState = remember { HazeState() }
                 val isAtTop by remember {
@@ -271,7 +279,7 @@ fun PlayfulHomeScreen(
                     }
                 }
                 val blurAlpha by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (isAtTop) 0f else 1f,
+                    targetValue = if (isBlurDisabled || isAtTop) 0f else 1f,
                     animationSpec = androidx.compose.animation.core.tween(300),
                     label = "PlayfulBlurAlpha"
                 )
@@ -446,7 +454,7 @@ fun PlayfulHomeScreen(
                                     .fillMaxHeight()
                                     .weight(1f)
                                     .padding(end = 16.dp)
-                                    .haze(state = hazeState),
+                                    .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier),
                                 contentPadding = PaddingValues(bottom = 250.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {

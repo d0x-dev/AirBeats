@@ -196,3 +196,17 @@ fun isLiteModeActive(): Boolean {
 fun Context.isLiteMode(): Boolean {
     return (this.dataStore[com.darkxvenom.airbeats.constants.AppModeKey] ?: com.darkxvenom.airbeats.constants.APP_MODE_LITE) == com.darkxvenom.airbeats.constants.APP_MODE_LITE
 }
+
+@Composable
+fun isBlurDisabled(): Boolean {
+    val isLite = isLiteModeActive()
+    val (disableBlur) = rememberPreference(
+        key = com.darkxvenom.airbeats.constants.DisableBlurKey,
+        defaultValue = false
+    )
+    return isLite || disableBlur
+}
+
+fun Context.isBlurDisabled(): Boolean {
+    return isLiteMode() || (this.dataStore[com.darkxvenom.airbeats.constants.DisableBlurKey] ?: false)
+}

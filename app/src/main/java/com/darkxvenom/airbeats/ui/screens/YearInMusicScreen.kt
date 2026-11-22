@@ -951,12 +951,14 @@ private fun SongSpotlightPage(
         modifier = modifier.combinedClickable(onClick = {}, onLongClick = onLongClick)
     ) {
         // Blurred album art full-screen background
-        AsyncImage(
-            model             = imageModel,
-            contentDescription = null,
-            contentScale      = ContentScale.Crop,
-            modifier          = Modifier.fillMaxSize().blur(20.dp),
-        )
+        if (!com.darkxvenom.airbeats.utils.isBlurDisabled()) {
+            AsyncImage(
+                model             = imageModel,
+                contentDescription = null,
+                contentScale      = ContentScale.Crop,
+                modifier          = Modifier.fillMaxSize().blur(20.dp),
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -1062,12 +1064,14 @@ private fun ArtistSpotlightPage(
         modifier = modifier.combinedClickable(onClick = {}, onLongClick = onLongClick)
     ) {
         // Blurred artist photo background
-        AsyncImage(
-            model             = imageModel,
-            contentDescription = null,
-            contentScale      = ContentScale.Crop,
-            modifier          = Modifier.fillMaxSize().blur(24.dp),
-        )
+        if (!com.darkxvenom.airbeats.utils.isBlurDisabled()) {
+            AsyncImage(
+                model             = imageModel,
+                contentDescription = null,
+                contentScale      = ContentScale.Crop,
+                modifier          = Modifier.fillMaxSize().blur(24.dp),
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()

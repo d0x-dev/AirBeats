@@ -95,6 +95,8 @@ fun NewClassicMiniPlayer(
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
     val isPlaying by playerConnection.isPlaying.collectAsState()
+    val playbackState by playerConnection.playbackState.collectAsState()
+    val isLoading = playbackState == androidx.media3.common.Player.STATE_BUFFERING
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val currentSong by playerConnection.currentSong.collectAsState(initial = null)
     val layoutDirection = LocalLayoutDirection.current
@@ -215,13 +217,22 @@ fun NewClassicMiniPlayer(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier.size(46.dp)
                 ) {
-                    CircularProgressIndicator(
-                        progress = { progress },
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
-                        strokeWidth = 2.5.dp
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                            strokeWidth = 2.5.dp
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            progress = { progress },
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                            strokeWidth = 2.5.dp
+                        )
+                    }
 
                     AsyncImage(
                         model = mediaMetadata?.thumbnailUrl?.highQualityThumbnail(),
@@ -332,30 +343,38 @@ fun NewClassicMiniPlayer(
                         },
                         contentAlignment = Alignment.Center
                     ) {
-                        AnimatedContent(
-                            targetState = isPlaying,
-                            transitionSpec = {
-                                (fadeIn(animationSpec = tween(150)) +
-                                        scaleIn(
-                                            initialScale = 0.4f, animationSpec = spring(
-                                                dampingRatio = Spring.DampingRatioLowBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            )
-                                        )
-                                        ).togetherWith(
-                                        fadeOut(animationSpec = tween(100)) +
-                                                scaleOut(targetScale = 1.6f, animationSpec = tween(100))
-                                    )
-                            },
-                            label = "playPauseIcon",
-                        ) { playing ->
-                            Icon(
-                                painter = painterResource(
-                                    if (playing) R.drawable.pause else R.drawable.play
-                                ),
-                                contentDescription = null,
+                        if (isLoading) {
+                            CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
+                        } else {
+                            AnimatedContent(
+                                targetState = isPlaying,
+                                transitionSpec = {
+                                    (fadeIn(animationSpec = tween(150)) +
+                                            scaleIn(
+                                                initialScale = 0.4f, animationSpec = spring(
+                                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                                    stiffness = Spring.StiffnessLow
+                                                )
+                                            )
+                                            ).togetherWith(
+                                            fadeOut(animationSpec = tween(100)) +
+                                                    scaleOut(targetScale = 1.6f, animationSpec = tween(100))
+                                        )
+                                },
+                                label = "playPauseIcon",
+                            ) { playing ->
+                                Icon(
+                                    painter = painterResource(
+                                        if (playing) R.drawable.pause else R.drawable.play
+                                    ),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                         }
                     }
                 }

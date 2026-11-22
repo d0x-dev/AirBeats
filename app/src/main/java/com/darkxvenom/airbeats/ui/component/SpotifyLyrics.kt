@@ -251,21 +251,25 @@ fun SpotifyLyrics(
         )
     }
 
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        AsyncImage(
-            model = mediaMetadata?.thumbnailUrl?.highQualityThumbnail(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(120.dp)
-                .alpha(0.34f)
-                .scale(1.16f)
-        )
+        if (!isBlurDisabled) {
+            AsyncImage(
+                model = mediaMetadata?.thumbnailUrl?.highQualityThumbnail(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(120.dp)
+                    .alpha(0.34f)
+                    .scale(1.16f)
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()

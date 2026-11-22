@@ -22,7 +22,7 @@ import com.darkxvenom.airbeats.utils.rememberPreference
  */
 @Composable
 fun isFrostedGlassUiEnabled(): Boolean {
-    if (isLiteModeActive()) return false
+    if (com.darkxvenom.airbeats.utils.isBlurDisabled()) return false
     val (enabled) = rememberPreference(FrostedGlassCardsButtonsKey, defaultValue = true)
     return enabled
 }

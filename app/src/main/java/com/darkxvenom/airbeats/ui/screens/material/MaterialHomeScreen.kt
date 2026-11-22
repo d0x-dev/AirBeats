@@ -182,6 +182,7 @@ fun MaterialHomeScreen(
     val pullRefreshState = rememberPullToRefreshState()
     val listState = rememberLazyListState()
 
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val hazeState = remember { HazeState() }
     val isAtTop by remember {
         derivedStateOf {
@@ -189,7 +190,7 @@ fun MaterialHomeScreen(
         }
     }
     val blurAlpha by animateFloatAsState(
-        targetValue = if (isAtTop) 0f else 1f,
+        targetValue = if (isBlurDisabled || isAtTop) 0f else 1f,
         animationSpec = tween(300),
         label = "MaterialHomeBlurAlpha"
     )
@@ -318,7 +319,7 @@ fun MaterialHomeScreen(
                 verticalArrangement = Arrangement.spacedBy(22.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .haze(state = hazeState),
+                    .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier),
             ) {
                 // 1. HERO SECTION
                 if (isSectionVisible(MaterialHomeSection.HERO)) {

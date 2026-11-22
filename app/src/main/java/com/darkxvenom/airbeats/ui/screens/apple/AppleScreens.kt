@@ -339,6 +339,7 @@ fun AppleScaffold(
 ) {
     val lazyListState = rememberLazyListState()
     val hazeState = remember { HazeState() }
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val pullRefreshState = androidx.compose.material3.pulltorefresh.rememberPullToRefreshState()
     
     Box(Modifier.fillMaxSize()) {
@@ -355,7 +356,7 @@ fun AppleScaffold(
                         )
                     } else modifier
                 }
-                .haze(state = hazeState)
+                .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier)
         ) {
             AppleMeshBackground()
             LazyColumn(
@@ -548,8 +549,18 @@ fun AppleHomeScreen(
         similarRecommendations.isNullOrEmpty() &&
         homePage?.sections.isNullOrEmpty()
 
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
     val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
-    fun isSectionVisible(section: MaterialHomeSection): Boolean = section.id !in hiddenSections
+    fun isSectionVisible(section: MaterialHomeSection): Boolean {
+        if (isLiteMode) {
+            if (section == MaterialHomeSection.FRESH_FINDS ||
+                section == MaterialHomeSection.SPOTLIGHT ||
+                section == MaterialHomeSection.TOP_ARTISTS) {
+                return false
+            }
+        }
+        return section.id !in hiddenSections
+    }
 
     val freshPicks = remember(quickPicks) { quickPicks?.drop(6).orEmpty().take(12) }
     val artistTriples = remember(quickPicks) {

@@ -245,6 +245,7 @@ fun HomeScreen(
         }
     }
 
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val hazeState = remember { HazeState() }
     val isAtTop by remember {
         derivedStateOf {
@@ -252,13 +253,23 @@ fun HomeScreen(
         }
     }
     val blurAlpha by animateFloatAsState(
-        targetValue = if (isAtTop) 0f else 1f,
+        targetValue = if (isBlurDisabled || isAtTop) 0f else 1f,
         animationSpec = tween(300),
         label = "HomeScreenBlurAlpha"
     )
 
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
     val hiddenSections by rememberPreference(com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey, defaultValue = com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections)
-    fun isSectionVisible(section: com.darkxvenom.airbeats.constants.MaterialHomeSection): Boolean = section.id !in hiddenSections
+    fun isSectionVisible(section: com.darkxvenom.airbeats.constants.MaterialHomeSection): Boolean {
+        if (isLiteMode) {
+            if (section == com.darkxvenom.airbeats.constants.MaterialHomeSection.FRESH_FINDS ||
+                section == com.darkxvenom.airbeats.constants.MaterialHomeSection.SPOTLIGHT ||
+                section == com.darkxvenom.airbeats.constants.MaterialHomeSection.TOP_ARTISTS) {
+                return false
+            }
+        }
+        return section.id !in hiddenSections
+    }
 
     val localGridItem: @Composable (LocalItem) -> Unit = {
         when (it) {
@@ -465,7 +476,7 @@ fun HomeScreen(
                     .asPaddingValues(),
                 modifier = Modifier
                     .fillMaxSize()
-                    .haze(state = hazeState)
+                    .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier)
             ) {
                 // ModernHomeTopBarInline is now inside the LazyColumn
                 item(key = "home_top_bar") {

@@ -222,6 +222,7 @@ fun NewClassicHomeScreen(
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val hazeState = remember { dev.chrisbanes.haze.HazeState() }
     val isAtTop by remember {
         androidx.compose.runtime.derivedStateOf {
@@ -229,7 +230,7 @@ fun NewClassicHomeScreen(
         }
     }
     val blurAlpha by animateFloatAsState(
-        targetValue = if (isAtTop) 0f else 1f,
+        targetValue = if (isBlurDisabled || isAtTop) 0f else 1f,
         animationSpec = androidx.compose.animation.core.tween(300),
         label = "NewClassicBlurAlpha"
     )
@@ -333,7 +334,7 @@ fun NewClassicHomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(screenBg)
-                .haze(state = hazeState),
+                .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier),
             contentPadding = PaddingValues(
                 bottom = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding() + 110.dp
             )

@@ -1347,6 +1347,7 @@ fun ProfileSection(
     accountName: String,
     currentSelection: AvatarSelection
 ) {
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1362,20 +1363,22 @@ fun ProfileSection(
                 contentAlignment = Alignment.Center
             ) {
                 // Outer glow
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    Color.Transparent
+                if (!isLiteMode) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        Color.Transparent
+                                    )
                                 )
                             )
-                        )
-                        .blur(20.dp)
-                )
+                            .blur(20.dp)
+                    )
+                }
 
                 // Avatar container
                 Box(
@@ -1583,20 +1586,22 @@ fun ProfileSection(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Logo with glow effect
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    Color.Transparent
+                if (!isLiteMode) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                        Color.Transparent
+                                    )
                                 )
                             )
-                        )
-                        .blur(20.dp)
-                )
+                            .blur(20.dp)
+                    )
+                }
 
                 Box(
                     modifier = Modifier

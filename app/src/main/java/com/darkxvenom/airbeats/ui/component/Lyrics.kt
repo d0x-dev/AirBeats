@@ -219,6 +219,7 @@ fun Lyrics(
 
     val rawRotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
     val rotateBackground = if (com.darkxvenom.airbeats.utils.isLiteModeActive()) false else rawRotateBackground
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val currentSongId = mediaMetadata?.id
@@ -640,7 +641,7 @@ fun Lyrics(
     ) {
         if (isFullscreen) {
             mediaMetadata?.let { metadata ->
-                if (playerBackground == PlayerBackgroundStyle.BLUR) {
+                if (!isBlurDisabled && playerBackground == PlayerBackgroundStyle.BLUR) {
                     AsyncImage(
                         model = metadata.thumbnailUrl,
                         contentDescription = null,

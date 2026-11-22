@@ -198,6 +198,7 @@ fun BetterHomeScreen(
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
+    val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
     val hazeState = remember { dev.chrisbanes.haze.HazeState() }
     val isAtTop by remember {
         derivedStateOf {
@@ -205,7 +206,7 @@ fun BetterHomeScreen(
         }
     }
     val blurAlpha by animateFloatAsState(
-        targetValue = if (isAtTop) 0f else 1f,
+        targetValue = if (isBlurDisabled || isAtTop) 0f else 1f,
         animationSpec = tween(300),
         label = "BetterBlurAlpha"
     )
@@ -264,7 +265,7 @@ fun BetterHomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(screenBg)
-                .haze(state = hazeState),
+                .then(if (!isBlurDisabled) Modifier.haze(state = hazeState) else Modifier),
             contentPadding = PaddingValues(
                 bottom = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding() + 100.dp
             )
