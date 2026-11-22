@@ -55,7 +55,6 @@ import com.darkxvenom.airbeats.ui.component.LocalUserName
 import com.darkxvenom.airbeats.ui.component.itune.ArtistCircleShelf
 import com.darkxvenom.airbeats.ui.component.itune.FloatingMiniPlayer
 import com.darkxvenom.airbeats.ui.component.itune.FloatingNavBar
-import com.darkxvenom.airbeats.ui.component.itune.HomeShelfGroup
 import com.darkxvenom.airbeats.ui.component.itune.LatestSongsSection
 import com.darkxvenom.airbeats.ui.component.itune.LiveFeaturedHeroCarousel
 import com.darkxvenom.airbeats.ui.component.itune.NavTab
@@ -69,7 +68,9 @@ import com.darkxvenom.airbeats.viewmodels.HomeViewModel
 import com.darkxvenom.itune.backend.MusicTrack
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedItem
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedShelf
-import com.darkxvenom.airbeats.data.model.itune.HomeFeedModels
+import com.darkxvenom.airbeats.data.model.itune.HomeHeroCard
+import com.darkxvenom.airbeats.data.model.itune.HomeItemKind
+import com.darkxvenom.airbeats.data.model.itune.HomeShelfGroup
 import com.darkxvenom.airbeats.ui.component.itune.rememberSpringOverscrollState
 import com.darkxvenom.airbeats.ui.component.itune.springOverscroll
 
@@ -114,7 +115,7 @@ fun ITuneHomeScreen(
                         isExplicit = item.explicit,
                     )
                     is AlbumItem -> HomeFeedItem(
-                        kind = FeedItemKind.ALBUM,
+                        kind = HomeItemKind.ALBUM,
                         title = item.title,
                         subtitle = item.artists.orEmpty().joinToString(" • ") { it.name }
                             .ifBlank { item.year?.toString().orEmpty() },
