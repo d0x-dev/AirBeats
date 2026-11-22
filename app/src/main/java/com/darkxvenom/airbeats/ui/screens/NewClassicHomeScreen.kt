@@ -393,51 +393,7 @@ fun NewClassicHomeScreen(
             }
 
             // 8. Recommended by AI
-            if (aiRecommendedPlaylist != null && aiRecommendedPlaylist!!.second.isNotEmpty()) {
-                val (playlist, songs) = aiRecommendedPlaylist!!
-                item(key = "section_ai_recommended") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = recommendedByAiQueueTitle,
-                        onSeeAllClick = {
-                            navController.navigate("local_playlist/${playlist.id}")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(songs, key = { it.id }) { song ->
-                            NewClassicSongCard(
-                                title = song.title,
-                                subtitle = song.artists.joinToString { it.name },
-                                thumbnailUrl = song.thumbnailUrl,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    playerConnection.playQueue(
-                                        ListQueue(
-                                            title = recommendedByAiQueueTitle,
-                                            items = songs.map { it.toMediaItem() },
-                                            startIndex = songs.indexOf(song).coerceAtLeast(0)
-                                        )
-                                    )
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        SongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+
 
             item(key = "bottom_spacer") {
                 Spacer(Modifier.height(40.dp))
