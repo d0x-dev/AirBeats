@@ -3898,8 +3898,17 @@ class MusicService :
             return dataSpec.withStreamUrl(it.url, it.contentLength)
         }
 
+            val enableJioSaavn = runBlocking {
+                dataStore.data.map { preferences ->
+                    preferences[EnableJioSaavnKey] ?: true
+                }.first()
+            }
+
             var actualMediaId = mediaId
             if (mediaId.startsWith("JS:")) {
+                check(enableJioSaavn) {
+                    "JioSaavn is disabled. This JioSaavn-only track is not available from YouTube."
+                }
                 var streamUrl: String? = null
                 try {
                     streamUrl = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
@@ -3993,12 +4002,6 @@ class MusicService :
                         }
                     }
                 }
-            }
-
-            val enableJioSaavn = runBlocking {
-                dataStore.data.map { preferences ->
-                    preferences[EnableJioSaavnKey] ?: true
-                }.first()
             }
 
             // When JioSaavn integration is enabled, prioritize JioSaavn 320kbps streams first
