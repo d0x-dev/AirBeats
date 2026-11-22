@@ -1016,7 +1016,7 @@ class MainActivity : FragmentActivity() {
 
                             LaunchedEffect(navBackStackEntry, homeScreenStyle) {
                                 shouldShowTopBar =
-                                    !active && navBackStackEntry?.destination?.route in topLevelScreens && navBackStackEntry?.destination?.route != "settings" && homeScreenStyle != HomeScreenStyle.ITUNE
+                                    !active && navBackStackEntry?.destination?.route in topLevelScreens && navBackStackEntry?.destination?.route != "settings" && !(navBackStackEntry?.destination?.route == Screens.Home.route && homeScreenStyle == HomeScreenStyle.ITUNE)
                             }
 
                             val coroutineScope = rememberCoroutineScope()
