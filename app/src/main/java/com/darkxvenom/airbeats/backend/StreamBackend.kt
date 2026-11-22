@@ -8,9 +8,6 @@ import android.util.Base64
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
 import android.util.Log
-import org.schabi.newpipe.extractor.NewPipe
-import org.schabi.newpipe.extractor.ServiceList
-import org.schabi.newpipe.extractor.stream.StreamInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -47,7 +44,7 @@ object StreamBackend {
         if (newPipeInitialized) return
         synchronized(this) {
             if (newPipeInitialized) return
-            NewPipe.init(com.darkxvenom.airbeats.innertube.NewPipeDownloader.instance)
+            NewPipe.init(NewPipeDownloader.instance)
             runCatching {
                 org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor.setFetchIosClient(true)
             }.onFailure { Log.w(TAG, "Could not enable iOS extractor fallback", it) }
@@ -79,7 +76,7 @@ object StreamBackend {
     // ── YouTube (NewPipeExtractor, same as iTune) ───────────────────────────
     private fun youtube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
         ensureNewPipe()
-        val info = StreamInfo.getInfo(ServiceList.YouTube, "https://www.youtube.com/watch?v=$id")
+        val info = NewPipeUtils.streamInfo(id)
         val all = info.audioStreams.orEmpty().filter {
             it.isUrl && !it.content.isNullOrBlank() &&
                 it.audioTrackType != AudioTrackType.DUBBED && it.averageBitrate > 0
