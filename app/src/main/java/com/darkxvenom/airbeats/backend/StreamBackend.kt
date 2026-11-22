@@ -16,7 +16,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.schabi.newpipe.extractor.MediaFormat
-import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.stream.AudioTrackType
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import java.util.concurrent.ConcurrentHashMap
@@ -44,7 +43,6 @@ object StreamBackend {
         if (newPipeInitialized) return
         synchronized(this) {
             if (newPipeInitialized) return
-            NewPipe.init(NewPipeDownloader.instance)
             runCatching {
                 org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor.setFetchIosClient(true)
             }.onFailure { Log.w(TAG, "Could not enable iOS extractor fallback", it) }
