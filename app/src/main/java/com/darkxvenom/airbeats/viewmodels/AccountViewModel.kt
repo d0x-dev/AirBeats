@@ -20,6 +20,8 @@ import com.darkxvenom.airbeats.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -38,22 +40,34 @@ class AccountViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            YouTube.library("FEmusic_liked_playlists").completedLibraryPage().onSuccess {
-                playlists.value = it.items.filterIsInstance<PlaylistItem>()
-                    .filterNot { it.id == "SE" }
-            }.onFailure {
-                reportException(it)
-            }
-            YouTube.library("FEmusic_liked_albums").completedLibraryPage().onSuccess {
-                albums.value = it.items.filterIsInstance<AlbumItem>()
-            }.onFailure {
-                reportException(it)
-            }
-            YouTube.library("FEmusic_library_corpus_artists").completedLibraryPage().onSuccess {
-                artists.value = it.items.filterIsInstance<ArtistItem>()
-            }.onFailure {
-                reportException(it)
-            }
+            loadYouTubeLibrary()
+        }
+    }
+
+    fun refreshYouTubeLibrary() {
+        viewModelScope.launch { loadYouTubeLibrary() }
+    }
+
+    private suspend fun loadYouTubeLibrary() = withContext(Dispatchers.IO) {
+        val cookie = context.dataStore.getSuspend(com.darkxvenom.airbeats.constants.InnerTubeCookieKey)
+            .orEmpty()
+        YouTube.cookie = cookie
+        val playlistResult = YouTube.library("FEmusic_liked_playlists").completedLibraryPage()
+        playlistResult.onSuccess { page ->
+            playlists.value = page.items.filterIsInstance<PlaylistItem>()
+                .filterNot { it.id in setOf("LM", "SE", "NE", "SS", "SR", "LL", "WL") }
+        }.onFailure { reportException(it) }
+
+        YouTube.library("FEmusic_liked_albums").completedLibraryPage().onSuccess {
+            albums.value = it.items.filterIsInstance<AlbumItem>()
+        }.onFailure { reportException(it) }
+
+        YouTube.library("FEmusic_library_corpus_artists").completedLibraryPage().onSuccess {
+            artists.value = it.items.filterIsInstance<ArtistItem>()
+        }.onFailure { reportException(it) }
+
+        if (playlistResult.isSuccess) {
+            runCatching { com.darkxvenom.airbeats.utils.SyncUtils(context, com.darkxvenom.airbeats.db.MusicDatabase.getInstance(context)).syncSavedPlaylists() }
         }
     }
 
