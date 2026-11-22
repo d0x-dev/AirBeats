@@ -91,12 +91,8 @@ fun PlayfulHomeScreen(
     val pullRefreshState = rememberPullToRefreshState()
 
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
-    val explorePage by viewModel.explorePage.collectAsState()
     
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
@@ -427,7 +423,6 @@ fun PlayfulHomeScreen(
                                 }
                             }
 
-                            val freshFinds = remember(quickPicks) { quickPicks?.drop(8)?.take(8) ?: emptyList() }
                             val artistTriples = remember(quickPicks) {
                                 quickPicks?.mapNotNull { pick ->
                                     pick.artists.firstOrNull()?.let { artist ->
@@ -603,153 +598,6 @@ fun PlayfulHomeScreen(
                                     }
                                 }
 
-                                if (isSectionVisible(MaterialHomeSection.JUMP_BACK_IN)) {
-                                    val recents = keepListening ?: emptyList()
-                                    if (recents.isNotEmpty()) {
-                                        item {
-                                            Text(
-                                                text = stringResource(R.string.ui_text_jump_back_in),
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                modifier = Modifier.padding(top = 8.dp)
-                                            )
-                                        }
-                                        item {
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                items(recents) { item ->
-                                                    playfulLocalItemCard(item)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (isSectionVisible(MaterialHomeSection.SPOTLIGHT)) {
-                                    quickPicks?.firstOrNull()?.let { pick ->
-                                        val artist = pick.artists.firstOrNull()
-                                        if (artist != null) {
-                                            item {
-                                                UniversalArtistSpotlightCard(
-                                                    artistName = artist.name,
-                                                    artistId = artist.id,
-                                                    thumbnailUrl = artist.thumbnailUrl,
-                                                    fallbackThumbnail = pick.song.thumbnailUrl,
-                                                    onOpenArtist = {
-                                                        artist.id.takeIf { it.isNotBlank() }?.let { navController.navigate("artist/$it") }
-                                                    },
-                                                    onPlayRadio = {
-                                                        playerConnection.playQueue(YouTubeQueue.radio(pick.toMediaMetadata()))
-                                                    },
-                                                    style = HomeThemeStyle.CLASSIC
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (isSectionVisible(MaterialHomeSection.TOP_ARTISTS)) {
-                                    if (artistTriples.isNotEmpty()) {
-                                        item {
-                                            Text(
-                                                text = stringResource(R.string.ui_text_top_artists),
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                modifier = Modifier.padding(top = 8.dp)
-                                            )
-                                        }
-                                        item {
-                                            UniversalTopArtistsRow(
-                                                artists = artistTriples,
-                                                onArtistClick = { artistId ->
-                                                    artistId.takeIf { it.isNotBlank() }?.let { navController.navigate("artist/$it") }
-                                                },
-                                                style = HomeThemeStyle.CLASSIC
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (isSectionVisible(MaterialHomeSection.HEAVY_ROTATION)) {
-                                    val favs = forgottenFavorites ?: emptyList()
-                                    if (favs.isNotEmpty()) {
-                                        item {
-                                            Text(
-                                                text = stringResource(R.string.heavy_rotation),
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                modifier = Modifier.padding(top = 8.dp)
-                                            )
-                                        }
-                                        item {
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                items(favs) { song ->
-                                                    playfulSongCard(song)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (isSectionVisible(MaterialHomeSection.MIXES)) {
-                                    val playlists = accountPlaylists ?: emptyList()
-                                    if (playlists.isNotEmpty()) {
-                                        item {
-                                            Text(
-                                                text = stringResource(R.string.ui_sweep_your_mixes_playlists),
-                                                fontSize = 20.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.Black,
-                                                modifier = Modifier.padding(top = 8.dp)
-                                            )
-                                        }
-                                        item {
-                                            LazyRow(
-                                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                items(playlists) { item ->
-                                                    ytGridItem(item)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if (isSectionVisible(MaterialHomeSection.BECAUSE_YOU_LISTEN_TO)) {
-                                    similarRecommendations?.forEach { rec ->
-                                        if (rec.items.isNotEmpty()) {
-                                            item {
-                                                Text(
-                                                    text = "Similar to ${rec.title.title}",
-                                                    fontSize = 20.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = Color.Black,
-                                                    modifier = Modifier.padding(top = 8.dp)
-                                                )
-                                            }
-                                            item {
-                                                LazyRow(
-                                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    items(rec.items) { item ->
-                                                        ytGridItem(item)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                
                                 // Extra Sections matching Classic Home Screen
                                 homePage?.sections?.forEach { section ->
                                     val shouldShow = when {

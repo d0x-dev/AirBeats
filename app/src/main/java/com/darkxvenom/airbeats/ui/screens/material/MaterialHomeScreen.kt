@@ -167,10 +167,7 @@ fun MaterialHomeScreen(
     val displayName = rawUserName.takeIf { it.isNotBlank() } ?: stringResource(R.string.guest)
 
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
@@ -219,7 +216,6 @@ fun MaterialHomeScreen(
             // 2. Personal taste-driven radio mix from user's history / favorites
             val candidateSeeds = mutableListOf<com.darkxvenom.airbeats.models.MediaMetadata>()
             quickPicks?.take(15)?.forEach { candidateSeeds.add(it.toMediaMetadata()) }
-            forgottenFavorites?.take(15)?.forEach { candidateSeeds.add(it.toMediaMetadata()) }
 
             if (candidateSeeds.isEmpty()) {
                 withContext(Dispatchers.IO) {
@@ -354,8 +350,6 @@ fun MaterialHomeScreen(
                                         playerConnection = playerConnection,
                                         currentSongId = mediaMetadata?.id,
                                         quickPicks = quickPicks,
-                                        forgottenFavorites = forgottenFavorites,
-                                        keepListening = keepListening,
                                         homeSongs = homePage?.sections?.flatMap { it.items }?.filterIsInstance<com.darkxvenom.airbeats.innertube.models.SongItem>()
                                     )
                                 }
@@ -469,273 +463,8 @@ fun MaterialHomeScreen(
                 }
 
                 // 4. QUICK PICKS SECTION
-                if (isSectionVisible(MaterialHomeSection.QUICK_PICKS)) {
-                    quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-                        item(key = "quick_picks") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.ui_text_quick_picks),
-                                    subtitle = stringResource(R.string.ui_heading_trending_songs_picked_for_you),
-                                    actionText = stringResource(R.string.ui_extra_play_all),
-                                    actionIcon = Icons.Filled.PlayArrow,
-                                    onActionClick = {
-                                        picks.firstOrNull()?.let {
-                                            playerConnection.playQueue(YouTubeQueue.radio(it.toMediaMetadata()))
-                                        }
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(picks.take(12)) { item ->
-                                        MaterialMediaCard(
-                                            title = item.song.title,
-                                            subtitle = item.artists.joinToString { it.name },
-                                            thumbnailUrl = item.song.thumbnailUrl,
-                                            onClick = {
-                                                playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Shared YouTube Music shelves are rendered below.
 
-                // 5. BECAUSE YOU LISTEN TO
-                if (isSectionVisible(MaterialHomeSection.BECAUSE_YOU_LISTEN_TO)) {
-                    similarRecommendations?.firstOrNull()?.let { recommendation ->
-                        item(key = "because_you_listen_to") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.ui_heading_because_you_listen_to),
-                                    subtitle = recommendation.title.title,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(recommendation.items.take(10)) { item ->
-                                        MaterialMediaCard(
-                                            title = item.title,
-                                            subtitle = when (item) {
-                                                is SongItem -> item.artists.joinToString { it.name }
-                                                is AlbumItem -> item.artists.orEmpty().joinToString { it.name }
-                                                is PlaylistItem -> item.author?.name.orEmpty()
-                                                is ArtistItem -> "Artist"
-                                            },
-                                            thumbnailUrl = item.thumbnail,
-                                            onClick = {
-                                                when (item) {
-                                                    is SongItem -> playerConnection.playQueue(YouTubeQueue(item.endpoint ?: WatchEndpoint(videoId = item.id)))
-                                                    is AlbumItem -> navController.navigate("album/${item.browseId}")
-                                                    is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                                                    is ArtistItem -> navController.navigate("artist/${item.id}")
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 6. FRESH FINDS SECTION
-                if (isSectionVisible(MaterialHomeSection.FRESH_FINDS)) {
-                    quickPicks?.drop(6)?.takeIf { it.isNotEmpty() }?.let { freshTracks ->
-                        item(key = "fresh_finds") {
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp),
-                                shape = CardShape,
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.65f),
-                            ) {
-                                Column(modifier = Modifier.padding(vertical = 14.dp)) {
-                                    MaterialSectionHeader(
-                                        title = stringResource(R.string.fresh_finds),
-                                        subtitle = stringResource(R.string.fresh_tracks_desc),
-                                        modifier = Modifier.padding(horizontal = 14.dp)
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    LazyRow(
-                                        contentPadding = PaddingValues(horizontal = 14.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                    ) {
-                                        items(freshTracks.take(8)) { item ->
-                                            MaterialMediaCard(
-                                                title = item.song.title,
-                                                subtitle = item.artists.joinToString { it.name },
-                                                thumbnailUrl = item.song.thumbnailUrl,
-                                                badgeText = "NEW",
-                                                onClick = {
-                                                    playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 7. JUMP BACK IN
-                if (isSectionVisible(MaterialHomeSection.JUMP_BACK_IN)) {
-                    keepListening?.filterIsInstance<Song>()?.takeIf { it.isNotEmpty() }?.let { items ->
-                        item(key = "jump_back_in") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.ui_text_jump_back_in),
-                                    subtitle = stringResource(R.string.ui_heading_from_your_recent_listening_history),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(items.take(12)) { song ->
-                                        MaterialMediaCard(
-                                            title = song.song.title,
-                                            subtitle = song.artists.joinToString { it.name },
-                                            thumbnailUrl = song.song.thumbnailUrl,
-                                            onClick = {
-                                                playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 8. MIXES SECTION
-                if (isSectionVisible(MaterialHomeSection.MIXES)) {
-                    accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
-                        item(key = "mixes") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.ui_heading_mixes_playlists),
-                                    subtitle = stringResource(R.string.ui_heading_familiar_favorites_continuous_playback),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(playlists.take(10)) { playlist ->
-                                        MaterialMediaCard(
-                                            title = playlist.title,
-                                            subtitle = playlist.author?.name ?: "Playlist",
-                                            thumbnailUrl = playlist.thumbnail,
-                                            onClick = {
-                                                navController.navigate("online_playlist/${playlist.id}")
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 9. SPOTLIGHT HERO SECTION
-                if (isSectionVisible(MaterialHomeSection.SPOTLIGHT)) {
-                    quickPicks?.firstOrNull()?.let { pick ->
-                        val artist = pick.artists.firstOrNull()
-                        if (artist != null) {
-                            item(key = "spotlight") {
-                                MaterialSpotlightCard(
-                                    artistName = artist.name,
-                                    artistId = artist.id,
-                                    thumbnailUrl = artist.thumbnailUrl,
-                                    fallbackThumbnail = pick.song.thumbnailUrl,
-                                    onOpenArtist = {
-                                        artist.id.takeIf { it.isNotBlank() }?.let { navController.navigate("artist/$it") }
-                                    },
-                                    onPlayRadio = {
-                                        playerConnection.playQueue(YouTubeQueue.radio(pick.toMediaMetadata()))
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 10. TOP ARTISTS SECTION
-                if (isSectionVisible(MaterialHomeSection.TOP_ARTISTS)) {
-                    quickPicks?.mapNotNull { pick ->
-                        pick.artists.firstOrNull()?.let { artist ->
-                            Triple(artist, artist.thumbnailUrl, pick.song.thumbnailUrl)
-                        }
-                    }?.distinctBy { it.first.id }?.takeIf { it.isNotEmpty() }?.let { artistTriples ->
-                        item(key = "top_artists") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.artists_for_you),
-                                    subtitle = stringResource(R.string.artists_for_you_desc),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                                ) {
-                                    itemsIndexed(artistTriples.take(10)) { index, (artist, thumb, songThumb) ->
-                                        MaterialArtistCard(
-                                            artistId = artist.id,
-                                            name = artist.name,
-                                            thumbnailUrl = thumb,
-                                            fallbackThumbnail = songThumb,
-                                            rank = index + 1,
-                                            onClick = {
-                                                artist.id.takeIf { it.isNotBlank() }?.let { navController.navigate("artist/$it") }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 11. HEAVY ROTATION
-                if (isSectionVisible(MaterialHomeSection.HEAVY_ROTATION)) {
-                    forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favorites ->
-                        item(key = "heavy_rotation") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.heavy_rotation),
-                                    subtitle = stringResource(R.string.heavy_rotation_desc),
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(favorites.take(10)) { item ->
-                                        MaterialMediaCard(
-                                            title = item.song.title,
-                                            subtitle = item.artists.joinToString { it.name },
-                                            thumbnailUrl = item.song.thumbnailUrl,
-                                            onClick = {
-                                                playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 12. ALBUMS SECTION & 13. CHARTS & 14. NEW RELEASES from homePage
                 homePage?.sections?.forEachIndexed { index, section ->
                     val isNewRelease = section.title.contains("New", ignoreCase = true) || section.title.contains("Release", ignoreCase = true)
                     val isChart = section.title.contains("Chart", ignoreCase = true) || section.title.contains("Top", ignoreCase = true)

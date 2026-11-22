@@ -144,15 +144,9 @@ fun NewClassicHomeScreen(
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
-    val heroPlaylist by viewModel.heroPlaylist.collectAsState()
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
-    val aiRecommendedPlaylist by viewModel.aiRecommendedPlaylist.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
-    val explorePage by viewModel.explorePage.collectAsState()
 
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
@@ -198,26 +192,19 @@ fun NewClassicHomeScreen(
     val emptyHeroTitle = stringResource(R.string.ui_heading_90s_hiphop_soundtracks)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_based_on_your_last_listening_habits_and_artis)
     val recommendedByAiQueueTitle = stringResource(R.string.recommended_by_ai)
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
-        heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
-            val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
-            HeroPlaylistData(
-                title = firstSong.song.title.ifBlank { "$topArtist Soundtracks" },
-                subtitle = firstSong.artists.joinToString { it.name }.ifEmpty { "Based on your last listening habits and artists..." },
-                tag = "RECOMMENDED",
-                thumbnailUrl = firstSong.thumbnailUrl,
-                songs = quickPicks.orEmpty(),
-                playlistId = null
-            )
-        } ?: HeroPlaylistData(
-            title = emptyHeroTitle,
-            subtitle = emptyHeroSubtitle,
-            tag = "HIPHOP",
-            thumbnailUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+    val effectiveHero: HeroPlaylistData = remember(homePage) {
+        val firstSection = homePage?.sections?.firstOrNull()
+        val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
+        HeroPlaylistData(
+            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
+            tag = "YOUTUBE MUSIC",
+            thumbnailUrl = firstSong?.thumbnail,
             songs = emptyList(),
-            playlistId = null
+            playlistId = null,
         )
     }
+
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -338,234 +325,7 @@ fun NewClassicHomeScreen(
                 }
             }
 
-            // 2. Keep Listening
-            keepListening?.takeIf { it.isNotEmpty() }?.let { keepList ->
-                item(key = "section_keep_listening") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = stringResource(R.string.keep_listening),
-                        onSeeAllClick = {
-                            navController.navigate("history")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(keepList, key = { it.id }) { item ->
-                            when (item) {
-                                is Song -> NewClassicSongCard(
-                                    title = item.title,
-                                    subtitle = item.artists.joinToString { it.name }.ifEmpty { "Song" },
-                                    thumbnailUrl = item.thumbnailUrl,
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                    },
-                                    onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menuState.show {
-                                            SongMenu(
-                                                originalSong = item,
-                                                navController = navController,
-                                                onDismiss = menuState::dismiss
-                                            )
-                                        }
-                                    }
-                                )
-                                is Album -> NewClassicSongCard(
-                                    title = item.title,
-                                    subtitle = item.artists.joinToString { it.name }.ifEmpty { "Album" },
-                                    thumbnailUrl = item.thumbnailUrl,
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        navController.navigate("album/${item.id}")
-                                    },
-                                    onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menuState.show {
-                                            AlbumMenu(
-                                                originalAlbum = item,
-                                                navController = navController,
-                                                onDismiss = menuState::dismiss
-                                            )
-                                        }
-                                    }
-                                )
-                                is Artist -> NewClassicSongCard(
-                                    title = item.title,
-                                    subtitle = stringResource(R.string.sort_by_artist),
-                                    thumbnailUrl = item.thumbnailUrl,
-                                    shape = CircleShape,
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        navController.navigate("artist/${item.id}")
-                                    },
-                                    onLongClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        menuState.show {
-                                            ArtistMenu(
-                                                originalArtist = item,
-                                                coroutineScope = scope,
-                                                onDismiss = menuState::dismiss
-                                            )
-                                        }
-                                    }
-                                )
-                                else -> {}
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. Your YouTube Account / Playlists
-            accountPlaylists?.takeIf { it.isNotEmpty() }?.let { playlists ->
-                item(key = "section_yt_account") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = accountName.ifBlank { stringResource(R.string.your_ytb_playlists) },
-                        subtitle = if (accountName.isNotBlank()) stringResource(R.string.your_ytb_playlists) else null,
-                        thumbnail = {
-                            val accountAvatarRequest = remember(userAvatarUrl) {
-                                userAvatarUrl?.let {
-                                    ImageRequest.Builder(context)
-                                        .data(it)
-                                        .crossfade(true)
-                                        .build()
-                                }
-                            }
-                            if (accountAvatarRequest != null) {
-                                AsyncImage(
-                                    model = accountAvatarRequest,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.person),
-                                        contentDescription = null,
-                                        tint = if (isDark) Color.White else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        },
-                        onSeeAllClick = {
-                            navController.navigate("account")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(playlists, key = { it.id }) { item ->
-                            NewClassicSongCard(
-                                title = item.title,
-                                subtitle = item.author?.name ?: "Playlist",
-                                thumbnailUrl = item.thumbnail,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    navController.navigate("online_playlist/${item.id}")
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        YouTubePlaylistMenu(
-                                            playlist = item,
-                                            coroutineScope = scope,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 4. Similar to <...>
-            similarRecommendations?.forEach { rec ->
-                item(key = "section_similar_${rec.title.id}") {
-                    Spacer(Modifier.height(20.dp))
-                    val headerTitle = when (val title = rec.title) {
-                        is Song -> "${stringResource(R.string.similar_to)} ${title.title}"
-                        is Artist -> "More from ${title.title}"
-                        is Album -> "More from ${title.title}"
-                        else -> "${stringResource(R.string.similar_to)} ${title.title}"
-                    }
-                    NewClassicSectionHeader(
-                        title = headerTitle,
-                        onSeeAllClick = {
-                            when (rec.title) {
-                                is Song -> rec.title.album?.let { navController.navigate("album/${it.id}") } ?: navController.navigate("explore")
-                                is Album -> navController.navigate("album/${rec.title.id}")
-                                is Artist -> navController.navigate("artist/${rec.title.id}")
-                                else -> navController.navigate("explore")
-                            }
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(rec.items, key = { it.id }) { item ->
-                            val isArtist = item is ArtistItem
-                            val sub = when (item) {
-                                is SongItem -> item.artists.joinToString { it.name }
-                                is AlbumItem -> item.artists?.joinToString { it.name } ?: "Album"
-                                is ArtistItem -> "Artist"
-                                is PlaylistItem -> item.author?.name ?: "Playlist"
-                            }
-                            NewClassicSongCard(
-                                title = item.title,
-                                subtitle = sub,
-                                thumbnailUrl = item.thumbnail,
-                                shape = if (isArtist) CircleShape else RoundedCornerShape(16.dp),
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    when (item) {
-                                        is SongItem -> playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                        is AlbumItem -> navController.navigate("album/${item.id}")
-                                        is ArtistItem -> navController.navigate("artist/${item.id}")
-                                        is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                                    }
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    when (item) {
-                                        is SongItem -> menuState.show {
-                                            YouTubeSongMenu(song = item, navController = navController, onDismiss = menuState::dismiss)
-                                        }
-                                        is AlbumItem -> menuState.show {
-                                            YouTubeAlbumMenu(albumItem = item, navController = navController, onDismiss = menuState::dismiss)
-                                        }
-                                        is ArtistItem -> menuState.show {
-                                            YouTubeArtistMenu(artist = item, onDismiss = menuState::dismiss)
-                                        }
-                                        is PlaylistItem -> menuState.show {
-                                            YouTubePlaylistMenu(playlist = item, coroutineScope = scope, onDismiss = menuState::dismiss)
-                                        }
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+            // The shared YouTube Music feed below is the only discovery-content source.
 
             // 5. YouTube Music Sections (Listen Again, Mixed for you, From community, etc.)
             homePage?.sections?.forEachIndexed { index, section ->
@@ -632,132 +392,8 @@ fun NewClassicHomeScreen(
                 }
             }
 
-            // 6. New Releases
-            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { newReleases ->
-                item(key = "section_new_releases") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = stringResource(R.string.new_release_albums),
-                        onSeeAllClick = {
-                            navController.navigate("new_release")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(newReleases, key = { it.id }) { album ->
-                            NewClassicSongCard(
-                                title = album.title,
-                                subtitle = album.artists?.joinToString { it.name } ?: "Album",
-                                thumbnailUrl = album.thumbnail,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    navController.navigate("album/${album.id}")
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        YouTubeAlbumMenu(
-                                            albumItem = album,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 7. Forgotten Favourites
-            forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favSongs ->
-                item(key = "section_forgotten_favorites") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = stringResource(R.string.forgotten_favorites),
-                        onSeeAllClick = {
-                            navController.navigate("auto_playlist/liked")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(favSongs, key = { it.id }) { song ->
-                            NewClassicSongCard(
-                                title = song.title,
-                                subtitle = song.artists.joinToString { it.name }.ifEmpty { "AirBeats" },
-                                thumbnailUrl = song.thumbnailUrl,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        SongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
             // 8. Recommended by AI
-            if (aiRecommendedPlaylist != null && aiRecommendedPlaylist!!.second.isNotEmpty()) {
-                val (playlist, songs) = aiRecommendedPlaylist!!
-                item(key = "section_ai_recommended") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = recommendedByAiQueueTitle,
-                        onSeeAllClick = {
-                            navController.navigate("local_playlist/${playlist.id}")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(songs, key = { it.id }) { song ->
-                            NewClassicSongCard(
-                                title = song.title,
-                                subtitle = song.artists.joinToString { it.name },
-                                thumbnailUrl = song.thumbnailUrl,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    playerConnection.playQueue(
-                                        ListQueue(
-                                            title = recommendedByAiQueueTitle,
-                                            items = songs.map { it.toMediaItem() },
-                                            startIndex = songs.indexOf(song).coerceAtLeast(0)
-                                        )
-                                    )
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        SongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+
 
             item(key = "bottom_spacer") {
                 Spacer(Modifier.height(40.dp))

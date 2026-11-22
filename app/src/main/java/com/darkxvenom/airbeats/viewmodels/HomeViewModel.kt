@@ -185,129 +185,50 @@ class HomeViewModel @Inject constructor(
 
     private suspend fun load() {
         isLoading.value = true
+        try {
+            val excludedSongIds = runCatching {
+                database.getExcludedSongIds().toHashSet()
+            }.getOrDefault(emptySet())
 
-        val excludedSongIds = runCatching { database.getExcludedSongIds().toHashSet() }.getOrDefault(emptySet())
-        // Read the latest persisted account cookie before requesting the personalized feed.
-        val savedCookie = context.dataStore.get(com.darkxvenom.airbeats.constants.InnerTubeCookieKey, "")
-        if (savedCookie.isNotBlank()) YouTube.cookie = savedCookie
-        val musicProvider = context.dataStore.get(com.darkxvenom.airbeats.constants.MusicProviderKey, "YT")
-        val isJioSaavn = musicProvider == "JIOSAAVN"
+            // Every presentation consumes the same YouTube Music FEmusic_home feed.
+            // Playback-provider settings do not alter discovery/home content.
+            val savedCookie = context.dataStore.get(
+                com.darkxvenom.airbeats.constants.InnerTubeCookieKey, ""
+            )
+            YouTube.cookie = savedCookie
+            YouTube.useLoginForBrowse = true
 
-        if (isJioSaavn) {
-            com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.getTrendingSongs().onSuccess { songs ->
-                val filteredSongs = songs.filter { it.id !in excludedSongIds }
-                homePage.value = HomePage(
-                    chips = null,
-                    sections = listOf(
-                        HomePage.Section(
-                            title = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_songs),
-                            label = "JioSaavn",
-                            thumbnail = null,
-                            endpoint = null,
-                            items = filteredSongs
-                        )
-                    )
-                )
-                if (quickPicks.value.isNullOrEmpty()) {
-                    quickPicks.value = filteredSongs.filterIsInstance<SongItem>().map(::mapToSong).take(20)
-                }
-            }.onFailure {
-                reportException(it)
-            }
-            explorePage.value = ExplorePage(emptyList(), emptyList())
+            val remote = com.darkxvenom.airbeats.backend.HomeBackend.load(excludedSongIds)
+            homePage.value = remote.page
+            accountPlaylists.value = remote.playlists
+
+            val feedSongs = remote.page?.sections.orEmpty()
+                .flatMap { it.items }
+                .filterIsInstance<SongItem>()
+                .filterNot { it.id in excludedSongIds }
+                .distinctBy { it.id }
+
+            quickPicks.value = feedSongs.take(20).map(::mapToSong).takeIf { it.isNotEmpty() }
+            forgottenFavorites.value = null
+            keepListening.value = null
+            similarRecommendations.value = null
+            explorePage.value = null
+            recentActivity.value = null
+            recentPlaylistsDb.value = null
+            allLocalItems.value = emptyList()
+            allYtItems.value = remote.page?.sections.orEmpty()
+                .flatMap { it.items }
+                .filterNot { it.id in excludedSongIds }
+                .distinctBy { it.id }
+        } catch (error: Throwable) {
+            reportException(error)
+            homePage.value = null
+            accountPlaylists.value = emptyList()
+            allLocalItems.value = emptyList()
+            allYtItems.value = emptyList()
+        } finally {
+            isLoading.value = false
         }
-
-        supervisorScope {
-            // 1. Quick Picks snapshot
-            launch(Dispatchers.IO) {
-                if (isJioSaavn) return@launch
-                val qpList = runCatching { database.quickPicks().first() }.getOrDefault(emptyList()).filter { !it.id.startsWith("JS:") && it.id !in excludedSongIds }
-                val rawPicks = if (qpList.isNotEmpty()) {
-                    qpList
-                } else {
-                    runCatching { database.recentSongs(limit = 60).first() }.getOrDefault(emptyList()).filter { !it.id.startsWith("JS:") && it.id !in excludedSongIds }
-                }
-                quickPicks.value = rawPicks.distinctBy { it.id }.shuffled(homeRandom).take(20).takeIf { it.isNotEmpty() }
-            }
-
-            // 2. Keep Listening snapshot
-            launch(Dispatchers.IO) {
-                val songs = runCatching { database.recentSongs(limit = 50, offset = 0).first() }.getOrDefault(emptyList())
-                    .filter { (if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:")) && it.id !in excludedSongIds }
-                    .distinctBy { it.id }.shuffled(homeRandom).take(10)
-                val albums = runCatching { database.recentAlbums(limit = 50, offset = 0).first() }.getOrDefault(emptyList())
-                    .filter { it.album.thumbnailUrl != null && (if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:")) }
-                    .distinctBy { it.id }.shuffled(homeRandom).take(5)
-                val artists = runCatching { database.recentArtists(limit = 50, offset = 0).first() }.getOrDefault(emptyList())
-                    .filter { it.artist.isYouTubeArtist && it.artist.thumbnailUrl != null && (if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:")) }
-                    .distinctBy { it.id }.shuffled(homeRandom).take(5)
-                keepListening.value = (songs + albums + artists).shuffled(homeRandom).takeIf { it.isNotEmpty() }
-            }
-
-            // 3. Forgotten Favorites snapshot
-            launch(Dispatchers.IO) {
-                val favs = runCatching { database.forgottenFavorites().first() }.getOrDefault(emptyList())
-                    .filter { (if (isJioSaavn) it.id.startsWith("JS:") else !it.id.startsWith("JS:")) && it.id !in excludedSongIds }
-                    .distinctBy { it.id }.shuffled(homeRandom).take(20)
-                forgottenFavorites.value = favs.takeIf { it.isNotEmpty() }
-            }
-
-            // 4. Remote items snapshot (YouTube) - account playlists load for every provider
-            launch(Dispatchers.IO) {
-                val remotePlaylists = com.darkxvenom.airbeats.backend.HomeBackend.accountPlaylists()
-                accountPlaylists.value = remotePlaylists
-            }
-            if (!isJioSaavn) {
-                launch(Dispatchers.IO) {
-                    val recentArtistsList = runCatching { database.recentArtists(limit = 10).first() }.getOrDefault(emptyList())
-                    val artistRecs = recentArtistsList.filter { it.artist.isYouTubeArtist }.shuffled(homeRandom).take(3).mapNotNull {
-                        val items = mutableListOf<YTItem>()
-                        YouTube.artist(it.id).onSuccess { page ->
-                            items += page.sections.getOrNull(page.sections.size - 2)?.items.orEmpty()
-                            items += page.sections.lastOrNull()?.items.orEmpty()
-                        }
-                        SimilarRecommendation(title = it, items = items.filter { item -> item.id !in excludedSongIds }.distinctBy { it.id }.shuffled(homeRandom).take(8)).takeIf { it.items.isNotEmpty() }
-                    }
-                    val songRecs = runCatching { database.recentSongs(limit = 10).first() }.getOrDefault(emptyList()).filter { !it.id.startsWith("JS:") && it.id !in excludedSongIds }.shuffled(homeRandom).take(2).mapNotNull { song ->
-                        val endpoint = YouTube.next(WatchEndpoint(videoId = song.id)).getOrNull()?.relatedEndpoint ?: return@mapNotNull null
-                        val page = YouTube.related(endpoint).getOrNull() ?: return@mapNotNull null
-                        val rawItems = (page.songs.shuffled(homeRandom).take(8) + page.albums.shuffled(homeRandom).take(4) + page.artists.shuffled(homeRandom).take(4) + page.playlists.shuffled(homeRandom).take(4))
-                        val filteredItems = rawItems.filter { it.id !in excludedSongIds }.distinctBy { it.id }.shuffled(homeRandom).take(10)
-                        SimilarRecommendation(title = song, items = filteredItems).takeIf { it.items.isNotEmpty() }
-                    }
-                    similarRecommendations.value = (artistRecs + songRecs).shuffled(homeRandom).takeIf { it.isNotEmpty() }
-                }
-
-                launch(Dispatchers.IO) {
-                    val remote = com.darkxvenom.airbeats.backend.HomeBackend.load(
-                        excluded = excludedSongIds,
-                        saavnEnabled = context.dataStore.get(com.darkxvenom.airbeats.constants.EnableJioSaavnKey, true),
-                        saavnTitle = context.getString(com.darkxvenom.airbeats.R.string.ui_dynamic_trending_jiosaavn),
-                    )
-                    remote.page?.let { page ->
-                        homePage.value = page
-                        val onlineSongs = page.sections.flatMap { it.items }.filterIsInstance<SongItem>()
-                        if (quickPicks.value.isNullOrEmpty() && onlineSongs.isNotEmpty()) {
-                            quickPicks.value = onlineSongs.map(::mapToSong).distinctBy { it.id }.shuffled(homeRandom).take(20)
-                        }
-                        if (forgottenFavorites.value.isNullOrEmpty() && onlineSongs.size > 10) {
-                            forgottenFavorites.value = onlineSongs.drop(10).map(::mapToSong).distinctBy { it.id }.take(20)
-                        }
-                    }
-                    if (remote.playlists.isNotEmpty()) accountPlaylists.value = remote.playlists
-                }
-
-                launch(Dispatchers.IO) {
-                    YouTube.explore().onSuccess { page ->
-                        explorePage.value = page.copy(newReleaseAlbums = page.newReleaseAlbums.filter { item -> item.id !in excludedSongIds })
-                    }.onFailure { reportException(it) }
-                }
-            }
-        }
-
-        allLocalItems.value = (quickPicks.value.orEmpty() + forgottenFavorites.value.orEmpty() + keepListening.value.orEmpty()).filter { it is Song || it is Album }
-        allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() + homePage.value?.sections?.flatMap { it.items }.orEmpty() + explorePage.value?.newReleaseAlbums.orEmpty()
-        isLoading.value = false
     }
 
     fun refresh() {

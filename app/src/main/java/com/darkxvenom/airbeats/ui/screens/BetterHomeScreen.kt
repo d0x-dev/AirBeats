@@ -122,15 +122,9 @@ fun BetterHomeScreen(
     val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
-    val heroPlaylist by viewModel.heroPlaylist.collectAsState()
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
-    val aiRecommendedPlaylist by viewModel.aiRecommendedPlaylist.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
-    val explorePage by viewModel.explorePage.collectAsState()
 
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
@@ -187,26 +181,19 @@ fun BetterHomeScreen(
 
     val emptyHeroTitle = stringResource(R.string.ui_heading_midnight_air)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_editorial_12_tracks_41_min)
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
-        heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
-            val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
-            HeroPlaylistData(
-                title = firstSong.song.title.ifBlank { "Midnight Air" },
-                subtitle = firstSong.artists.joinToString { it.name }.ifEmpty { "Editorial · 12 tracks · 41 min" },
-                tag = "FEATURED MIX",
-                thumbnailUrl = firstSong.thumbnailUrl,
-                songs = quickPicks.orEmpty(),
-                playlistId = null
-            )
-        } ?: HeroPlaylistData(
-            title = emptyHeroTitle,
-            subtitle = emptyHeroSubtitle,
-            tag = "FEATURED MIX",
-            thumbnailUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800",
+    val effectiveHero: HeroPlaylistData = remember(homePage) {
+        val firstSection = homePage?.sections?.firstOrNull()
+        val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
+        HeroPlaylistData(
+            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
+            tag = "YOUTUBE MUSIC",
+            thumbnailUrl = firstSong?.thumbnail,
             songs = emptyList(),
-            playlistId = null
+            playlistId = null,
         )
     }
+
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -332,9 +319,7 @@ fun BetterHomeScreen(
                     onSeeAllClick = { navController.navigate("history") }
                 )
 
-                val firstKeepSong = keepListening?.firstOrNull()
                 val displayTitle = currentPlayingMedia?.title
-                    ?: (firstKeepSong as? Song)?.title
                     ?: trendingSongs.firstOrNull()?.title
                     ?: "Glasshouse"
                 val displayArtist = currentPlayingMedia?.artists?.joinToString { it.name }
@@ -438,7 +423,7 @@ fun BetterHomeScreen(
             }
 
             // 04. Recently
-            val recentList = keepListening?.filterIsInstance<Song>().orEmpty().ifEmpty { trendingSongs.drop(1) }
+            val recentList = emptyList<Song>()
             if (recentList.isNotEmpty()) {
                 item(key = "section_04_recently") {
                     Spacer(Modifier.height(24.dp))
@@ -534,48 +519,7 @@ fun BetterHomeScreen(
                 }
             }
 
-            // New Releases Albums
-            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { newReleases ->
-                item(key = "section_better_new_releases") {
-                    Spacer(Modifier.height(24.dp))
-                    BetterSectionHeader(
-                        number = "06",
-                        title = stringResource(R.string.new_release_albums),
-                        onSeeAllClick = { navController.navigate("new_release") }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(newReleases, key = { "nr_${it.id}" }) { album ->
-                            BetterMixCard(
-                                title = album.title,
-                                subtitle = album.artists?.joinToString { it.name } ?: "Album",
-                                thumbnailUrl = album.thumbnail,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    navController.navigate("album/${album.id}")
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        YouTubeAlbumMenu(
-                                            albumItem = album,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            item(key = "better_bottom_spacer") {
-                Spacer(Modifier.height(40.dp))
-            }
+            // All discovery shelves are rendered above from the shared YouTube Music home feed.
         }
 
 
