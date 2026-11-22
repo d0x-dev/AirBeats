@@ -4001,62 +4001,77 @@ class MusicService :
                 }.first()
             }
 
-            // When JioSaavn integration is enabled, prioritize JioSaavn 320kbps streams first
-            if (enableJioSaavn && !mediaId.startsWith("JS:") && !mediaId.startsWith("local:") && !jioSaavnFailedSongs.contains(mediaId)) {
-                try {
-                    val mediaMetadata = getMediaMetadataSafely(mediaId)
-                    if (mediaMetadata != null && mediaMetadata.title.isNotBlank()) {
-                        val artistName = mediaMetadata.artists.firstOrNull()?.name ?: ""
-                        val jsStreamUrl: String? = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
-                            runCatching {
-                                kotlinx.coroutines.withTimeoutOrNull(4000L) {
-                                    com.darkxvenom.airbeats.jiosaavn.JioSaavnApi.findMatchAndStreamUrl(
-                                        mediaMetadata.title,
-                                        artistName,
-                                        mediaMetadata.duration
-                                    )
-                                }
-                            }.getOrNull()
-                        }
-                        if (jsStreamUrl != null) {
-                            val verifiedUrl = verifyJioSaavnUrl(jsStreamUrl)
+            // Optional JioSaavn provider: try exact catalogue matching first.
+            // A miss, timeout, low-quality stream, or rejected URL falls through to YouTube.
+            if (enableJioSaavn &&
+                !mediaId.startsWith("JS:") &&
+                !mediaId.startsWith("local:") &&
+                !mediaId.startsWith("sp:") &&
+                !jioSaavnFailedSongs.contains(mediaId)
+            ) {
+                val mediaMetadata = getMediaMetadataSafely(mediaId)
+                val songTitle = mediaMetadata?.title?.takeIf { it.isNotBlank() }
+                    ?: getMediaItemTitleSafely(mediaId)
+                val creditedArtists = mediaMetadata?.artists
+                    ?.mapNotNull { it.name.takeIf(String::isNotBlank) }
+                    ?.distinct()
+                    ?.joinToString(" & ")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: getMediaItemArtistSafely(mediaId)
 
-                            if (verifiedUrl != null) {
-                                jioSaavnAttemptedSongIds.add(mediaId)
-                                Timber.tag("MusicService").d("JioSaavn Priority: Serving verified 320k for '${mediaMetadata.title}'")
-                                database.query {
-                                    upsert(
-                                        FormatEntity(
-                                            id = mediaId,
-                                            itag = 141,
-                                            mimeType = "audio/mp4",
-                                            codecs = "mp4a.40.2",
-                                            bitrate = 320000,
-                                            sampleRate = 44100,
-                                            contentLength = 0L,
-                                            loudnessDb = null,
-                                            playbackUrl = verifiedUrl
-                                        )
-                                    )
-                                }
-                                songUrlCache[mediaId] = CachedSongUrl(
-                                    url = verifiedUrl,
-                                    expiresAt = System.currentTimeMillis() + 3600000L,
-                                    contentLength = null,
+                if (!songTitle.isNullOrBlank() && creditedArtists.isNotBlank()) {
+                    try {
+                        val jsStreamUrl = kotlinx.coroutines.runBlocking(Dispatchers.IO) {
+                            kotlinx.coroutines.withTimeoutOrNull(20_000L) {
+                                com.darkxvenom.airbeats.jiosaavn.JioSaavnProvider.resolve(
+                                    trackId = mediaId,
+                                    title = songTitle,
+                                    artist = creditedArtists,
                                 )
-                                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-                                return dataSpec.withStreamUrl(verifiedUrl, null)
-                            } else {
-                                Timber.tag("MusicService").w("JioSaavn stream URL validation failed for '$mediaId'. Falling back directly to YouTube.")
                             }
                         }
+                        val verifiedUrl = jsStreamUrl?.let(::verifyJioSaavnUrl)
+                        if (verifiedUrl != null) {
+                            jioSaavnAttemptedSongIds.add(mediaId)
+                            Timber.tag("MusicService").d(
+                                "JioSaavn exact match: serving Saavn stream for '$songTitle' by '$creditedArtists'"
+                            )
+                            database.query {
+                                upsert(
+                                    FormatEntity(
+                                        id = mediaId,
+                                        itag = 141,
+                                        mimeType = "audio/mp4",
+                                        codecs = "mp4a.40.2",
+                                        bitrate = 320000,
+                                        sampleRate = 44100,
+                                        contentLength = 0L,
+                                        loudnessDb = null,
+                                        playbackUrl = verifiedUrl
+                                    )
+                                )
+                            }
+                            songUrlCache[mediaId] = CachedSongUrl(
+                                url = verifiedUrl,
+                                expiresAt = System.currentTimeMillis() + 3600000L,
+                                contentLength = null,
+                            )
+                            scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
+                            return dataSpec.withStreamUrl(verifiedUrl, null)
+                        } else {
+                            Timber.tag("MusicService").d(
+                                "No exact/usable JioSaavn result for '$songTitle'; continuing with YouTube extractor"
+                            )
+                        }
+                    } catch (e: Exception) {
+                        if (e is InterruptedException || e is kotlinx.coroutines.CancellationException) {
+                            Timber.tag("MusicService").d("JioSaavn lookup cancelled; continuing with YouTube")
+                        } else {
+                            Timber.tag("MusicService").w(e, "JioSaavn lookup failed; continuing with YouTube")
+                        }
                     }
-                } catch (e: Exception) {
-                    if (e is InterruptedException || e is kotlinx.coroutines.CancellationException) {
-                        Timber.tag("MusicService").d("JioSaavn priority resolution timed out or cancelled, falling through to YouTube")
-                    } else {
-                        Timber.tag("MusicService").w(e, "JioSaavn priority resolution error, falling through to YouTube")
-                    }
+                } else {
+                    Timber.tag("MusicService").d("Missing title/artist metadata for JioSaavn match; continuing with YouTube")
                 }
             }
 
