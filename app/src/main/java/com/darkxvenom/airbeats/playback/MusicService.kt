@@ -3726,8 +3726,6 @@ class MusicService :
         if (testUrl(rawUrl)) return rawUrl
         val fallback160 = if (rawUrl.contains("_320.")) rawUrl.replace("_320.", "_160.") else null
         if (fallback160 != null && testUrl(fallback160)) return fallback160
-        val fallback96 = if (rawUrl.contains("_320.")) rawUrl.replace("_320.", "_96.") else if (rawUrl.contains("_160.")) rawUrl.replace("_160.", "_96.") else null
-        if (fallback96 != null && testUrl(fallback96)) return fallback96
         return null
     }
 
@@ -4043,7 +4041,7 @@ class MusicService :
                                         itag = 141,
                                         mimeType = "audio/mp4",
                                         codecs = "mp4a.40.2",
-                                        bitrate = 320000,
+                                        bitrate = if (verifiedUrl.contains("_320.")) 320000 else 160000,
                                         sampleRate = 44100,
                                         contentLength = 0L,
                                         loudnessDb = null,
