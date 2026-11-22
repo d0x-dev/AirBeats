@@ -25,6 +25,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.darkxvenom.airbeats.extensions.toMediaItem
+import com.darkxvenom.airbeats.playback.queues.ListQueue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -74,6 +80,7 @@ import com.darkxvenom.airbeats.data.model.itune.HomeShelfGroup
 import com.darkxvenom.airbeats.ui.component.itune.rememberSpringOverscrollState
 import com.darkxvenom.airbeats.ui.component.itune.springOverscroll
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ITuneHomeScreen(
     navController: NavHostController,
@@ -88,6 +95,7 @@ fun ITuneHomeScreen(
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
 
     val accountName by rememberPreference(AccountNameKey, "")
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
@@ -239,16 +247,24 @@ fun ITuneHomeScreen(
         }
     }
 
-    fun playHomeItem(item: HomeFeedItem) {
+    fun playHomeItem(item: HomeFeedItem, queue: List<HomeFeedItem> = listOf(item)) {
         when {
             item.isPlayableTrack -> {
                 val videoId = item.videoId ?: return
-                playerConnection.playQueue(
-                    YouTubeQueue(
-                        WatchEndpoint(videoId = videoId),
-                        item.toMediaMetadata(),
+                val metadataQueue = queue
+                    .filter { it.isPlayableTrack }
+                    .mapNotNull { it.toMediaMetadata() }
+                val playableQueue = metadataQueue.ifEmpty { listOfNotNull(item.toMediaMetadata()) }
+                if (playableQueue.isNotEmpty()) {
+                    val startIndex = playableQueue.indexOfFirst { it.id == videoId }.coerceAtLeast(0)
+                    playerConnection.playQueue(
+                        ListQueue(
+                            title = item.title,
+                            items = playableQueue.map { it.toMediaItem() },
+                            startIndex = startIndex,
+                        )
                     )
-                )
+                }
             }
             item.kind == HomeItemKind.ALBUM -> {
                 item.browseId?.let { navController.navigate("album/$it") }
@@ -273,7 +289,12 @@ fun ITuneHomeScreen(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
-                .springOverscroll(overscrollState),
+                .springOverscroll(overscrollState)
+                .pullToRefresh(
+                    state = pullRefreshState,
+                    isRefreshing = isRefreshing,
+                    onRefresh = viewModel::refresh,
+                ),
             contentPadding = PaddingValues(top = 4.dp, bottom = 158.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
@@ -290,14 +311,24 @@ fun ITuneHomeScreen(
                     isLoading = isLoading,
                     isApple = true,
                     sectionTitle = "Made for You",
-                    onCardClick = { card -> playHomeItem(card.item) },
+                    onCardClick = { card -> playHomeItem(card.item, card.queue) },
                 )
             }
 
-            if (shelves.isEmpty() && isLoading) {
-                item(key = "itune_loading_skeleton") {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        repeat(3) { HomeShelfSkeleton() }
+            if (shelves.isEmpty()) {
+                if (isLoading) {
+                    item(key = "itune_loading_skeleton") {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            repeat(3) { HomeShelfSkeleton() }
+                        }
+                    }
+                } else {
+                    item(key = "itune_feed_error") {
+                        Text(
+                            text = "Couldn't load music right now. Pull down to try again.",
+                            color = Color.White.copy(alpha = 0.68f),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                        )
                     }
                 }
             } else {
@@ -309,26 +340,32 @@ fun ITuneHomeScreen(
                                 personalizedTracks = shelf.items.mapNotNull { it.toMusicTrack() },
                                 sectionTitle = shelf.title,
                                 onPersonalizedTrackClick = { track ->
-                                    playerConnection.playQueue(
-                                        YouTubeQueue(
-                                            WatchEndpoint(videoId = track.id),
-                                            track.toMediaMetadata(),
+                                    val feedItem = shelf.items.firstOrNull { it.videoId == track.id }
+                                    if (feedItem != null) {
+                                        playHomeItem(feedItem, shelf.items)
+                                    } else {
+                                        val metadata = track.toMediaMetadata()
+                                        playerConnection.playQueue(
+                                            ListQueue(
+                                                title = track.title,
+                                                items = listOf(metadata.toMediaItem()),
+                                            )
                                         )
-                                    )
+                                    }
                                 },
                             )
                         }
                         shelf.isArtistShelf -> ArtistCircleShelf(
                             shelf = shelf,
-                            onItemClick = ::playHomeItem,
+                            onItemClick = { item -> playHomeItem(item, shelf.items) },
                         )
                         shelf.isVideoShelf -> WideCardShelf(
                             shelf = shelf,
-                            onItemClick = ::playHomeItem,
+                            onItemClick = { item -> playHomeItem(item, shelf.items) },
                         )
                         else -> SquareCardShelf(
                             shelf = shelf,
-                            onItemClick = ::playHomeItem,
+                            onItemClick = { item -> playHomeItem(item, shelf.items) },
                         )
                     }
                 }
