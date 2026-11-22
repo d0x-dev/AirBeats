@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darkxvenom.airbeats.constants.SpotifyCookieKey
+import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.AlbumItem
 import com.darkxvenom.airbeats.innertube.models.ArtistItem
@@ -27,7 +28,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val database: MusicDatabase
 ) : ViewModel() {
     val playlists = MutableStateFlow<List<PlaylistItem>?>(null)
     val albums = MutableStateFlow<List<AlbumItem>?>(null)
@@ -67,7 +69,7 @@ class AccountViewModel @Inject constructor(
         }.onFailure { reportException(it) }
 
         if (playlistResult.isSuccess) {
-            runCatching { com.darkxvenom.airbeats.utils.SyncUtils(context, com.darkxvenom.airbeats.db.MusicDatabase.getInstance(context)).syncSavedPlaylists() }
+            runCatching { com.darkxvenom.airbeats.utils.SyncUtils(context, database).syncSavedPlaylists() }
         }
     }
 
