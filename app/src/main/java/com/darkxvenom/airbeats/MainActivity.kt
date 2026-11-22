@@ -1014,9 +1014,9 @@ class MainActivity : FragmentActivity() {
 
                             var shouldShowTopBar by rememberSaveable { mutableStateOf(false) }
 
-                            LaunchedEffect(navBackStackEntry) {
+                            LaunchedEffect(navBackStackEntry, homeScreenStyle) {
                                 shouldShowTopBar =
-                                    !active && navBackStackEntry?.destination?.route in topLevelScreens && navBackStackEntry?.destination?.route != "settings"
+                                    !active && navBackStackEntry?.destination?.route in topLevelScreens && navBackStackEntry?.destination?.route != "settings" && homeScreenStyle != HomeScreenStyle.ITUNE
                             }
 
                             val coroutineScope = rememberCoroutineScope()
@@ -1395,10 +1395,11 @@ class MainActivity : FragmentActivity() {
                                                         (currentRoute == "stats" && homeScreenStyle == HomeScreenStyle.APPLE)
 
                                             val isPlayfulHome = (currentRoute == Screens.Home.route || currentRoute == Screens.Library.route || currentRoute == Screens.Explore.route) && homeScreenStyle == HomeScreenStyle.PLAYFUL
+                                            val isITuneHome = currentRoute == Screens.Home.route && homeScreenStyle == HomeScreenStyle.ITUNE
 
                                             val isAuthScreen = currentRoute == "onboarding" || currentRoute == "guest_profile_setup" || currentRoute == "discord_login"
 
-                                            if (!isAuthScreen && (!isPlayfulHome || !playerBottomSheetState.isCollapsed)) {
+                                            if (!isAuthScreen && (!(isPlayfulHome || isITuneHome) || !playerBottomSheetState.isCollapsed)) {
                                                 BottomSheetPlayer(
                                                     state = playerBottomSheetState,
                                                     navController = navController,
@@ -1589,13 +1590,15 @@ class MainActivity : FragmentActivity() {
                                                 shouldShowNavigationBar &&
                                                         playerBottomSheetState.progress < 0.95f &&
                                                         !isPlayfulHome &&
-                                                        !isBetterNavBar
+                                                        !isBetterNavBar &&
+                                                        !isITuneHome
 
                                             val shouldShowBetterSideNav =
                                                 shouldShowNavigationBar &&
                                                         playerBottomSheetState.progress < 0.95f &&
                                                         !isAuthScreen &&
-                                                        isBetterNavBar
+                                                        isBetterNavBar &&
+                                                        !isITuneHome
 
                                             if (shouldShowBottomNav) {
 
