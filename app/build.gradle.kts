@@ -78,8 +78,8 @@ android {
         applicationId = "com.darkxvenom.airbeats"
         minSdk = 24
         targetSdk = 35
-        versionCode = 244
-        versionName = "6.2.4"
+        versionCode = 246
+        versionName = "6.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // Keep the app's supported languages while stripping unrelated third-party library locales
