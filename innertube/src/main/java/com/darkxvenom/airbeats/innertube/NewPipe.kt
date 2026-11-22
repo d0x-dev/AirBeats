@@ -55,8 +55,8 @@ private class NewPipeDownloaderImpl : Downloader() {
  */
 object NewPipeUtils {
     private val ready by lazy {
-        org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor.setFetchIosClient(true)
         NewPipe.init(NewPipeDownloaderImpl())
+        org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor.setFetchIosClient(true)
         true
     }
 
