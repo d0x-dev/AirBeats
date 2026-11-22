@@ -10,6 +10,9 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 val DynamicThemeKey = booleanPreferencesKey("dynamicTheme")
+val AppModeKey = stringPreferencesKey("app_mode")
+const val APP_MODE_LITE = "Lite"
+const val APP_MODE_NORMAL = "Normal"
 /** User chose "Use locally" on the Google sign-in prompt. */
 val UseLocalOnlyKey = booleanPreferencesKey("loginChoiceLocal")
 val DynamicBackgroundKey = booleanPreferencesKey("dynamicBackground")

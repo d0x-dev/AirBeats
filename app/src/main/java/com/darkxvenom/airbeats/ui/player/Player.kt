@@ -267,24 +267,29 @@ fun BottomSheetPlayer(
         PlayerTextAlignment.CENTER
     )
 
-    val playerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+
+    val rawPlayerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(
         PlayerScreenStyleKey,
-        PlayerScreenStyle.IOS_STYLED
+        PlayerScreenStyle.BETTER
     )
+    val playerScreenStyle = if (isLiteMode) PlayerScreenStyle.BETTER else rawPlayerScreenStyle
 
     val playerBackground by rememberEnumPreference(
         key = PlayerBackgroundStyleKey,
         defaultValue = PlayerBackgroundStyle.DEFAULT
     )
 
-    val (immersivePlayerMode) = rememberPreference(
+    val (rawImmersivePlayerMode) = rememberPreference(
         ImmersivePlayerModeKey,
         defaultValue = false
     )
-    val (fullScreenMode) = rememberPreference(
+    val immersivePlayerMode = if (isLiteMode) false else rawImmersivePlayerMode
+    val (rawFullScreenMode) = rememberPreference(
         FullScreenModeKey,
         defaultValue = false
     )
+    val fullScreenMode = if (isLiteMode) false else rawFullScreenMode
 
     val view = LocalView.current
     val activity = remember(context) { context.findActivity() }
@@ -419,7 +424,8 @@ fun BottomSheetPlayer(
     }
 
     val showLyrics by rememberPreference(ShowLyricsKey, defaultValue = false)
-    val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
+    val rawSliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
+    val sliderStyle = if (isLiteMode) SliderStyle.SQUIGGLY else rawSliderStyle
 
     var position by rememberSaveable(mediaMetadata?.id) {
         mutableLongStateOf(0L)

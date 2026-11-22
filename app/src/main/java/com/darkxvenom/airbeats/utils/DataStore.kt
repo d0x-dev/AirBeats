@@ -183,3 +183,16 @@ inline fun <reified T : Enum<T>> rememberEnumPreference(
         }
     }
 }
+
+@Composable
+fun isLiteModeActive(): Boolean {
+    val (appMode) = rememberPreference(
+        key = com.darkxvenom.airbeats.constants.AppModeKey,
+        defaultValue = com.darkxvenom.airbeats.constants.APP_MODE_LITE
+    )
+    return appMode == com.darkxvenom.airbeats.constants.APP_MODE_LITE
+}
+
+fun Context.isLiteMode(): Boolean {
+    return (this.dataStore[com.darkxvenom.airbeats.constants.AppModeKey] ?: com.darkxvenom.airbeats.constants.APP_MODE_LITE) == com.darkxvenom.airbeats.constants.APP_MODE_LITE
+}

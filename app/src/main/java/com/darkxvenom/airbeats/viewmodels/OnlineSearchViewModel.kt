@@ -52,7 +52,7 @@ constructor(
 
     init {
         viewModelScope.launch {
-            val enableJioSaavn = context.dataStore.get(EnableJioSaavnKey, true)
+            val enableJioSaavn = context.dataStore.get(EnableJioSaavnKey, false)
             val hideExplicit = context.dataStore.get(HideExplicitKey, false)
             if (enableJioSaavn) {
                 launch(Dispatchers.IO) {

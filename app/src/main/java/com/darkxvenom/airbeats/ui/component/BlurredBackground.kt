@@ -131,9 +131,10 @@ fun ScreenAdaptiveBackground(
     artworkUrl: String?,
     modifier: Modifier = Modifier,
 ) {
+    val isLite = com.darkxvenom.airbeats.utils.isLiteModeActive()
     val (dynamicBackground, _) = rememberPreference(DynamicBackgroundKey, defaultValue = true)
 
-    if (!dynamicBackground) {
+    if (isLite || !dynamicBackground) {
         Box(
             modifier = modifier
                 .fillMaxSize()

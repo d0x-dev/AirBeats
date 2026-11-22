@@ -157,6 +157,8 @@ fun AlbumScreen(
     val otherVersions by viewModel.otherVersions.collectAsState()
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val effectiveDisableBlur = disableBlur || isLiteMode
 
     val systemBarsTopPadding = WindowInsets.systemBars.asPaddingValues().calculateTopPadding()
 
@@ -266,7 +268,7 @@ fun AlbumScreen(
 
     val transparentAppBar by remember {
         derivedStateOf {
-            !disableBlur && !selection && !showTopBarTitle
+            !effectiveDisableBlur && !selection && !showTopBarTitle
         }
     }
 
@@ -279,7 +281,7 @@ fun AlbumScreen(
             .fillMaxSize()
             .background(surfaceColor)
     ) {
-        if (!disableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
+        if (!effectiveDisableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

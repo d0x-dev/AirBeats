@@ -41,7 +41,7 @@ fun ContentSettings(
     )
     val (enableJioSaavn, onEnableJioSaavnChange) = rememberPreference(
         key = EnableJioSaavnKey,
-        defaultValue = true
+        defaultValue = false
     )
     val (musicProvider, onMusicProviderChange) = rememberPreference(
         key = MusicProviderKey,

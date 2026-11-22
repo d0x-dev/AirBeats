@@ -217,7 +217,8 @@ fun Lyrics(
         label = "rotation"
     )
 
-    val rotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
+    val rawRotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
+    val rotateBackground = if (com.darkxvenom.airbeats.utils.isLiteModeActive()) false else rawRotateBackground
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val currentSongId = mediaMetadata?.id

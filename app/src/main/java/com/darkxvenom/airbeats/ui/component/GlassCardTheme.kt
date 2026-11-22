@@ -13,14 +13,16 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 import com.darkxvenom.airbeats.constants.FrostedGlassCardsButtonsKey
+import com.darkxvenom.airbeats.utils.isLiteModeActive
 import com.darkxvenom.airbeats.utils.rememberPreference
 
 /**
  * Checks whether global frosted glass styling for cards, buttons, and popups is enabled.
- * Defaults to true.
+ * Defaults to true, but disabled in Lite mode.
  */
 @Composable
 fun isFrostedGlassUiEnabled(): Boolean {
+    if (isLiteModeActive()) return false
     val (enabled) = rememberPreference(FrostedGlassCardsButtonsKey, defaultValue = true)
     return enabled
 }

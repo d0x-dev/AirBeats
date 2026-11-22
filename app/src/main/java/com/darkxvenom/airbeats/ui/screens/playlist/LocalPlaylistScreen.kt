@@ -177,6 +177,8 @@ fun LocalPlaylistScreen(
     )
     var locked by rememberPreference(PlaylistEditLockKey, defaultValue = true)
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val effectiveDisableBlur = disableBlur || isLiteMode
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -503,7 +505,7 @@ fun LocalPlaylistScreen(
 
     val transparentAppBar by remember {
         derivedStateOf {
-            !disableBlur && !selection && !showTopBarTitle
+            !effectiveDisableBlur && !selection && !showTopBarTitle
         }
     }
 
@@ -512,7 +514,7 @@ fun LocalPlaylistScreen(
             .fillMaxSize()
             .background(surfaceColor),
     ) {
-        if (!disableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
+        if (!effectiveDisableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

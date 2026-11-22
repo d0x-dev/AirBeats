@@ -198,6 +198,7 @@ import com.darkxvenom.airbeats.constants.PlayerBackgroundStyle
 import androidx.compose.foundation.Image
 import com.darkxvenom.airbeats.constants.PlayerBackgroundStyleKey
 import com.darkxvenom.airbeats.constants.PureBlackKey
+import com.darkxvenom.airbeats.utils.isLiteMode
 import com.darkxvenom.airbeats.constants.SearchSource
 import com.darkxvenom.airbeats.constants.SearchSourceKey
 import com.darkxvenom.airbeats.constants.SlimNavBarKey
@@ -389,7 +390,7 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
-            val enabled = dataStore.get(com.darkxvenom.airbeats.constants.DynamicIslandKey, false)
+            val enabled = !isLiteMode() && dataStore.get(com.darkxvenom.airbeats.constants.DynamicIslandKey, false)
             if (enabled && android.provider.Settings.canDrawOverlays(this@MainActivity)) {
                 try {
                     startService(android.content.Intent(this@MainActivity, com.darkxvenom.airbeats.playback.DynamicIslandService::class.java))
@@ -590,14 +591,24 @@ class MainActivity : FragmentActivity() {
             val userName by namePreferenceManager.userName.collectAsState(initial = "AirBeats User")
             var showFullscreenLyrics by remember { mutableStateOf(false) }
 
-            val playerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(PlayerScreenStyleKey, defaultValue = PlayerScreenStyle.IOS_STYLED)
-            val homeScreenStyle by rememberEnumPreference(HomeScreenStyleKey, defaultValue = HomeScreenStyle.CLASSIC)
-            val navBarStyle by rememberEnumPreference(NavBarStyleKey, defaultValue = NavBarStyle.APPLE)
+            val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+
+            val rawPlayerScreenStyle by rememberEnumPreference<PlayerScreenStyle>(PlayerScreenStyleKey, defaultValue = PlayerScreenStyle.BETTER)
+            val playerScreenStyle = if (isLiteMode) PlayerScreenStyle.BETTER else rawPlayerScreenStyle
+
+            val rawHomeScreenStyle by rememberEnumPreference(HomeScreenStyleKey, defaultValue = HomeScreenStyle.CLASSIC)
+            val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
+
+            val rawNavBarStyle by rememberEnumPreference(NavBarStyleKey, defaultValue = NavBarStyle.NEW_CLASSIC)
+            val navBarStyle = if (isLiteMode) NavBarStyle.NEW_CLASSIC else rawNavBarStyle
+
             val isBetterNavBar = navBarStyle == NavBarStyle.BETTER
             val enableNewLyricsScreen by rememberPreference(com.darkxvenom.airbeats.constants.EnableNewLyricsScreenKey, defaultValue = true)
             val lyricsScreenStyle by rememberEnumPreference(com.darkxvenom.airbeats.constants.LyricsScreenStyleKey, defaultValue = com.darkxvenom.airbeats.constants.LyricsScreenStyle.LYRICS_2)
 
-            val enableDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
+            val rawDynamicTheme by rememberPreference(DynamicThemeKey, defaultValue = true)
+            val enableDynamicTheme = if (isLiteMode) true else rawDynamicTheme
+
             val themeAccentColor by rememberPreference(com.darkxvenom.airbeats.constants.ThemeAccentColorKey, defaultValue = 0xFF4285F4.toInt())
             val themeColorEffectKey by rememberPreference(com.darkxvenom.airbeats.constants.ThemeColorEffectKey, defaultValue = com.darkxvenom.airbeats.constants.ThemeColorEffect.NONE.name)
             val themeColorEffect = remember(themeColorEffectKey) {
@@ -608,8 +619,11 @@ class MainActivity : FragmentActivity() {
                 }
             }
             val darkTheme by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
-            val enableLiquidGlass by rememberPreference(LiquidGlassKey, defaultValue = false)
-            val frostedGlassCardsButtons by rememberPreference(FrostedGlassCardsButtonsKey, defaultValue = true)
+            val rawLiquidGlass by rememberPreference(LiquidGlassKey, defaultValue = false)
+            val enableLiquidGlass = if (isLiteMode) false else rawLiquidGlass
+
+            val rawFrostedGlassCardsButtons by rememberPreference(FrostedGlassCardsButtonsKey, defaultValue = true)
+            val frostedGlassCardsButtons = if (isLiteMode) false else rawFrostedGlassCardsButtons
 
             val pureBlack by rememberPreference(PureBlackKey, defaultValue = false)
             val appFontKey by rememberPreference(AppFontKey, defaultValue = AppFont.LINOTTE.key)
@@ -617,8 +631,10 @@ class MainActivity : FragmentActivity() {
             val isPlayful = homeScreenStyle == HomeScreenStyle.PLAYFUL
             val isSystemInDarkTheme = isSystemInDarkTheme()
             val useDarkTheme =
-                remember(darkTheme, isSystemInDarkTheme, enableLiquidGlass, frostedGlassCardsButtons, isPlayful) {
-                    if (isPlayful) {
+                remember(darkTheme, isSystemInDarkTheme, enableLiquidGlass, frostedGlassCardsButtons, isPlayful, isLiteMode) {
+                    if (isLiteMode) {
+                        if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
+                    } else if (isPlayful) {
                         false
                     } else if (enableLiquidGlass || frostedGlassCardsButtons) {
                         true
@@ -626,7 +642,8 @@ class MainActivity : FragmentActivity() {
                         if (darkTheme == DarkMode.AUTO) isSystemInDarkTheme else darkTheme == DarkMode.ON
                     }
                 }
-            val fullScreenMode by rememberPreference(FullScreenModeKey, defaultValue = false)
+            val rawFullScreenMode by rememberPreference(FullScreenModeKey, defaultValue = false)
+            val fullScreenMode = if (isLiteMode) false else rawFullScreenMode
             val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
             DisposableEffect(lifecycleOwner, fullScreenMode, useDarkTheme) {
@@ -1153,7 +1170,8 @@ class MainActivity : FragmentActivity() {
                                 var showRealNavBar by remember { mutableStateOf(false) }
                                 var playIntroAnimation by remember { mutableStateOf(true) }
 
-                                val aodAutoTimeoutSeconds by rememberPreference(AodAutoActivationKey, 0)
+                                val rawAodAutoTimeoutSeconds by rememberPreference(AodAutoActivationKey, 0)
+                                val aodAutoTimeoutSeconds = if (isLiteMode) 0 else rawAodAutoTimeoutSeconds
                                 var isAodActive by remember { mutableStateOf(false) }
                                 var lastInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
@@ -1741,7 +1759,8 @@ class MainActivity : FragmentActivity() {
                                         }
                                     }
 
-                                    val enableSwipeBackGesture by rememberPreference(com.darkxvenom.airbeats.constants.EnableSwipeBackGestureKey, defaultValue = true)
+                                    val rawSwipeBack by rememberPreference(com.darkxvenom.airbeats.constants.EnableSwipeBackGestureKey, defaultValue = true)
+                                    val enableSwipeBackGesture = if (isLiteMode) false else rawSwipeBack
                                     val currentDestRoute = navBackStackEntry?.destination?.route
                                     val rootTabRoutes = remember(navigationItems) { navigationItems.map { it.route }.toSet() }
                                     val isRootScreen = currentDestRoute in rootTabRoutes

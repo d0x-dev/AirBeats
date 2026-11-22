@@ -207,10 +207,13 @@ fun AppearanceSettings(
     val selectedFont = remember(appFontKey) { AppFont.fromKey(appFontKey) }
     var showFontDialog by remember { mutableStateOf(false) }
 
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val useDarkTheme =
-        remember(darkMode, isSystemInDarkTheme, enableLiquidGlass, frostedGlassCardsButtons, isPlayful) {
-            if (isPlayful) {
+        remember(darkMode, isSystemInDarkTheme, enableLiquidGlass, frostedGlassCardsButtons, isPlayful, isLiteMode) {
+            if (isLiteMode) {
+                if (darkMode == DarkMode.AUTO) isSystemInDarkTheme else darkMode == DarkMode.ON
+            } else if (isPlayful) {
                 false
             } else if (enableLiquidGlass || frostedGlassCardsButtons) {
                 true
@@ -562,123 +565,127 @@ fun AppearanceSettings(
                                 onClick = { navController.navigate("settings/appearance/app_icon") }
                             )
                         },
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.home_screen_style)) },
-                            icon = { Icon(painterResource(R.drawable.home), null) },
-                            selectedValue = homeScreenStyle,
-                            onValueSelected = { selected ->
-                                onHomeScreenStyleChange(selected)
-                                if (selected == HomeScreenStyle.BETTER) {
-                                    onNavBarStyleChange(NavBarStyle.BETTER)
-                                }
-                            },
-                            valueText = {
-                                when (it) {
-                                    HomeScreenStyle.NEW_CLASSIC -> "New Classic"
-                                    HomeScreenStyle.BETTER -> "Better"
-                                    HomeScreenStyle.CLASSIC -> "Classic"
-                                    HomeScreenStyle.PLAYFUL -> "Playful"
-                                    HomeScreenStyle.SPOTIFY -> "Spotify"
-                                    HomeScreenStyle.APPLE -> "Apple"
-                                    HomeScreenStyle.MATERIAL -> "Material"
-                                    HomeScreenStyle.UNIVERSAL -> "Universal"
-                                }
-                            },
-                        )},
-                        *(if (homeScreenStyle != HomeScreenStyle.NEW_CLASSIC && homeScreenStyle != HomeScreenStyle.BETTER) arrayOf<@Composable () -> Unit>({
-                            PreferenceEntry(
-                                title = { Text(stringResource(R.string.ui_text_home_sections)) },
-                                description = stringResource(R.string.ui_extra_customize_visible_sections_on_the_home_screen),
-                                icon = { Icon(Icons.Filled.Dashboard, null) },
-                                onClick = { navController.navigate("settings/home_sections") }
-                            )
-                        }) else emptyArray()),
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.navigation_bar_style)) },
-                            icon = { Icon(painterResource(R.drawable.nav_bar), null) },
-                            selectedValue = navBarStyle,
-                            onValueSelected = onNavBarStyleChange,
-                            valueText = {
-                                when (it) {
-                                    NavBarStyle.NEW_CLASSIC -> "New Classic"
-                                    NavBarStyle.BETTER -> "Better"
-                                    NavBarStyle.LIQUID_GLASS -> "Liquid Glass"
-                                    NavBarStyle.SPOTIFY -> "Spotify"
-                                    NavBarStyle.APPLE -> "Apple"
-                                    NavBarStyle.MATERIAL -> "Material"
-                                }
-                            },
-                        )},
-                        {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                SwitchPreference(
-                                    title = { Text(stringResource(R.string.enable_dynamic_theme)) },
-                                    icon = { Icon(painterResource(R.drawable.palette), null) },
-                                    checked = dynamicTheme,
-                                    onCheckedChange = onDynamicThemeChange,
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {EnumListPreference(
+                                title = { Text(stringResource(R.string.home_screen_style)) },
+                                icon = { Icon(painterResource(R.drawable.home), null) },
+                                selectedValue = homeScreenStyle,
+                                onValueSelected = { selected ->
+                                    onHomeScreenStyleChange(selected)
+                                    if (selected == HomeScreenStyle.BETTER) {
+                                        onNavBarStyleChange(NavBarStyle.BETTER)
+                                    }
+                                },
+                                valueText = {
+                                    when (it) {
+                                        HomeScreenStyle.NEW_CLASSIC -> "New Classic"
+                                        HomeScreenStyle.BETTER -> "Better"
+                                        HomeScreenStyle.CLASSIC -> "Classic"
+                                        HomeScreenStyle.PLAYFUL -> "Playful"
+                                        HomeScreenStyle.SPOTIFY -> "Spotify"
+                                        HomeScreenStyle.APPLE -> "Apple"
+                                        HomeScreenStyle.MATERIAL -> "Material"
+                                        HomeScreenStyle.UNIVERSAL -> "Universal"
+                                    }
+                                },
+                            )},
+                            *(if (homeScreenStyle != HomeScreenStyle.NEW_CLASSIC && homeScreenStyle != HomeScreenStyle.BETTER) arrayOf<@Composable () -> Unit>({
+                                PreferenceEntry(
+                                    title = { Text(stringResource(R.string.ui_text_home_sections)) },
+                                    description = stringResource(R.string.ui_extra_customize_visible_sections_on_the_home_screen),
+                                    icon = { Icon(Icons.Filled.Dashboard, null) },
+                                    onClick = { navController.navigate("settings/home_sections") }
                                 )
+                            }) else emptyArray()),
+                            {EnumListPreference(
+                                title = { Text(stringResource(R.string.navigation_bar_style)) },
+                                icon = { Icon(painterResource(R.drawable.nav_bar), null) },
+                                selectedValue = navBarStyle,
+                                onValueSelected = onNavBarStyleChange,
+                                valueText = {
+                                    when (it) {
+                                        NavBarStyle.NEW_CLASSIC -> "New Classic"
+                                        NavBarStyle.BETTER -> "Better"
+                                        NavBarStyle.LIQUID_GLASS -> "Liquid Glass"
+                                        NavBarStyle.SPOTIFY -> "Spotify"
+                                        NavBarStyle.APPLE -> "Apple"
+                                        NavBarStyle.MATERIAL -> "Material"
+                                    }
+                                },
+                            )}
+                        ) else emptyArray()),
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    SwitchPreference(
+                                        title = { Text(stringResource(R.string.enable_dynamic_theme)) },
+                                        icon = { Icon(painterResource(R.drawable.palette), null) },
+                                        checked = dynamicTheme,
+                                        onCheckedChange = onDynamicThemeChange,
+                                    )
 
-                                AnimatedVisibility(
-                                    visible = !dynamicTheme,
-                                    enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
-                                    exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(
-                                                start = 72.dp,
-                                                end = 16.dp
-                                            ),
-                                            thickness = 0.5.dp,
-                                            color = Color.White.copy(alpha = 0.08f)
-                                        )
+                                    AnimatedVisibility(
+                                        visible = !dynamicTheme,
+                                        enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                                        exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
+                                    ) {
+                                        Column(modifier = Modifier.fillMaxWidth()) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(
+                                                    start = 72.dp,
+                                                    end = 16.dp
+                                                ),
+                                                thickness = 0.5.dp,
+                                                color = Color.White.copy(alpha = 0.08f)
+                                            )
 
-                                        AccentColorSettingsSection(
-                                            selectedColorInt = themeAccentColor,
-                                            onColorSelected = onThemeAccentColorChange,
-                                        )
+                                            AccentColorSettingsSection(
+                                                selectedColorInt = themeAccentColor,
+                                                onColorSelected = onThemeAccentColorChange,
+                                            )
 
-                                        HorizontalDivider(
-                                            modifier = Modifier.padding(
-                                                start = 72.dp,
-                                                end = 16.dp
-                                            ),
-                                            thickness = 0.5.dp,
-                                            color = Color.White.copy(alpha = 0.08f)
-                                        )
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(
+                                                    start = 72.dp,
+                                                    end = 16.dp
+                                                ),
+                                                thickness = 0.5.dp,
+                                                color = Color.White.copy(alpha = 0.08f)
+                                            )
 
-                                        EnumListPreference(
-                                            title = { Text(stringResource(R.string.ui_text_color_effects)) },
-                                            icon = { Icon(Icons.Filled.AutoAwesome, null) },
-                                            selectedValue = themeColorEffect,
-                                            onValueSelected = { onThemeColorEffectKeyChange(it.name) },
-                                            valueText = {
-                                                when (it) {
-                                                    ThemeColorEffect.NONE -> "None · Default balanced appearance"
-                                                    ThemeColorEffect.VIBRANT -> "Vibrant · High energy & maximum saturation"
-                                                    ThemeColorEffect.EXPRESSIVE -> "Expressive · Playful artistic secondary hues"
-                                                    ThemeColorEffect.FRUIT_SALAD -> "Fruit Salad · Complementary fruit palette"
-                                                    ThemeColorEffect.RAINBOW -> "Rainbow · Spirited spectrum tones"
-                                                    ThemeColorEffect.FIDELITY -> "Fidelity · Exact accent color match"
-                                                    ThemeColorEffect.CONTENT -> "Content · Media balanced aesthetic"
-                                                    ThemeColorEffect.MONOCHROME -> "Monochrome · Modern greyscale styling"
-                                                    ThemeColorEffect.NEUTRAL -> "Neutral · Quiet & understated tones"
-                                                }
-                                            },
-                                        )
+                                            EnumListPreference(
+                                                title = { Text(stringResource(R.string.ui_text_color_effects)) },
+                                                icon = { Icon(Icons.Filled.AutoAwesome, null) },
+                                                selectedValue = themeColorEffect,
+                                                onValueSelected = { onThemeColorEffectKeyChange(it.name) },
+                                                valueText = {
+                                                    when (it) {
+                                                        ThemeColorEffect.NONE -> "None · Default balanced appearance"
+                                                        ThemeColorEffect.VIBRANT -> "Vibrant · High energy & maximum saturation"
+                                                        ThemeColorEffect.EXPRESSIVE -> "Expressive · Playful artistic secondary hues"
+                                                        ThemeColorEffect.FRUIT_SALAD -> "Fruit Salad · Complementary fruit palette"
+                                                        ThemeColorEffect.RAINBOW -> "Rainbow · Spirited spectrum tones"
+                                                        ThemeColorEffect.FIDELITY -> "Fidelity · Exact accent color match"
+                                                        ThemeColorEffect.CONTENT -> "Content · Media balanced aesthetic"
+                                                        ThemeColorEffect.MONOCHROME -> "Monochrome · Modern greyscale styling"
+                                                        ThemeColorEffect.NEUTRAL -> "Neutral · Quiet & understated tones"
+                                                    }
+                                                },
+                                            )
+                                        }
                                     }
                                 }
+                            },
+                            {
+                                SwitchPreference(
+                                    title = { Text(stringResource(R.string.ui_text_dynamic_background)) },
+                                    description = if (dynamicBackground) "Using adaptive song artwork and ambient mesh background" else "Using plain background based on color scheme",
+                                    icon = { Icon(painterResource(R.drawable.image), null) },
+                                    checked = dynamicBackground,
+                                    onCheckedChange = onDynamicBackgroundChange,
+                                )
                             }
-                        },
-                        {
-                            SwitchPreference(
-                                title = { Text(stringResource(R.string.ui_text_dynamic_background)) },
-                                description = if (dynamicBackground) "Using adaptive song artwork and ambient mesh background" else "Using plain background based on color scheme",
-                                icon = { Icon(painterResource(R.drawable.image), null) },
-                                checked = dynamicBackground,
-                                onCheckedChange = onDynamicBackgroundChange,
-                            )
-                        },
+                        ) else emptyArray()),
                         {EnumListPreference(
                             title = { Text(stringResource(R.string.dark_theme)) },
                             icon = { Icon(painterResource(R.drawable.dark_mode), null) },
@@ -699,62 +706,66 @@ fun AppearanceSettings(
                             },
                             isEnabled = !enableLiquidGlass && !frostedGlassCardsButtons && !isPlayful
                         )},
-                        {
-                            PreferenceEntry(
-                                title = { Text(stringResource(R.string.ui_text_dynamic_island)) },
-                                description = stringResource(R.string.ui_extra_position_fluid_size_landscape_settings_liquid_glass_colors),
-                                icon = { Icon(painterResource(R.drawable.music_note), null) },
-                                onClick = {
-                                    navController.navigate("settings/dynamic_island")
-                                }
-                            )
-                        },
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.enable_liquid_glass)) },
-                            description = stringResource(R.string.enable_liquid_glass_desc),
-                            icon = { Icon(painterResource(R.drawable.palette), null) },
-                            checked = enableLiquidGlass && !isPlayful,
-                            onCheckedChange = { newValue ->
-                                onEnableLiquidGlassChange(newValue)
-                                if (newValue) {
-                                    onDarkModeChange(DarkMode.ON)
-                                }
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {
+                                PreferenceEntry(
+                                    title = { Text(stringResource(R.string.ui_text_dynamic_island)) },
+                                    description = stringResource(R.string.ui_extra_position_fluid_size_landscape_settings_liquid_glass_colors),
+                                    icon = { Icon(painterResource(R.drawable.music_note), null) },
+                                    onClick = {
+                                        navController.navigate("settings/dynamic_island")
+                                    }
+                                )
                             },
-                            isEnabled = !isPlayful
-                        )},
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.ui_text_frosted_glass_cards_and_buttons)) },
-                            description = stringResource(R.string.ui_extra_apply_frosted_glass_effect_to_buttons_tags_settings_cards_and_popups),
-                            icon = { Icon(painterResource(R.drawable.contrast), null) },
-                            checked = frostedGlassCardsButtons,
-                            onCheckedChange = { newValue ->
-                                onFrostedGlassCardsButtonsChange(newValue)
-                                if (newValue) {
-                                    onDarkModeChange(DarkMode.ON)
-                                    onPureBlackChange(false)
+                            {SwitchPreference(
+                                title = { Text(stringResource(R.string.enable_liquid_glass)) },
+                                description = stringResource(R.string.enable_liquid_glass_desc),
+                                icon = { Icon(painterResource(R.drawable.palette), null) },
+                                checked = enableLiquidGlass && !isPlayful,
+                                onCheckedChange = { newValue ->
+                                    onEnableLiquidGlassChange(newValue)
+                                    if (newValue) {
+                                        onDarkModeChange(DarkMode.ON)
+                                    }
+                                },
+                                isEnabled = !isPlayful
+                            )},
+                            {SwitchPreference(
+                                title = { Text(stringResource(R.string.ui_text_frosted_glass_cards_and_buttons)) },
+                                description = stringResource(R.string.ui_extra_apply_frosted_glass_effect_to_buttons_tags_settings_cards_and_popups),
+                                icon = { Icon(painterResource(R.drawable.contrast), null) },
+                                checked = frostedGlassCardsButtons,
+                                onCheckedChange = { newValue ->
+                                    onFrostedGlassCardsButtonsChange(newValue)
+                                    if (newValue) {
+                                        onDarkModeChange(DarkMode.ON)
+                                        onPureBlackChange(false)
+                                    }
                                 }
-                            }
-                        )},
+                            )}
+                        ) else emptyArray()),
                         {AnimatedVisibility(useDarkTheme) {
                             SwitchPreference(
                                 title = { Text(stringResource(R.string.pure_black)) },
                                 icon = { Icon(painterResource(R.drawable.contrast), null) },
-                                checked = pureBlack && useDarkTheme && !enableLiquidGlass && !frostedGlassCardsButtons,
+                                checked = pureBlack && useDarkTheme && (isLiteMode || (!enableLiquidGlass && !frostedGlassCardsButtons)),
                                 onCheckedChange = { newValue ->
-                                    if (useDarkTheme && !enableLiquidGlass && !frostedGlassCardsButtons) {
+                                    if (useDarkTheme && (isLiteMode || (!enableLiquidGlass && !frostedGlassCardsButtons))) {
                                         onPureBlackChange(newValue)
                                     }
                                 },
-                                isEnabled = useDarkTheme && !enableLiquidGlass && !frostedGlassCardsButtons
+                                isEnabled = useDarkTheme && (isLiteMode || (!enableLiquidGlass && !frostedGlassCardsButtons))
                             )
                         }},
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.full_screen_mode)) },
-                            description = stringResource(R.string.full_screen_mode_description),
-                            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
-                            checked = fullScreenMode,
-                            onCheckedChange = onFullScreenModeChange,
-                        )},
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {SwitchPreference(
+                                title = { Text(stringResource(R.string.full_screen_mode)) },
+                                description = stringResource(R.string.full_screen_mode_description),
+                                icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+                                checked = fullScreenMode,
+                                onCheckedChange = onFullScreenModeChange,
+                            )}
+                        ) else emptyArray()),
                         { PreferenceEntry(
                             title = { Text(stringResource(R.string.ui_text_fonts)) },
                             description = selectedFont.title,
@@ -855,154 +866,156 @@ fun AppearanceSettings(
                 SettingsGeneralCategory(
                     title = stringResource(R.string.player),
                     items = listOf(
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.player_screen_style)) },
-                            icon = { Icon(painterResource(R.drawable.palette), null) },
-                            selectedValue = playerScreenStyle,
-                            onValueSelected = onPlayerScreenStyleChange,
-                            values = listOf(
-                                PlayerScreenStyle.MATERIAL,
-                                PlayerScreenStyle.IOS_STYLED,
-                                PlayerScreenStyle.MODERN,
-                                PlayerScreenStyle.SPOTIFY,
-                                PlayerScreenStyle.BETTER,
-                                PlayerScreenStyle.CLASSIC,
-                                PlayerScreenStyle.APPLE,
-                                PlayerScreenStyle.PAPER,
-                                PlayerScreenStyle.LIQUID,
-                                PlayerScreenStyle.CLOUDGLOW,
-                                PlayerScreenStyle.FROST,
-                                PlayerScreenStyle.FOLD,
-                                PlayerScreenStyle.GROOVE,
-                                PlayerScreenStyle.POPSY,
-                                PlayerScreenStyle.MINIMAL,
-                                PlayerScreenStyle.COLOURFULL,
-                                PlayerScreenStyle.GALAXY,
-                            ),
-                            valueText = {
-                                when (it) {
-                                    PlayerScreenStyle.MATERIAL -> "Material"
-                                    PlayerScreenStyle.IOS_STYLED -> "iOS Styled"
-                                    PlayerScreenStyle.MODERN -> stringResource(R.string.modern_player)
-                                    PlayerScreenStyle.SPOTIFY -> stringResource(R.string.spotify_player)
-                                    PlayerScreenStyle.BETTER -> "Better"
-                                    PlayerScreenStyle.CLASSIC -> stringResource(R.string.classic_player)
-                                    PlayerScreenStyle.APPLE -> "Apple"
-                                    PlayerScreenStyle.PAPER -> stringResource(R.string.paper_player)
-                                    PlayerScreenStyle.LIQUID -> stringResource(R.string.liquid_player)
-                                    PlayerScreenStyle.CLOUDGLOW -> "CloudGlow"
-                                    PlayerScreenStyle.FROST -> "Frost"
-                                    PlayerScreenStyle.FOLD -> "Fold"
-                                    PlayerScreenStyle.GROOVE -> "Groove"
-                                    PlayerScreenStyle.POPSY -> "Popsy"
-                                    PlayerScreenStyle.MINIMAL -> "Minimal"
-                                    PlayerScreenStyle.COLOURFULL -> "Colourfull"
-                                    PlayerScreenStyle.GALAXY -> "Galaxy"
-                                }
-                            },
-                        )},
-
-                        *(if (playerScreenStyle == PlayerScreenStyle.COLOURFULL || playerScreenStyle == PlayerScreenStyle.APPLE || playerScreenStyle == PlayerScreenStyle.GALAXY) arrayOf(
-                            { PreferenceEntry(
-                                title = { Text(stringResource(R.string.player_colour)) },
-                                description = stringResource(R.string.ui_extra_choose_a_custom_background_color),
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {EnumListPreference(
+                                title = { Text(stringResource(R.string.player_screen_style)) },
                                 icon = { Icon(painterResource(R.drawable.palette), null) },
-                                onClick = {
-                                    showColorPickerOptionDialog = true
-                                }
-                            ) }
-                        ) else emptyArray()),
-
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.player_background_style)) },
-                            icon = { Icon(painterResource(R.drawable.gradient), null) },
-                            selectedValue = safeSelectedValue,
-                            onValueSelected = onPlayerBackgroundChange,
-                            valueText = {
-                                when (it) {
-                                    PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                                    PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                                    PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                                    PlayerBackgroundStyle.FLUID -> stringResource(R.string.player_background_fluid)
-                                }
-                            },
-                            values = availableBackgroundStyles
-                        )},
-
-                        {ThumbnailCornerRadiusSelectorButton(
-                            onRadiusSelected = { selectedRadius ->
-                                Timber.tag("Thumbnail").d("Selected radio: $selectedRadius")
-                            }
-                        )},
-
-                        {
-                            UnifiedShapeSelectorButton(
-                                smallButtonsShape = smallButtonsShapeState.value,
-                                playPauseShape = playPauseShapeState.value,
-                                miniPlayerShape = miniPlayerThumbnailShapeState.value,
-                                onSmallButtonsShapeSelected = { newShape ->
-                                    smallButtonsShapeState.value = newShape
+                                selectedValue = playerScreenStyle,
+                                onValueSelected = onPlayerScreenStyleChange,
+                                values = listOf(
+                                    PlayerScreenStyle.MATERIAL,
+                                    PlayerScreenStyle.IOS_STYLED,
+                                    PlayerScreenStyle.MODERN,
+                                    PlayerScreenStyle.SPOTIFY,
+                                    PlayerScreenStyle.BETTER,
+                                    PlayerScreenStyle.CLASSIC,
+                                    PlayerScreenStyle.APPLE,
+                                    PlayerScreenStyle.PAPER,
+                                    PlayerScreenStyle.LIQUID,
+                                    PlayerScreenStyle.CLOUDGLOW,
+                                    PlayerScreenStyle.FROST,
+                                    PlayerScreenStyle.FOLD,
+                                    PlayerScreenStyle.GROOVE,
+                                    PlayerScreenStyle.POPSY,
+                                    PlayerScreenStyle.MINIMAL,
+                                    PlayerScreenStyle.COLOURFULL,
+                                    PlayerScreenStyle.GALAXY,
+                                ),
+                                valueText = {
+                                    when (it) {
+                                        PlayerScreenStyle.MATERIAL -> "Material"
+                                        PlayerScreenStyle.IOS_STYLED -> "iOS Styled"
+                                        PlayerScreenStyle.MODERN -> stringResource(R.string.modern_player)
+                                        PlayerScreenStyle.SPOTIFY -> stringResource(R.string.spotify_player)
+                                        PlayerScreenStyle.BETTER -> "Better"
+                                        PlayerScreenStyle.CLASSIC -> stringResource(R.string.classic_player)
+                                        PlayerScreenStyle.APPLE -> "Apple"
+                                        PlayerScreenStyle.PAPER -> stringResource(R.string.paper_player)
+                                        PlayerScreenStyle.LIQUID -> stringResource(R.string.liquid_player)
+                                        PlayerScreenStyle.CLOUDGLOW -> "CloudGlow"
+                                        PlayerScreenStyle.FROST -> "Frost"
+                                        PlayerScreenStyle.FOLD -> "Fold"
+                                        PlayerScreenStyle.GROOVE -> "Groove"
+                                        PlayerScreenStyle.POPSY -> "Popsy"
+                                        PlayerScreenStyle.MINIMAL -> "Minimal"
+                                        PlayerScreenStyle.COLOURFULL -> "Colourfull"
+                                        PlayerScreenStyle.GALAXY -> "Galaxy"
+                                    }
                                 },
-                                onPlayPauseShapeSelected = { newShape ->
-                                    playPauseShapeState.value = newShape
+                            )},
+
+                            *(if (playerScreenStyle == PlayerScreenStyle.COLOURFULL || playerScreenStyle == PlayerScreenStyle.APPLE || playerScreenStyle == PlayerScreenStyle.GALAXY) arrayOf(
+                                { PreferenceEntry(
+                                    title = { Text(stringResource(R.string.player_colour)) },
+                                    description = stringResource(R.string.ui_extra_choose_a_custom_background_color),
+                                    icon = { Icon(painterResource(R.drawable.palette), null) },
+                                    onClick = {
+                                        showColorPickerOptionDialog = true
+                                    }
+                                ) }
+                            ) else emptyArray()),
+
+                            {EnumListPreference(
+                                title = { Text(stringResource(R.string.player_background_style)) },
+                                icon = { Icon(painterResource(R.drawable.gradient), null) },
+                                selectedValue = safeSelectedValue,
+                                onValueSelected = onPlayerBackgroundChange,
+                                valueText = {
+                                    when (it) {
+                                        PlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
+                                        PlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
+                                        PlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
+                                        PlayerBackgroundStyle.FLUID -> stringResource(R.string.player_background_fluid)
+                                    }
                                 },
-                                onMiniPlayerShapeSelected = { newShape ->
-                                    miniPlayerThumbnailShapeState.value = newShape
+                                values = availableBackgroundStyles
+                            )},
+
+                            {ThumbnailCornerRadiusSelectorButton(
+                                onRadiusSelected = { selectedRadius ->
+                                    Timber.tag("Thumbnail").d("Selected radio: $selectedRadius")
                                 }
-                            )
-                        },
+                            )},
 
-                        {EnumListPreference(
-                            title = { Text(stringResource(R.string.player_buttons_style)) },
-                            icon = { Icon(painterResource(R.drawable.palette), null) },
-                            selectedValue = playerButtonsStyle,
-                            onValueSelected = onPlayerButtonsStyleChange,
-                            valueText = {
-                                when (it) {
-                                    PlayerButtonsStyle.DEFAULT -> stringResource(R.string.default_style)
-                                    PlayerButtonsStyle.PRIMARY -> stringResource(R.string.secondary_color_style)
-                                    PlayerButtonsStyle.TERTIARY -> stringResource(R.string.tertiary_color_style)
-                                }
-                            },
-                        )},
-
-                        {PreferenceEntry(
-                            title = { Text(stringResource(R.string.player_slider_style)) },
-                            description =
-                                when (sliderStyle) {
-                                    SliderStyle.DEFAULT -> stringResource(R.string.default_)
-                                    SliderStyle.SQUIGGLY -> stringResource(R.string.squiggly)
-                                    SliderStyle.SLIM -> stringResource(R.string.slim)
-                                },
-                            icon = { Icon(painterResource(R.drawable.sliders), null) },
-                            onClick = {
-                                showSliderOptionDialog = true
-                            },
-                        )},
-
-                        *(if (playerScreenStyle == PlayerScreenStyle.GALAXY) arrayOf(
                             {
-                                val (showGalaxySlider, onShowGalaxySliderChange) = rememberPreference(
-                                    ShowGalaxySliderKey,
-                                    defaultValue = true
+                                UnifiedShapeSelectorButton(
+                                    smallButtonsShape = smallButtonsShapeState.value,
+                                    playPauseShape = playPauseShapeState.value,
+                                    miniPlayerShape = miniPlayerThumbnailShapeState.value,
+                                    onSmallButtonsShapeSelected = { newShape ->
+                                        smallButtonsShapeState.value = newShape
+                                    },
+                                    onPlayPauseShapeSelected = { newShape ->
+                                        playPauseShapeState.value = newShape
+                                    },
+                                    onMiniPlayerShapeSelected = { newShape ->
+                                        miniPlayerThumbnailShapeState.value = newShape
+                                    }
                                 )
-                                SwitchPreference(
-                                    title = { Text(stringResource(R.string.show_galaxy_slider)) },
-                                    description = stringResource(R.string.show_galaxy_slider_desc),
-                                    icon = { Icon(painterResource(R.drawable.sliders), null) },
-                                    checked = showGalaxySlider,
-                                    onCheckedChange = onShowGalaxySliderChange
-                                )
-                            }
-                        ) else emptyArray()),
+                            },
 
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.immersive_player_mode)) },
-                            description = stringResource(R.string.immersive_player_mode_description),
-                            icon = { Icon(painterResource(R.drawable.fullscreen), null) },
-                            checked = immersivePlayerMode,
-                            onCheckedChange = onImmersivePlayerModeChange,
-                        )},
+                            {EnumListPreference(
+                                title = { Text(stringResource(R.string.player_buttons_style)) },
+                                icon = { Icon(painterResource(R.drawable.palette), null) },
+                                selectedValue = playerButtonsStyle,
+                                onValueSelected = onPlayerButtonsStyleChange,
+                                valueText = {
+                                    when (it) {
+                                        PlayerButtonsStyle.DEFAULT -> stringResource(R.string.default_style)
+                                        PlayerButtonsStyle.PRIMARY -> stringResource(R.string.secondary_color_style)
+                                        PlayerButtonsStyle.TERTIARY -> stringResource(R.string.tertiary_color_style)
+                                    }
+                                },
+                            )},
+
+                            {PreferenceEntry(
+                                title = { Text(stringResource(R.string.player_slider_style)) },
+                                description =
+                                    when (sliderStyle) {
+                                        SliderStyle.DEFAULT -> stringResource(R.string.default_)
+                                        SliderStyle.SQUIGGLY -> stringResource(R.string.squiggly)
+                                        SliderStyle.SLIM -> stringResource(R.string.slim)
+                                    },
+                                icon = { Icon(painterResource(R.drawable.sliders), null) },
+                                onClick = {
+                                    showSliderOptionDialog = true
+                                },
+                            )},
+
+                            *(if (playerScreenStyle == PlayerScreenStyle.GALAXY) arrayOf(
+                                {
+                                    val (showGalaxySlider, onShowGalaxySliderChange) = rememberPreference(
+                                        ShowGalaxySliderKey,
+                                        defaultValue = true
+                                    )
+                                    SwitchPreference(
+                                        title = { Text(stringResource(R.string.show_galaxy_slider)) },
+                                        description = stringResource(R.string.show_galaxy_slider_desc),
+                                        icon = { Icon(painterResource(R.drawable.sliders), null) },
+                                        checked = showGalaxySlider,
+                                        onCheckedChange = onShowGalaxySliderChange
+                                    )
+                                }
+                            ) else emptyArray()),
+
+                            {SwitchPreference(
+                                title = { Text(stringResource(R.string.immersive_player_mode)) },
+                                description = stringResource(R.string.immersive_player_mode_description),
+                                icon = { Icon(painterResource(R.drawable.fullscreen), null) },
+                                checked = immersivePlayerMode,
+                                onCheckedChange = onImmersivePlayerModeChange,
+                            )}
+                        ) else emptyArray()),
 
                         {SwitchPreference(
                             title = { Text(stringResource(R.string.enable_swipe_thumbnail)) },
@@ -1011,13 +1024,15 @@ fun AppearanceSettings(
                             onCheckedChange = onSwipeThumbnailChange,
                         )},
 
-                        {SwitchPreference(
-                            title = { Text(stringResource(R.string.Rotatelyricsbackground)) },
-                            description = null,
-                            icon = { Icon(painterResource(R.drawable.album), null) },
-                            checked = rotateBackground,
-                            onCheckedChange = onRotateBackgroundChange
-                        )},
+                        *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                            {SwitchPreference(
+                                title = { Text(stringResource(R.string.Rotatelyricsbackground)) },
+                                description = null,
+                                icon = { Icon(painterResource(R.drawable.album), null) },
+                                checked = rotateBackground,
+                                onCheckedChange = onRotateBackgroundChange
+                            )}
+                        ) else emptyArray()),
 
                         {EnumListPreference(
                             title = { Text(stringResource(R.string.player_text_alignment)) },

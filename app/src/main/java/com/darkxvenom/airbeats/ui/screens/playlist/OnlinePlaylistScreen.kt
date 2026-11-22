@@ -166,6 +166,8 @@ fun OnlinePlaylistScreen(
 
     val hideExplicit by rememberPreference(key = HideExplicitKey, defaultValue = false)
     val (disableBlur) = rememberPreference(DisableBlurKey, false)
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+    val effectiveDisableBlur = disableBlur || isLiteMode
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -416,7 +418,7 @@ fun OnlinePlaylistScreen(
 
     val transparentAppBar by remember {
         derivedStateOf {
-            !disableBlur && !selection && !showTopBarTitle
+            !effectiveDisableBlur && !selection && !showTopBarTitle
         }
     }
 
@@ -430,7 +432,7 @@ fun OnlinePlaylistScreen(
                 onRefresh = viewModel::refresh
             ),
     ) {
-        if (!disableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
+        if (!effectiveDisableBlur && gradientColors.isNotEmpty() && gradientAlpha > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

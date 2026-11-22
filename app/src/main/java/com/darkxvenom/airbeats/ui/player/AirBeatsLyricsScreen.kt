@@ -140,7 +140,8 @@ fun AirBeatsLyricsScreen(
     )
     val useLyricsV2 = lyricsScreenStyle == com.darkxvenom.airbeats.constants.LyricsScreenStyle.LYRICS_2
     val sliderStyle by rememberEnumPreference(SliderStyleKey, SliderStyle.SQUIGGLY)
-    val rotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
+    val rawRotateBackground by rememberPreference(RotateBackgroundKey, defaultValue = false)
+    val rotateBackground = if (com.darkxvenom.airbeats.utils.isLiteModeActive()) false else rawRotateBackground
 
     val infiniteTransition = rememberInfiniteTransition(label = "backgroundRotation")
     val rotation by infiniteTransition.animateFloat(

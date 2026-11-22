@@ -225,9 +225,10 @@ fun PlayerSettings(
     )
     val (enableJioSaavn, onEnableJioSaavnChange) = rememberPreference(
         com.darkxvenom.airbeats.constants.EnableJioSaavnKey,
-        defaultValue = true
+        defaultValue = false
     )
     var showQualityDialog by remember { mutableStateOf(false) }
+    val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
     val haptic = LocalHapticFeedback.current
 
     val service = playerConnection?.service
@@ -282,48 +283,49 @@ fun PlayerSettings(
         SettingsGeneralCategory(
             title = stringResource(R.string.player),
             items = listOf(
-                {
-                    val deviceName = when {
-                        isCasting -> castDeviceName ?: "Cast device"
-                        activeDevice != null -> activeDevice.productName.toString()
-                        else -> "Phone Speaker"
+                *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                    {
+                        val deviceName = when {
+                            isCasting -> castDeviceName ?: "Cast device"
+                            activeDevice != null -> activeDevice.productName.toString()
+                            else -> "Phone Speaker"
+                        }
+                        val deviceIcon = when {
+                            isCasting -> R.drawable.ic_cast_connected
+                            isBluetooth -> R.drawable.ic_bluetooth
+                            else -> R.drawable.airplay
+                        }
+                        PreferenceEntry(
+                            title = { Text(stringResource(R.string.output_audio_device)) },
+                            description = deviceName,
+                            icon = {
+                                Icon(
+                                    painter = painterResource(deviceIcon),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
+                            onClick = { showDeviceSheet = true }
+                        )
+                    },
+                    {
+                        val streamingQualitySubtitle = when (streamingQualityPreset) {
+                            QualityTiers.QUALITY_DOLBY_ATMOS -> "Dolby Atmos • Spatial Audio"
+                            QualityTiers.QUALITY_MAX_HI_RES -> "Max Quality • Up to 24-bit / 192 kHz"
+                            QualityTiers.QUALITY_HI_RES_96 -> "Hi-Res Audio • 24-bit / 96 kHz"
+                            QualityTiers.QUALITY_CD_LOSSLESS -> "CD Lossless • 16-bit / 44.1 kHz"
+                            QualityTiers.QUALITY_MP3_320 -> "Standard Quality • 320 kbps"
+                            QualityTiers.QUALITY_DATA_SAVER -> "Data Saver • 96 kbps"
+                            else -> "YouTube Music • Native stream"
+                        }
+                        PreferenceEntry(
+                            title = { Text(stringResource(R.string.ui_text_streaming_quality)) },
+                            description = streamingQualitySubtitle,
+                            icon = { Icon(Icons.Filled.HighQuality, null) },
+                            onClick = { showQualityDialog = true }
+                        )
                     }
-                    val deviceIcon = when {
-                        isCasting -> R.drawable.ic_cast_connected
-                        isBluetooth -> R.drawable.ic_bluetooth
-                        else -> R.drawable.airplay
-                    }
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.output_audio_device)) },
-                        description = deviceName,
-                        icon = {
-                            Icon(
-                                painter = painterResource(deviceIcon),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        },
-                        onClick = { showDeviceSheet = true }
-                    )
-                },
-
-                {
-                    val streamingQualitySubtitle = when (streamingQualityPreset) {
-                        QualityTiers.QUALITY_DOLBY_ATMOS -> "Dolby Atmos • Spatial Audio"
-                        QualityTiers.QUALITY_MAX_HI_RES -> "Max Quality • Up to 24-bit / 192 kHz"
-                        QualityTiers.QUALITY_HI_RES_96 -> "Hi-Res Audio • 24-bit / 96 kHz"
-                        QualityTiers.QUALITY_CD_LOSSLESS -> "CD Lossless • 16-bit / 44.1 kHz"
-                        QualityTiers.QUALITY_MP3_320 -> "Standard Quality • 320 kbps"
-                        QualityTiers.QUALITY_DATA_SAVER -> "Data Saver • 96 kbps"
-                        else -> "YouTube Music • Native stream"
-                    }
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.ui_text_streaming_quality)) },
-                        description = streamingQualitySubtitle,
-                        icon = { Icon(Icons.Filled.HighQuality, null) },
-                        onClick = { showQualityDialog = true }
-                    )
-                },
+                ) else emptyArray()),
 
                 {
                     SwitchPreference(
@@ -335,6 +337,7 @@ fun PlayerSettings(
                     )
                 },
 
+                *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
                 {
                     SwitchPreference(
                         title = { Text(stringResource(R.string.ui_remaining_pure_audio_direct_source_bypass)) },
@@ -733,7 +736,8 @@ fun PlayerSettings(
                             AudioQuality.AUTO -> stringResource(R.string.audio_quality_auto)
                         }
                     }
-                )},
+                )}
+                ) else emptyArray()),
 
                 {SwitchPreference(
                     title = { Text(stringResource(R.string.permanent_shuffle)) },
@@ -745,12 +749,14 @@ fun PlayerSettings(
 
 
 
-                {SwitchPreference(
-                    title = { Text(stringResource(R.string.skip_silence)) },
-                    icon = { Icon(painterResource(R.drawable.fast_forward), null) },
-                    checked = skipSilence,
-                    onCheckedChange = onSkipSilenceChange
-                )},
+                *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                    {SwitchPreference(
+                        title = { Text(stringResource(R.string.skip_silence)) },
+                        icon = { Icon(painterResource(R.drawable.fast_forward), null) },
+                        checked = skipSilence,
+                        onCheckedChange = onSkipSilenceChange
+                    )}
+                ) else emptyArray()),
 
                 {SwitchPreference(
                     title = { Text(stringResource(R.string.audio_normalization)) },
@@ -769,64 +775,66 @@ fun PlayerSettings(
                     onCheckedChange = onPauseOnZeroVolumeChange
                 )},
 
-                {SwitchPreference(
-                    title = { Text(stringResource(R.string.automix)) },
-                    description = stringResource(
-                        if (automix) R.string.automix_enabled_subtitle else R.string.automix_disabled_subtitle
-                    ),
-                    icon = { Icon(painterResource(R.drawable.auto_awesome), null) },
-                    checked = automix,
-                    onCheckedChange = { enabled ->
-                        onAutomixChange(enabled)
-                        playerConnection?.service?.setAutomixEnabled(enabled)
-                    }
-                )},
+                *(if (!isLiteMode) arrayOf<@Composable () -> Unit>(
+                    {SwitchPreference(
+                        title = { Text(stringResource(R.string.automix)) },
+                        description = stringResource(
+                            if (automix) R.string.automix_enabled_subtitle else R.string.automix_disabled_subtitle
+                        ),
+                        icon = { Icon(painterResource(R.drawable.auto_awesome), null) },
+                        checked = automix,
+                        onCheckedChange = { enabled ->
+                            onAutomixChange(enabled)
+                            playerConnection?.service?.setAutomixEnabled(enabled)
+                        }
+                    )},
 
-                if (automix) {
-                    {EnumListPreference(
-                        title = { Text(stringResource(R.string.automix_performance)) },
-                        icon = { Icon(painterResource(R.drawable.speed), null) },
-                        selectedValue = automixPerformance,
-                        onValueSelected = { mode ->
-                            onAutomixPerformanceChange(mode)
-                            playerConnection?.service?.setAutomixPerformanceMode(mode)
-                        },
-                        valueText = { mode ->
-                            when (mode) {
-                                AutomixPerformanceMode.EFFICIENT -> stringResource(R.string.automix_mode_efficient)
-                                AutomixPerformanceMode.BALANCED -> stringResource(R.string.automix_mode_balanced)
-                                AutomixPerformanceMode.PERFORMANCE -> stringResource(R.string.automix_mode_performance)
+                    if (automix) {
+                        {EnumListPreference(
+                            title = { Text(stringResource(R.string.automix_performance)) },
+                            icon = { Icon(painterResource(R.drawable.speed), null) },
+                            selectedValue = automixPerformance,
+                            onValueSelected = { mode ->
+                                onAutomixPerformanceChange(mode)
+                                playerConnection?.service?.setAutomixPerformanceMode(mode)
+                            },
+                            valueText = { mode ->
+                                when (mode) {
+                                    AutomixPerformanceMode.EFFICIENT -> stringResource(R.string.automix_mode_efficient)
+                                    AutomixPerformanceMode.BALANCED -> stringResource(R.string.automix_mode_balanced)
+                                    AutomixPerformanceMode.PERFORMANCE -> stringResource(R.string.automix_mode_performance)
+                                }
+                            }
+                        )}
+                    } else {
+                        {
+                            Column {
+                                SwitchPreference(
+                                    title = { Text(stringResource(R.string.audio_crossfade_title)) },
+                                    description = stringResource(R.string.audio_crossfade_description),
+                                    icon = { Icon(painterResource(R.drawable.sync), null) },
+                                    checked = crossfadeEnabled,
+                                    onCheckedChange = { enabled ->
+                                        onCrossfadeEnabledChange(enabled)
+                                    },
+                                )
+                                CrossfadeSliderPreference(
+                                    valueSeconds = crossfadeDurationSeconds,
+                                    onValueChange = onCrossfadeDurationSecondsChange,
+                                    isEnabled = crossfadeEnabled,
+                                )
+                                SwitchPreference(
+                                    title = { Text(stringResource(R.string.crossfade_gapless_title)) },
+                                    description = stringResource(R.string.crossfade_gapless_description),
+                                    icon = { Icon(painterResource(R.drawable.album), null) },
+                                    checked = crossfadeGapless,
+                                    onCheckedChange = onCrossfadeGaplessChange,
+                                    isEnabled = crossfadeEnabled,
+                                )
                             }
                         }
-                    )}
-                } else {
-                    {
-                        Column {
-                            SwitchPreference(
-                                title = { Text(stringResource(R.string.audio_crossfade_title)) },
-                                description = stringResource(R.string.audio_crossfade_description),
-                                icon = { Icon(painterResource(R.drawable.sync), null) },
-                                checked = crossfadeEnabled,
-                                onCheckedChange = { enabled ->
-                                    onCrossfadeEnabledChange(enabled)
-                                },
-                            )
-                            CrossfadeSliderPreference(
-                                valueSeconds = crossfadeDurationSeconds,
-                                onValueChange = onCrossfadeDurationSecondsChange,
-                                isEnabled = crossfadeEnabled,
-                            )
-                            SwitchPreference(
-                                title = { Text(stringResource(R.string.crossfade_gapless_title)) },
-                                description = stringResource(R.string.crossfade_gapless_description),
-                                icon = { Icon(painterResource(R.drawable.album), null) },
-                                checked = crossfadeGapless,
-                                onCheckedChange = onCrossfadeGaplessChange,
-                                isEnabled = crossfadeEnabled,
-                            )
-                        }
                     }
-                },
+                ) else emptyArray()),
             )
         )
 

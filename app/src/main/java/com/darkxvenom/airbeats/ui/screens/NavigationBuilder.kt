@@ -73,10 +73,12 @@ fun NavGraphBuilder.navigationBuilder(
                 key = { index -> navigationItems.getOrNull(index)?.route ?: index.toString() }
             ) { pageIndex ->
                 val screen = navigationItems.getOrNull(pageIndex) ?: Screens.Home
-                val (homeScreenStyle, _) = rememberEnumPreference(
+                val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+                val (rawHomeScreenStyle, _) = rememberEnumPreference(
                     HomeScreenStyleKey,
                     defaultValue = HomeScreenStyle.CLASSIC
                 )
+                val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
                 when (screen.route) {
                     Screens.Home.route -> {
                         when (homeScreenStyle) {
@@ -124,10 +126,12 @@ fun NavGraphBuilder.navigationBuilder(
                 }
             }
         } else {
-            val (homeScreenStyle, _) = rememberEnumPreference(
+            val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+            val (rawHomeScreenStyle, _) = rememberEnumPreference(
                 HomeScreenStyleKey,
                 defaultValue = HomeScreenStyle.CLASSIC
             )
+            val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
 
             if (homeScreenStyle == HomeScreenStyle.PLAYFUL) {
                 PlayfulHomeScreen(navController = navController, playerBottomSheetState = playerBottomSheetState, onSearchClick = onSearchClick)
@@ -152,10 +156,12 @@ fun NavGraphBuilder.navigationBuilder(
     composable(
         Screens.Library.route,
     ) {
-        val (homeScreenStyle, _) = rememberEnumPreference(
+        val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+        val (rawHomeScreenStyle, _) = rememberEnumPreference(
             HomeScreenStyleKey,
             defaultValue = HomeScreenStyle.CLASSIC
         )
+        val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
 
         if (homeScreenStyle == HomeScreenStyle.PLAYFUL) {
             PlayfulLibraryScreen(
@@ -174,10 +180,12 @@ fun NavGraphBuilder.navigationBuilder(
         }
     }
     composable(Screens.Explore.route) {
-        val (homeScreenStyle, _) = rememberEnumPreference(
+        val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+        val (rawHomeScreenStyle, _) = rememberEnumPreference(
             HomeScreenStyleKey,
             defaultValue = HomeScreenStyle.CLASSIC
         )
+        val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
 
         if (homeScreenStyle == HomeScreenStyle.PLAYFUL) {
             PlayfulExploreScreen(
@@ -213,10 +221,12 @@ fun NavGraphBuilder.navigationBuilder(
         com.darkxvenom.airbeats.ui.screens.onboarding.GuestProfileSetupScreen(navController = navController)
     }
     composable("stats") {
-        val (homeScreenStyle, _) = rememberEnumPreference(
+        val isLiteMode = com.darkxvenom.airbeats.utils.isLiteModeActive()
+        val (rawHomeScreenStyle, _) = rememberEnumPreference(
             HomeScreenStyleKey,
             defaultValue = HomeScreenStyle.CLASSIC
         )
+        val homeScreenStyle = if (isLiteMode) HomeScreenStyle.CLASSIC else rawHomeScreenStyle
         if (homeScreenStyle == HomeScreenStyle.APPLE) {
             com.darkxvenom.airbeats.ui.screens.apple.AppleStatsScreen(navController = navController)
         } else {

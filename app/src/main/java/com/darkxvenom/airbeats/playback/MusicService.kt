@@ -101,6 +101,7 @@ import com.darkxvenom.airbeats.constants.DisableLoadMoreWhenRepeatAllKey
 import com.darkxvenom.airbeats.constants.DiscordTokenKey
 import com.darkxvenom.airbeats.constants.DiscordUseDetailsKey
 import com.darkxvenom.airbeats.constants.DynamicIslandKey
+import com.darkxvenom.airbeats.utils.isLiteMode
 import com.darkxvenom.airbeats.constants.EnableDiscordRPCKey
 import com.darkxvenom.airbeats.constants.AudioBoostEnabledKey
 import com.darkxvenom.airbeats.constants.AudioBoostPercentKey
@@ -915,7 +916,7 @@ class MusicService :
 
 
         dataStore.data
-            .map { it[DynamicIslandKey] ?: false }
+            .map { (!isLiteMode()) && (it[DynamicIslandKey] ?: false) }
             .distinctUntilChanged()
             .collect(scope) { enabled ->
                 if (enabled && Settings.canDrawOverlays(this)) {
@@ -3209,7 +3210,7 @@ class MusicService :
             setupEqualizer()
             ensureVisualizer()
             scope.launch {
-                val enabled = dataStore.get(DynamicIslandKey, false)
+                val enabled = (!isLiteMode()) && dataStore.get(DynamicIslandKey, false)
                 if (enabled && Settings.canDrawOverlays(this@MusicService)) {
                     try {
                         startService(Intent(this@MusicService, DynamicIslandService::class.java))
@@ -4017,7 +4018,7 @@ class MusicService :
 
             val enableJioSaavn = runBlocking {
                 dataStore.data.map { preferences ->
-                    preferences[EnableJioSaavnKey] ?: true
+                    preferences[EnableJioSaavnKey] ?: false
                 }.first()
             }
 
@@ -4151,7 +4152,7 @@ class MusicService :
 
                 val enableJioSaavnFallback = runBlocking {
                     dataStore.data.map { preferences ->
-                        preferences[EnableJioSaavnKey] ?: true
+                        preferences[EnableJioSaavnKey] ?: false
                     }.first()
                 }
 
@@ -4669,7 +4670,7 @@ class MusicService :
         }
 
         val enableJioSaavn = dataStore.data.map { preferences ->
-            preferences[EnableJioSaavnKey] ?: true
+            preferences[EnableJioSaavnKey] ?: false
         }.first()
 
         if (enableJioSaavn && !actualMediaId.startsWith("JS:") && !actualMediaId.startsWith("local:")) {

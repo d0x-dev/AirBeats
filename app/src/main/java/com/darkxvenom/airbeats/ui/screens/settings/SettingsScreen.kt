@@ -71,7 +71,11 @@ import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
 import com.darkxvenom.airbeats.constants.AccountNameKey
+import com.darkxvenom.airbeats.constants.AppModeKey
+import com.darkxvenom.airbeats.constants.APP_MODE_LITE
+import com.darkxvenom.airbeats.constants.APP_MODE_NORMAL
 import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
+import com.darkxvenom.airbeats.ui.component.AppleSegmentedSwitch
 import com.darkxvenom.airbeats.ui.component.AvatarPreferenceManager
 import com.darkxvenom.airbeats.ui.component.AvatarSelection
 import com.darkxvenom.airbeats.ui.component.ChangelogScreen
@@ -944,156 +948,205 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                val (appMode, onAppModeChange) = rememberPreference(AppModeKey, defaultValue = APP_MODE_LITE)
+                val isLiteMode = appMode == APP_MODE_LITE
+                val isFrosted = isFrostedGlassUiEnabled()
+
                 // Settings Categories
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // App Mode Switcher (Apple Styled Segmented Switch)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = settingsCardContainerColor(isFrosted)
+                        ),
+                        border = settingsCardBorder(isFrosted),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(
+                                    text = "App Mode",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (isLiteMode) "Lite Mode • Clean & fast" else "Normal Mode • Full features",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                )
+                            }
+
+                            AppleSegmentedSwitch(
+                                options = listOf("Lite", "Normal"),
+                                selectedOption = if (isLiteMode) "Lite" else "Normal",
+                                onSelect = { selected ->
+                                    onAppModeChange(selected)
+                                },
+                                modifier = Modifier.width(152.dp)
+                            )
+                        }
+                    }
+
                     // General Settings
+                    val generalSettingsItems = listOfNotNull(
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.palette),
+                            title = {
+                                Text(
+                                    stringResource(R.string.appearance),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/appearance") }
+                        ),
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.schedule),
+                            title = {
+                                Text(
+                                    stringResource(R.string.always_on_display),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/always_on_display") }
+                        ) else null,
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.person),
+                            title = {
+                                Text(
+                                    stringResource(R.string.account),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/account") }
+                        ),
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.language),
+                            title = {
+                                Text(
+                                    stringResource(R.string.content),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/content") }
+                        ),
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.lyrics),
+                            title = { Text(stringResource(R.string.lyrics), color = MaterialTheme.colorScheme.onSurface) },
+                            onClick = { navController.navigate("settings/lyrics") }
+                        ) else null,
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.ic_gen_ai),
+                            title = { Text(stringResource(R.string.ai_integration), color = MaterialTheme.colorScheme.onSurface) },
+                            onClick = { navController.navigate("settings/ai") }
+                        ) else null,
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.play),
+                            title = {
+                                Text(
+                                    stringResource(R.string.player_and_audio),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/player") }
+                        ),
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.swipe),
+                            title = {
+                                Text(
+                                    stringResource(R.string.ui_text_gestures),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/gestures") }
+                        ) else null,
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.graphic_eq),
+                            title = {
+                                Text(
+                                    stringResource(R.string.ui_text_scrobbler),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/scrobbler") }
+                        ) else null,
+                        if (!isLiteMode) SettingsCategoryItem(
+                            icon = painterResource(R.drawable.play),
+                            title = {
+                                Text(
+                                    stringResource(R.string.android_auto),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/android_auto") }
+                        ) else null,
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.group),
+                            title = {
+                                Text(
+                                    stringResource(R.string.listen_together),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("listen_together") }
+                        ),
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.storage),
+                            title = {
+                                Text(
+                                    stringResource(R.string.storage),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/storage") }
+                        ),
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.security),
+                            title = {
+                                Text(
+                                    stringResource(R.string.privacy),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/privacy") }
+                        ),
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.restore),
+                            title = {
+                                Text(
+                                    stringResource(R.string.backup_restore),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/backup_restore") }
+                        ),
+                        SettingsCategoryItem(
+                            icon = painterResource(R.drawable.bug_report),
+                            title = {
+                                Text(
+                                    stringResource(R.string.ui_text_experimental_settings),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            onClick = { navController.navigate("settings/experimental") }
+                        )
+                    )
+
                     SettingsCategory(
                         title = stringResource(R.string.general_settings),
-                        items = listOf(
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.palette),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.appearance),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/appearance") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.schedule),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.always_on_display),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/always_on_display") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.person),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.account),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/account") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.language),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.content),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/content") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.lyrics),
-                                title = { Text(stringResource(R.string.lyrics), color = MaterialTheme.colorScheme.onSurface) },
-                                onClick = { navController.navigate("settings/lyrics") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.ic_gen_ai),
-                                title = { Text(stringResource(R.string.ai_integration), color = MaterialTheme.colorScheme.onSurface) },
-                                onClick = { navController.navigate("settings/ai") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.play),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.player_and_audio),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/player") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.swipe),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.ui_text_gestures),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/gestures") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.graphic_eq),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.ui_text_scrobbler),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/scrobbler") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.play),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.android_auto),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/android_auto") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.group),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.listen_together),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("listen_together") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.storage),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.storage),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/storage") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.security),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.privacy),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/privacy") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.restore),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.backup_restore),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/backup_restore") }
-                            ),
-                            SettingsCategoryItem(
-                                icon = painterResource(R.drawable.bug_report),
-                                title = {
-                                    Text(
-                                        stringResource(R.string.ui_text_experimental_settings),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                },
-                                onClick = { navController.navigate("settings/experimental") }
-                            )
-                        )
+                        items = generalSettingsItems
                     )
 
                     // About & Community
