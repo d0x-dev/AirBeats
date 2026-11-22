@@ -11,8 +11,8 @@
 
 package com.darkxvenom.airbeats.ui.home.itune
 
-import com.darkxvenom.itune.backend.MusicPlaylistRef
-import com.darkxvenom.itune.backend.NewReleaseAlbum
+import com.darkxvenom.airbeats.innertube.models.AlbumItem
+import com.darkxvenom.airbeats.innertube.models.PlaylistItem
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedItem
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedShelf
 import com.darkxvenom.airbeats.data.model.itune.HomeItemKind
@@ -26,26 +26,24 @@ internal fun List<HomeFeedShelf>.withoutExplicit(hide: Boolean): List<HomeFeedSh
     }
 }
 
-internal fun NewReleaseAlbum.toFeedItem(): HomeFeedItem = HomeFeedItem(
+internal fun AlbumItem.toFeedItem(): HomeFeedItem = HomeFeedItem(
     kind = HomeItemKind.ALBUM,
     title = title,
-    subtitle = subtitleLine,
-    thumbnailUrl = thumbnailUrl,
+    subtitle = artists.orEmpty().joinToString(", ") { it.name }.ifBlank { year?.toString().orEmpty() },
+    thumbnailUrl = thumbnail,
     browseId = browseId,
-    artistName = artist,
-    artistId = artistId,
-    isExplicit = isExplicit,
+    watchPlaylistId = playlistId,
+    isExplicit = explicit,
 )
-// Originally created by DxV Studio ~~ Dark | Credits: DxV Studio, AirBeats, Dark — Licensed under GPL-3.0.
 
-internal fun MusicPlaylistRef.toFeedItem(): HomeFeedItem = HomeFeedItem(
-    kind = if (isAlbum) HomeItemKind.ALBUM else HomeItemKind.PLAYLIST,
+internal fun PlaylistItem.toFeedItem(): HomeFeedItem = HomeFeedItem(
+    kind = HomeItemKind.PLAYLIST,
     title = title,
-    subtitle = author.ifBlank { if (trackCount > 0) "$trackCount tracks" else "Playlist" },
-    thumbnailUrl = thumbnailUrl,
+    subtitle = author?.name.orEmpty().ifBlank { songCountText ?: "Playlist" },
+    thumbnailUrl = thumbnail,
     browseId = id,
-    watchPlaylistId = watchPlaylistId,
-    isExplicit = isExplicit,
+    watchPlaylistId = id,
+    isExplicit = false,
 )
 
 /**
@@ -59,8 +57,8 @@ internal fun MusicPlaylistRef.toFeedItem(): HomeFeedItem = HomeFeedItem(
 internal fun orderHomeShelves(
     remote: List<HomeFeedShelf>,
     personal: List<HomeFeedShelf>,
-    releases: List<NewReleaseAlbum>,
-    playlists: List<MusicPlaylistRef>,
+    releases: List<AlbumItem>,
+    playlists: List<PlaylistItem>,
     signedIn: Boolean,
 ): List<HomeFeedShelf> {
     val out = mutableListOf<HomeFeedShelf>()
@@ -73,7 +71,7 @@ internal fun orderHomeShelves(
         HomeFeedShelf(
             key = "new_releases",
             title = "New Releases",
-            items = it.take(16).map(NewReleaseAlbum::toFeedItem),
+            items = it.take(16).map(AlbumItem::toFeedItem),
             group = HomeShelfGroup.TRENDING,
         )
     }
@@ -81,7 +79,7 @@ internal fun orderHomeShelves(
         HomeFeedShelf(
             key = "featured_playlists",
             title = if (signedIn) "Playlists for You" else "Featured Playlists",
-            items = it.take(16).map(MusicPlaylistRef::toFeedItem),
+            items = it.take(16).map(PlaylistItem::toFeedItem),
             group = HomeShelfGroup.FEED,
         )
     }
