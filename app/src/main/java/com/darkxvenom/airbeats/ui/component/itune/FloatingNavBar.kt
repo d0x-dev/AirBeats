@@ -80,7 +80,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.darkxvenom.itune.R
+import com.darkxvenom.airbeats.R
 import com.darkxvenom.itune.ui.theme.AppleGlassBorder
 import com.darkxvenom.itune.ui.theme.AppleGlassDock
 import com.darkxvenom.itune.ui.theme.AppleMusicRed
