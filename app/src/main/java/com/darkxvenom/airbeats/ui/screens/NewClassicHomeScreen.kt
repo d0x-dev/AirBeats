@@ -192,26 +192,19 @@ fun NewClassicHomeScreen(
     val emptyHeroTitle = stringResource(R.string.ui_heading_90s_hiphop_soundtracks)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_based_on_your_last_listening_habits_and_artis)
     val recommendedByAiQueueTitle = stringResource(R.string.recommended_by_ai)
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
-        heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
-            val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
-            HeroPlaylistData(
-                title = firstSong.song.title.ifBlank { "$topArtist Soundtracks" },
-                subtitle = firstSong.artists.joinToString { it.name }.ifEmpty { "Based on your last listening habits and artists..." },
-                tag = "RECOMMENDED",
-                thumbnailUrl = firstSong.thumbnailUrl,
-                songs = quickPicks.orEmpty(),
-                playlistId = null
-            )
-        } ?: HeroPlaylistData(
-            title = emptyHeroTitle,
-            subtitle = emptyHeroSubtitle,
-            tag = "HIPHOP",
-            thumbnailUrl = "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+    val effectiveHero: HeroPlaylistData = remember(homePage) {
+        val firstSection = homePage?.sections?.firstOrNull()
+        val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
+        HeroPlaylistData(
+            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
+            tag = "YOUTUBE MUSIC",
+            thumbnailUrl = firstSong?.thumbnail,
             songs = emptyList(),
-            playlistId = null
+            playlistId = null,
         )
     }
+
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -394,86 +387,6 @@ fun NewClassicHomeScreen(
                                     }
                                 )
                             }
-                        }
-                    }
-                }
-            }
-
-            // 6. New Releases
-            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { newReleases ->
-                item(key = "section_new_releases") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = stringResource(R.string.new_release_albums),
-                        onSeeAllClick = {
-                            navController.navigate("new_release")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(newReleases, key = { it.id }) { album ->
-                            NewClassicSongCard(
-                                title = album.title,
-                                subtitle = album.artists?.joinToString { it.name } ?: "Album",
-                                thumbnailUrl = album.thumbnail,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    navController.navigate("album/${album.id}")
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        YouTubeAlbumMenu(
-                                            albumItem = album,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 7. Forgotten Favourites
-            forgottenFavorites?.takeIf { it.isNotEmpty() }?.let { favSongs ->
-                item(key = "section_forgotten_favorites") {
-                    Spacer(Modifier.height(20.dp))
-                    NewClassicSectionHeader(
-                        title = stringResource(R.string.forgotten_favorites),
-                        onSeeAllClick = {
-                            navController.navigate("auto_playlist/liked")
-                        }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(favSongs, key = { it.id }) { song ->
-                            NewClassicSongCard(
-                                title = song.title,
-                                subtitle = song.artists.joinToString { it.name }.ifEmpty { "AirBeats" },
-                                thumbnailUrl = song.thumbnailUrl,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        SongMenu(
-                                            originalSong = song,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
                         }
                     }
                 }
