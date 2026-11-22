@@ -68,12 +68,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import coil.compose.AsyncImage
-import com.darkxvenom.itune.R
+import com.darkxvenom.airbeats.R
 import com.darkxvenom.itune.ui.theme.LocalAppFontFamily
-import com.darkxvenom.itune.data.model.HomeFeedItem
-import com.darkxvenom.itune.data.model.HomeFeedShelf
-import com.darkxvenom.itune.data.model.HomeHeroCard
-import com.darkxvenom.itune.data.model.HomeItemKind
+import com.darkxvenom.airbeats.data.model.itune.HomeFeedItem
+import com.darkxvenom.airbeats.data.model.itune.HomeFeedShelf
+import com.darkxvenom.airbeats.data.model.itune.HomeHeroCard
+import com.darkxvenom.airbeats.data.model.itune.HomeItemKind
 import com.darkxvenom.itune.ui.theme.AppleSurface
 import com.darkxvenom.itune.ui.theme.AppleSurfaceElevated
 import com.darkxvenom.itune.ui.theme.AppleTextPrimary
