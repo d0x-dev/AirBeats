@@ -167,10 +167,7 @@ fun MaterialHomeScreen(
     val displayName = rawUserName.takeIf { it.isNotBlank() } ?: stringResource(R.string.guest)
 
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
