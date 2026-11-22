@@ -5,6 +5,7 @@
 
 package com.darkxvenom.airbeats.innertube
 
+import com.darkxvenom.airbeats.innertube.models.YouTubeClient
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.schabi.newpipe.extractor.NewPipe
