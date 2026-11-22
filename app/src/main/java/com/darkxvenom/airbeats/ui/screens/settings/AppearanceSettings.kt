@@ -581,10 +581,11 @@ fun AppearanceSettings(
                                     HomeScreenStyle.SPOTIFY -> "Spotify"
                                     HomeScreenStyle.APPLE -> "Apple"
                                     HomeScreenStyle.MATERIAL -> "Material"
+                                    HomeScreenStyle.ITUNE -> "iTune"
                                 }
                             },
                         )},
-                        *(if (homeScreenStyle != HomeScreenStyle.NEW_CLASSIC && homeScreenStyle != HomeScreenStyle.BETTER) arrayOf<@Composable () -> Unit>({
+                        *(if (homeScreenStyle != HomeScreenStyle.NEW_CLASSIC && homeScreenStyle != HomeScreenStyle.BETTER && homeScreenStyle != HomeScreenStyle.ITUNE) arrayOf<@Composable () -> Unit>({
                             PreferenceEntry(
                                 title = { Text(stringResource(R.string.ui_text_home_sections)) },
                                 description = stringResource(R.string.ui_extra_customize_visible_sections_on_the_home_screen),
