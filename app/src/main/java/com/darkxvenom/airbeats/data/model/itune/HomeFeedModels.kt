@@ -13,7 +13,9 @@ package com.darkxvenom.airbeats.data.model.itune
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import com.darkxvenom.itune.backend.MusicTrack
+import com.darkxvenom.airbeats.innertube.models.Artist
+import com.darkxvenom.airbeats.innertube.models.Album
+import com.darkxvenom.airbeats.innertube.models.SongItem
 
 enum class HomeItemKind { SONG, VIDEO, ALBUM, ARTIST, PLAYLIST, PODCAST, EPISODE }
 
@@ -43,18 +45,20 @@ data class HomeFeedItem(
         get() = !videoId.isNullOrBlank() &&
             (kind == HomeItemKind.SONG || kind == HomeItemKind.VIDEO || kind == HomeItemKind.EPISODE)
 
-    fun toMusicTrack(): MusicTrack? {
+    fun toSongItem(): SongItem? {
         val id = videoId?.takeIf { it.isNotBlank() } ?: return null
-        return MusicTrack(
+        val thumbnail = thumbnailUrl?.takeIf { it.isNotBlank() } ?: return null
+        return SongItem(
             id = id,
             title = title,
-            artists = artistName.ifBlank { if (kind == HomeItemKind.EPISODE) subtitle else "Unknown artist" },
-            artistId = artistId,
-            album = albumName,
-            albumId = albumId,
-            thumbnailUrl = thumbnailUrl,
-            isVideo = kind == HomeItemKind.VIDEO,
-            isExplicit = isExplicit,
+            artists = listOf(Artist(
+                name = artistName.ifBlank { if (kind == HomeItemKind.EPISODE) subtitle else "Unknown artist" },
+                id = artistId,
+            )),
+            album = albumName?.let { Album(name = it, id = albumId.orEmpty()) },
+            duration = null,
+            thumbnail = thumbnail,
+            explicit = isExplicit,
         )
     }
 }
