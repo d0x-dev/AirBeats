@@ -190,8 +190,8 @@ class HomeViewModel @Inject constructor(
                 database.getExcludedSongIds().toHashSet()
             }.getOrDefault(emptySet())
 
-            // Home content always comes from YouTube Music. The selected playback
-            // provider must not change or replace the source of the home feed.
+            // Every presentation consumes the same YouTube Music FEmusic_home feed.
+            // Playback-provider settings do not alter discovery/home content.
             val savedCookie = context.dataStore.get(
                 com.darkxvenom.airbeats.constants.InnerTubeCookieKey, ""
             )
@@ -202,23 +202,19 @@ class HomeViewModel @Inject constructor(
             homePage.value = remote.page
             accountPlaylists.value = remote.playlists
 
-            // Keep compatibility with existing home layouts while ensuring every
-            // item shown in their shared shelves originates from YouTube Music.
-            val ytSongs = remote.page?.sections.orEmpty()
+            val feedSongs = remote.page?.sections.orEmpty()
                 .flatMap { it.items }
                 .filterIsInstance<SongItem>()
                 .filterNot { it.id in excludedSongIds }
                 .distinctBy { it.id }
 
-            quickPicks.value = ytSongs.take(20).map(::mapToSong).takeIf { it.isNotEmpty() }
-            forgottenFavorites.value = ytSongs.drop(20).take(20)
-                .map(::mapToSong).takeIf { it.isNotEmpty() }
-            keepListening.value = emptyList()
-            similarRecommendations.value = emptyList()
+            quickPicks.value = feedSongs.take(20).map(::mapToSong).takeIf { it.isNotEmpty() }
+            forgottenFavorites.value = null
+            keepListening.value = null
+            similarRecommendations.value = null
             explorePage.value = null
-            recentActivity.value = emptyList()
-            recentPlaylistsDb.value = emptyList()
-
+            recentActivity.value = null
+            recentPlaylistsDb.value = null
             allLocalItems.value = emptyList()
             allYtItems.value = remote.page?.sections.orEmpty()
                 .flatMap { it.items }
@@ -228,6 +224,7 @@ class HomeViewModel @Inject constructor(
             reportException(error)
             homePage.value = null
             accountPlaylists.value = emptyList()
+            allLocalItems.value = emptyList()
             allYtItems.value = emptyList()
         } finally {
             isLoading.value = false
