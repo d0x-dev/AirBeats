@@ -309,7 +309,7 @@ dependencies {
 
     implementation(libs.ktor.client.core)
 
-    coreLibraryDesugaring(libs.desugaring)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
     implementation(libs.haze)
     implementation(libs.haze.materials)
     implementation(libs.liquid.glass)
