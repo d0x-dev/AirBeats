@@ -7,9 +7,11 @@ package com.darkxvenom.airbeats.utils
 import android.net.ConnectivityManager
 import com.darkxvenom.airbeats.backend.StreamBackend
 import com.darkxvenom.airbeats.constants.AudioQuality
+import com.darkxvenom.airbeats.constants.EnableJioSaavnKey
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient
 import com.darkxvenom.airbeats.innertube.models.response.PlayerResponse
+import com.darkxvenom.airbeats.utils.dataStoreCache
 import kotlinx.coroutines.withTimeoutOrNull
 
 object YTPlayerUtils {
@@ -33,7 +35,8 @@ object YTPlayerUtils {
         networkMetered: Boolean? = null,
         avoidCodecs: Set<String> = emptySet(),
     ): Result<PlaybackData> = runCatching {
-        val r = StreamBackend.resolve(videoId, audioQuality, avoidCodecs).getOrThrow()
+        val jioSaavnEnabled = dataStoreCache[EnableJioSaavnKey.name] as? Boolean ?: true
+        val r = StreamBackend.resolve(videoId, audioQuality, avoidCodecs, jioSaavnEnabled = jioSaavnEnabled).getOrThrow()
         // Metadata (title, loudness, history-tracking URLs) is best effort and never blocks playback.
         val meta = withTimeoutOrNull(4_000L) { playerResponseForMetadata(videoId, playlistId).getOrNull() }
         val mime = if (r.codec != null) "${r.mimeType}; codecs=\"${r.codec}\"" else r.mimeType
