@@ -423,7 +423,6 @@ fun PlayfulHomeScreen(
                                 }
                             }
 
-                            val freshFinds = remember(quickPicks) { quickPicks?.drop(8)?.take(8) ?: emptyList() }
                             val artistTriples = remember(quickPicks) {
                                 quickPicks?.mapNotNull { pick ->
                                     pick.artists.firstOrNull()?.let { artist ->
