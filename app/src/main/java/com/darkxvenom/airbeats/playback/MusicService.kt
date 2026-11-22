@@ -3891,11 +3891,6 @@ class MusicService :
             )
         }
 
-        songUrlCache[mediaId]?.takeIf { it.expiresAt > System.currentTimeMillis() }?.let {
-            scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
-            return dataSpec.withStreamUrl(it.url, it.contentLength)
-        }
-
             var actualMediaId = mediaId
             if (mediaId.startsWith("JS:")) {
                 var streamUrl: String? = null
@@ -4071,6 +4066,13 @@ class MusicService :
                 } else {
                     Timber.tag("MusicService").d("Missing title/artist metadata for JioSaavn match; continuing with YouTube")
                 }
+            }
+
+            // Only reuse a prior stream URL after the optional JioSaavn attempt.
+            // JioSaavn's own cache prevents repeating the catalogue lookup on every play.
+            songUrlCache[mediaId]?.takeIf { it.expiresAt > System.currentTimeMillis() }?.let {
+                scope.launch(Dispatchers.IO) { recoverSong(mediaId) }
+                return dataSpec.withStreamUrl(it.url, it.contentLength)
             }
 
             // YouTube backend (rock-solid primary / fallback)
