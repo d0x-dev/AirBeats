@@ -14,12 +14,23 @@ import com.darkxvenom.airbeats.jiosaavn.JioSaavnApi
 object HomeBackend {
     data class Remote(val page: HomePage?, val playlists: List<PlaylistItem>)
 
-    fun isLoggedIn(): Boolean = YouTube.cookie?.contains("SAPISID=") == true
+    fun isLoggedIn(): Boolean {
+        val cookie = YouTube.cookie.orEmpty()
+        val jar = cookie.split(';').mapNotNull { part ->
+            val index = part.indexOf('=')
+            if (index <= 0) null else part.substring(0, index).trim() to part.substring(index + 1).trim()
+        }.toMap()
+        val hasSapisid = listOf("SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID").any { !jar[it].isNullOrBlank() }
+        val hasSession = listOf("SID", "__Secure-1PSID", "__Secure-3PSID", "LOGIN_INFO").any { !jar[it].isNullOrBlank() }
+        return hasSapisid && hasSession
+    }
 
     suspend fun accountPlaylists(): List<PlaylistItem> =
         if (!isLoggedIn()) emptyList()
         else YouTube.library("FEmusic_liked_playlists").completedLibraryPage().getOrNull()
-            ?.items?.filterIsInstance<PlaylistItem>()?.filterNot { it.id == "SE" }.orEmpty()
+            ?.items?.filterIsInstance<PlaylistItem>()
+            ?.filterNot { it.id in setOf("LM", "SE", "NE", "SS", "SR", "LL", "WL") }
+            .orEmpty()
 
     suspend fun saavnSection(title: String, excluded: Set<String>): HomePage.Section? =
         JioSaavnApi.getTrendingSongs().getOrNull()?.filter { it.id !in excluded }
