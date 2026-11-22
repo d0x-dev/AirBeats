@@ -7,7 +7,6 @@ package com.darkxvenom.airbeats.backend
 import android.util.Base64
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
-import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -16,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.schabi.newpipe.extractor.MediaFormat
+import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.stream.AudioTrackType
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import java.util.concurrent.ConcurrentHashMap
