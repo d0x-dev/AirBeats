@@ -91,6 +91,7 @@ fun PlayfulHomeScreen(
     val pullRefreshState = rememberPullToRefreshState()
 
     val quickPicks by viewModel.quickPicks.collectAsState()
+    val freshFinds: List<Song> = quickPicks.orEmpty()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
     
