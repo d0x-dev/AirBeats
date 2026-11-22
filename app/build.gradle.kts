@@ -297,6 +297,8 @@ dependencies {
     }
 
     implementation(projects.innertube)
+    // StreamBackend directly uses NewPipeExtractor stream model types.
+    implementation(libs.newpipe.extractor)
     implementation(projects.kugou)
     implementation(projects.lrclib)
     implementation(projects.discordrpc)
