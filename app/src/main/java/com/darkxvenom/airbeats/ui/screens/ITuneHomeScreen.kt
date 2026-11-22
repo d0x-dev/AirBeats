@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.constants.AccountNameKey
@@ -54,9 +55,6 @@ import com.darkxvenom.airbeats.ui.component.LocalUserName
 import com.darkxvenom.airbeats.ui.component.itune.ArtistCircleShelf
 import com.darkxvenom.airbeats.ui.component.itune.FloatingMiniPlayer
 import com.darkxvenom.airbeats.ui.component.itune.FloatingNavBar
-import com.darkxvenom.airbeats.ui.component.itune.HomeFeedShelf
-import com.darkxvenom.airbeats.ui.component.itune.HomeHeroCard
-import com.darkxvenom.airbeats.ui.component.itune.HomeItemKind
 import com.darkxvenom.airbeats.ui.component.itune.HomeShelfGroup
 import com.darkxvenom.airbeats.ui.component.itune.LatestSongsSection
 import com.darkxvenom.airbeats.ui.component.itune.LiveFeaturedHeroCarousel
@@ -64,21 +62,16 @@ import com.darkxvenom.airbeats.ui.component.itune.NavTab
 import com.darkxvenom.airbeats.ui.component.itune.SquareCardShelf
 import com.darkxvenom.airbeats.ui.component.itune.TopHeaderBar
 import com.darkxvenom.airbeats.ui.component.itune.TopSpringLoadingBar
+import com.darkxvenom.airbeats.ui.component.itune.HomeShelfSkeleton
 import com.darkxvenom.airbeats.ui.component.itune.WideCardShelf
 import com.darkxvenom.airbeats.utils.rememberPreference
 import com.darkxvenom.airbeats.viewmodels.HomeViewModel
 import com.darkxvenom.itune.backend.MusicTrack
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedItem
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedShelf
-import com.darkxvenom.airbeats.data.model.itune.HomeHeroCard as FeedHeroCard
-import com.darkxvenom.airbeats.data.model.itune.HomeItemKind as FeedItemKind
-import com.darkxvenom.airbeats.data.model.itune.HomeShelfGroup as FeedShelfGroup
 import com.darkxvenom.airbeats.data.model.itune.HomeFeedModels
 import com.darkxvenom.airbeats.ui.component.itune.rememberSpringOverscrollState
 import com.darkxvenom.airbeats.ui.component.itune.springOverscroll
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 
 @Composable
 fun ITuneHomeScreen(
@@ -109,7 +102,7 @@ fun ITuneHomeScreen(
             val feedItems = section.items.mapNotNull { item ->
                 when (item) {
                     is SongItem -> HomeFeedItem(
-                        kind = FeedItemKind.SONG,
+                        kind = HomeItemKind.SONG,
                         title = item.title,
                         subtitle = item.artists.joinToString(" • ") { it.name },
                         thumbnailUrl = item.thumbnail,
@@ -160,7 +153,7 @@ fun ITuneHomeScreen(
                     items = items,
                     group = when {
                         section.title.contains("personal", ignoreCase = true) ||
-                            section.title.contains("listen", ignoreCase = true) -> FeedShelfGroup.PERSONAL
+                            section.title.contains("listen", ignoreCase = true) -> HomeShelfGroup.PERSONAL
                         section.title.contains("chart", ignoreCase = true) -> FeedShelfGroup.CHARTS
                         section.title.contains("podcast", ignoreCase = true) -> FeedShelfGroup.PODCASTS
                         section.title.contains("release", ignoreCase = true) ||
@@ -199,7 +192,7 @@ fun ITuneHomeScreen(
     val heroCards = remember(shelves) {
         shelves.flatMap { shelf ->
             shelf.items.take(2).map { item ->
-                FeedHeroCard(
+                HomeHeroCard(
                     id = item.stableKey,
                     category = item.kind.name,
                     title = item.title,
@@ -233,7 +226,8 @@ fun ITuneHomeScreen(
     val listState = rememberLazyListState()
     val overscrollState = rememberSpringOverscrollState()
     var selectedTab by remember { mutableStateOf<NavTab?>(NavTab.HOME) }
-    val currentRoute = navController.currentBackStackEntry?.destination?.route
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
 
     LaunchedEffect(currentRoute) {
         selectedTab = when (currentRoute) {
@@ -302,7 +296,7 @@ fun ITuneHomeScreen(
             if (shelves.isEmpty() && isLoading) {
                 item(key = "itune_loading_skeleton") {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        repeat(3) { HomeFeedShelfSkeleton() }
+                        repeat(3) { HomeShelfSkeleton() }
                     }
                 }
             } else {
