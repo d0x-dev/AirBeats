@@ -187,6 +187,9 @@ class HomeViewModel @Inject constructor(
         isLoading.value = true
 
         val excludedSongIds = runCatching { database.getExcludedSongIds().toHashSet() }.getOrDefault(emptySet())
+        // Read the latest persisted account cookie before requesting the personalized feed.
+        val savedCookie = context.dataStore.get(com.darkxvenom.airbeats.constants.InnerTubeCookieKey, "")
+        if (savedCookie.isNotBlank()) YouTube.cookie = savedCookie
         val musicProvider = context.dataStore.get(com.darkxvenom.airbeats.constants.MusicProviderKey, "YT")
         val isJioSaavn = musicProvider == "JIOSAAVN"
 
@@ -250,9 +253,9 @@ class HomeViewModel @Inject constructor(
             }
 
             // 4. Remote items snapshot (YouTube) - account playlists load for every provider
-            if (isJioSaavn) launch(Dispatchers.IO) {
-                com.darkxvenom.airbeats.backend.HomeBackend.accountPlaylists().takeIf { it.isNotEmpty() }
-                    ?.let { accountPlaylists.value = it }
+            launch(Dispatchers.IO) {
+                val remotePlaylists = com.darkxvenom.airbeats.backend.HomeBackend.accountPlaylists()
+                accountPlaylists.value = remotePlaylists
             }
             if (!isJioSaavn) {
                 launch(Dispatchers.IO) {
