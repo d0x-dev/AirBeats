@@ -7,6 +7,7 @@ package com.darkxvenom.airbeats.backend
 import android.util.Base64
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -34,6 +35,7 @@ object StreamBackend {
         val source: String,
     )
 
+    private const val TAG = "StreamBackend"
     private const val TTL_MS = 20 * 60_000L
     private val cache = ConcurrentHashMap<String, Pair<Long, Resolved>>()
     private val http = OkHttpClient.Builder()
@@ -54,13 +56,15 @@ object StreamBackend {
             if (id.startsWith("JS:")) saavn(id.removePrefix("JS:"))
             else youtube(id, quality, avoidCodecs)
         }.onSuccess { cache[key] = System.currentTimeMillis() to it }
+          .onFailure { Log.e(TAG, "Stream resolve failed for $id: ${it.message}", it) }
     }
 
     // ── YouTube (NewPipeExtractor, same as iTune) ───────────────────────────
     private fun youtube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
         val info = NewPipeUtils.streamInfo(id)
         val all = info.audioStreams.orEmpty().filter {
-            !it.content.isNullOrBlank() && it.audioTrackType != AudioTrackType.DUBBED
+            it.isUrl && !it.content.isNullOrBlank() &&
+                it.audioTrackType != AudioTrackType.DUBBED && it.averageBitrate > 0
         }
         val usable = all.filter { it.deliveryMethod == DeliveryMethod.PROGRESSIVE_HTTP }.ifEmpty { all }
         val noAvoid = usable.filter { s -> avoid.none { a -> s.codec.orEmpty().contains(a, true) } }
@@ -76,6 +80,7 @@ object StreamBackend {
             cands.minWith(compareBy({ kotlin.math.abs(it.averageBitrate * 1000 - target) }, { if (it.format == MediaFormat.M4A) 0 else 1 }))
         }
         val url = best.content
+        Log.d(TAG, "Resolved YouTube stream $id: ${best.format} @ ${best.averageBitrate} kbps")
         val mime = best.format?.mimeType ?: "audio/mp4"
         val expire = url.toHttpUrlOrNull()?.queryParameter("expire")?.toLongOrNull()
         val ttl = expire?.let { (it - System.currentTimeMillis() / 1000).toInt() }?.takeIf { it > 60 } ?: 5 * 3600

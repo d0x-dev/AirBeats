@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darkxvenom.airbeats.constants.SpotifyCookieKey
+import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.AlbumItem
 import com.darkxvenom.airbeats.innertube.models.ArtistItem
@@ -20,12 +21,15 @@ import com.darkxvenom.airbeats.utils.reportException
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val database: MusicDatabase
 ) : ViewModel() {
     val playlists = MutableStateFlow<List<PlaylistItem>?>(null)
     val albums = MutableStateFlow<List<AlbumItem>?>(null)
@@ -38,22 +42,34 @@ class AccountViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            YouTube.library("FEmusic_liked_playlists").completedLibraryPage().onSuccess {
-                playlists.value = it.items.filterIsInstance<PlaylistItem>()
-                    .filterNot { it.id == "SE" }
-            }.onFailure {
-                reportException(it)
-            }
-            YouTube.library("FEmusic_liked_albums").completedLibraryPage().onSuccess {
-                albums.value = it.items.filterIsInstance<AlbumItem>()
-            }.onFailure {
-                reportException(it)
-            }
-            YouTube.library("FEmusic_library_corpus_artists").completedLibraryPage().onSuccess {
-                artists.value = it.items.filterIsInstance<ArtistItem>()
-            }.onFailure {
-                reportException(it)
-            }
+            loadYouTubeLibrary()
+        }
+    }
+
+    fun refreshYouTubeLibrary() {
+        viewModelScope.launch { loadYouTubeLibrary() }
+    }
+
+    private suspend fun loadYouTubeLibrary() = withContext(Dispatchers.IO) {
+        val cookie = context.dataStore.getSuspend(com.darkxvenom.airbeats.constants.InnerTubeCookieKey)
+            .orEmpty()
+        YouTube.cookie = cookie
+        val playlistResult = YouTube.library("FEmusic_liked_playlists").completedLibraryPage()
+        playlistResult.onSuccess { page ->
+            playlists.value = page.items.filterIsInstance<PlaylistItem>()
+                .filterNot { it.id in setOf("LM", "SE", "NE", "SS", "SR", "LL", "WL") }
+        }.onFailure { reportException(it) }
+
+        YouTube.library("FEmusic_liked_albums").completedLibraryPage().onSuccess {
+            albums.value = it.items.filterIsInstance<AlbumItem>()
+        }.onFailure { reportException(it) }
+
+        YouTube.library("FEmusic_library_corpus_artists").completedLibraryPage().onSuccess {
+            artists.value = it.items.filterIsInstance<ArtistItem>()
+        }.onFailure { reportException(it) }
+
+        if (playlistResult.isSuccess) {
+            runCatching { com.darkxvenom.airbeats.utils.SyncUtils(context, database).syncSavedPlaylists() }
         }
     }
 
