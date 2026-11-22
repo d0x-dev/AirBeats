@@ -28,13 +28,7 @@ enum class AppFont(val label: String, val key: String) {
 
     fun family(): FontFamily = when (this) {
         SYSTEM -> FontFamily.Default
-        SF_PRO -> FontFamily(
-            Font(R.font.sf_pro_display_regular, FontWeight.Normal),
-            Font(R.font.sf_pro_display_medium, FontWeight.Medium),
-            Font(R.font.sf_pro_display_semibold, FontWeight.SemiBold),
-            Font(R.font.sf_pro_display_bold, FontWeight.Bold),
-            Font(R.font.sf_pro_display_heavy, FontWeight.Black),
-        )
+        SF_PRO -> FontFamily.SansSerif
         LINOTTE -> FontFamily(Font(R.font.linotte))
         POPPINS -> FontFamily(
             Font(R.font.poppins_regular, FontWeight.Normal),
