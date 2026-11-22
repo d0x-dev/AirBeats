@@ -91,12 +91,8 @@ fun PlayfulHomeScreen(
     val pullRefreshState = rememberPullToRefreshState()
 
     val quickPicks by viewModel.quickPicks.collectAsState()
-    val keepListening by viewModel.keepListening.collectAsState()
-    val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
-    val similarRecommendations by viewModel.similarRecommendations.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
-    val explorePage by viewModel.explorePage.collectAsState()
     
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
