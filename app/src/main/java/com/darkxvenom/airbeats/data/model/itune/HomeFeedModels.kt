@@ -14,6 +14,7 @@ package com.darkxvenom.airbeats.data.model.itune
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import com.darkxvenom.itune.backend.MusicTrack
+import com.darkxvenom.itune.data.model.CoverArtType
 
 enum class HomeItemKind { SONG, VIDEO, ALBUM, ARTIST, PLAYLIST, PODCAST, EPISODE }
 
