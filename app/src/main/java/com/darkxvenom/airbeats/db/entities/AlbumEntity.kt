@@ -30,11 +30,18 @@ data class AlbumEntity(
         bookmarkedAt = if (bookmarkedAt != null) null else LocalDateTime.now()
     )
 
-    fun toggleLike() = localToggleLike().also {
+    fun toggleLike() = localToggleLike().also { updated ->
+        val isSaved = updated.bookmarkedAt != null
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                if (playlistId != null)
-                    YouTube.likePlaylist(playlistId, bookmarkedAt == null)
+                val pid = playlistId
+                if (!pid.isNullOrBlank()) {
+                    com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.ratePlaylist(pid.removePrefix("VL"), isSaved)
+                }
+            }.onFailure {
+                if (playlistId != null) {
+                    runCatching { YouTube.likePlaylist(playlistId, isSaved) }
+                }
             }
         }
     }

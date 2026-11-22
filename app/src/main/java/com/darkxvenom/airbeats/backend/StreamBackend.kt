@@ -7,6 +7,9 @@ package com.darkxvenom.airbeats.backend
 import android.util.Base64
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
+import com.darkxvenom.airbeats.innertube.YouTube
+import com.darkxvenom.airbeats.innertube.models.YouTubeClient
+import kotlinx.coroutines.CancellationException
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -59,8 +62,65 @@ object StreamBackend {
           .onFailure { Log.e(TAG, "Stream resolve failed for $id: ${it.message}", it) }
     }
 
-    // ── YouTube (NewPipeExtractor, same as iTune) ───────────────────────────
-    private fun youtube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
+    // ── YouTube: NewPipeExtractor first (same as iTune), InnerTube direct-URL clients as fallback ──
+    @Volatile private var newPipeBroken = false
+
+    private suspend fun youtube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
+        if (!newPipeBroken) {
+            try {
+                return youtubeNewPipe(id, quality, avoid)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                // NoSuchMethodError (URLDecoder.decode(String, Charset) on Android < 13 without R8 backport)
+                // is permanent for this process: skip NewPipe from now on instead of paying for it every track.
+                if (e is LinkageError) newPipeBroken = true
+                Log.w(TAG, "NewPipe failed for $id (${e.javaClass.simpleName}: ${e.message}); using InnerTube fallback")
+            }
+        }
+        return youtubeInnerTube(id, quality, avoid)
+    }
+
+    /** Direct-URL clients (no signature cipher / JS player needed): one POST, fast start. */
+    private suspend fun youtubeInnerTube(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
+        var lastError: Throwable? = null
+        for (client in listOf(YouTubeClient.IOS, YouTubeClient.ANDROID_VR_NO_AUTH)) {
+            val resp = YouTube.player(id, client = client, setLogin = false)
+                .onFailure { lastError = it }.getOrNull() ?: continue
+            val audio = resp.streamingData?.adaptiveFormats.orEmpty().filter {
+                it.isAudio && !it.url.isNullOrBlank() && it.signatureCipher == null && it.cipher == null
+            }
+            if (audio.isEmpty()) continue
+            val noAvoid = audio.filter { f -> avoid.none { a -> f.mimeType.contains(a, true) } }
+            val cands = noAvoid.ifEmpty { audio }
+            fun bps(f: com.darkxvenom.airbeats.innertube.models.response.PlayerResponse.StreamingData.Format) =
+                f.averageBitrate ?: f.bitrate
+            val target = when (quality) {
+                AudioQuality.LOW -> 70_000; AudioQuality.MEDIUM -> 128_000
+                AudioQuality.HIGH, AudioQuality.AUTO -> null
+            }
+            val best = if (target == null) {
+                cands.maxWith(compareBy({ bps(it) }, { if (it.mimeType.contains("mp4a")) 1 else 0 }))
+            } else {
+                cands.minWith(compareBy({ kotlin.math.abs(bps(it) - target) }, { if (it.mimeType.contains("mp4a")) 0 else 1 }))
+            }
+            val url = best.url!!
+            val expire = url.toHttpUrlOrNull()?.queryParameter("expire")?.toLongOrNull()
+            val ttl = resp.streamingData?.expiresInSeconds
+                ?: expire?.let { (it - System.currentTimeMillis() / 1000).toInt() }?.takeIf { it > 60 } ?: 3 * 3600
+            Log.d(TAG, "Resolved YouTube stream $id via ${client.clientName}: ${best.mimeType} @ ${bps(best)}")
+            return Resolved(
+                url = url,
+                mimeType = best.mimeType.substringBefore(';').trim(),
+                codec = best.mimeType.substringAfter("codecs=\"", "").substringBefore('"').ifBlank { null },
+                bitrateBps = bps(best), itag = best.itag, contentLength = best.contentLength,
+                expiresInSeconds = ttl, source = "YouTube",
+            )
+        }
+        throw IllegalStateException("No YouTube audio stream for $id", lastError)
+    }
+
+    private fun youtubeNewPipe(id: String, quality: AudioQuality, avoid: Set<String>): Resolved {
         val info = NewPipeUtils.streamInfo(id)
         val all = info.audioStreams.orEmpty().filter {
             it.isUrl && !it.content.isNullOrBlank() &&

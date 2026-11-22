@@ -60,7 +60,9 @@ import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections
 import com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
 import com.darkxvenom.airbeats.constants.MaterialHomeSection
 import com.darkxvenom.airbeats.utils.rememberPreference
 import com.darkxvenom.airbeats.ui.component.HomeFloatingActions
@@ -94,6 +96,11 @@ fun PlayfulHomeScreen(
     val freshFinds: List<Song> = quickPicks.orEmpty()
     val accountPlaylists by viewModel.accountPlaylists.collectAsState()
     val homePage by viewModel.homePage.collectAsState()
+
+    val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
+    LaunchedEffect(innerTubeCookie) {
+        viewModel.onAccountChanged(innerTubeCookie)
+    }
     
     val playerConnection = LocalPlayerConnection.current ?: return
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
@@ -104,7 +111,7 @@ fun PlayfulHomeScreen(
     val scope = rememberCoroutineScope()
     
     var selectedTab by remember { mutableStateOf("history") }
-    val hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = emptySet())
+    val hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
     val isSectionVisible: (MaterialHomeSection) -> Boolean = remember(hiddenSections) {
         { section -> section.id !in hiddenSections }
     }

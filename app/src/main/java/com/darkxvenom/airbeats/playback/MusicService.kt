@@ -534,6 +534,7 @@ class MusicService :
 
     private var consecutivePlaybackErr = 0
     private var offlineBufferingJob: Job? = null
+    private var playbackProgressTrackingJob: Job? = null
     private var isAutoSkippingUncached = false
 
     // Google Cast / Chromecast audio streaming state
@@ -2932,10 +2933,13 @@ class MusicService :
         reason: Int,
     ) {
         offlineBufferingJob?.cancel()
+        val posSec = (player.currentPosition / 1000L).coerceAtLeast(0L)
+        com.darkxvenom.airbeats.data.auth.YouTubePlaybackTracker.onTrackChanged(posSec)
         mediaItem?.mediaId?.let { startedId ->
             if (!dataStore.get(booleanPreferencesKey("pauseRemoteListenHistory"), false)) {
                 scope.launch(Dispatchers.IO) {
                     runCatching { com.darkxvenom.airbeats.backend.YtHistoryTracker.onTrackStarted(startedId) }
+                    runCatching { com.darkxvenom.airbeats.data.auth.YouTubePlaybackTracker.onPlaying(this@MusicService, startedId) }
                 }
             }
         }
@@ -3028,6 +3032,10 @@ class MusicService :
         @Player.State playbackState: Int,
     ) {
         offlineBufferingJob?.cancel()
+        if (playbackState == Player.STATE_ENDED) {
+            val posSec = (player.currentPosition / 1000L).coerceAtLeast(0L)
+            com.darkxvenom.airbeats.data.auth.YouTubePlaybackTracker.onPlaybackFinished(posSec)
+        }
         if (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY) {
             MusicWidgetRefreshScheduler.refreshNow(this)
         }
@@ -3123,10 +3131,22 @@ class MusicService :
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         super.onIsPlayingChanged(isPlaying)
         visualizerManager.isPlaying = isPlaying
+        playbackProgressTrackingJob?.cancel()
         if (isPlaying) {
             ensureVisualizer()
             simultaneousAudioProcessor.onPlay()
+            playbackProgressTrackingJob = scope.launch(Dispatchers.IO) {
+                while (isActive) {
+                    delay(1000L)
+                    val currentId = withContext(Dispatchers.Main) { player.currentMediaItem?.mediaId }
+                    val posSec = withContext(Dispatchers.Main) { (player.currentPosition / 1000L).coerceAtLeast(0L) }
+                    if (currentId != null) {
+                        com.darkxvenom.airbeats.data.auth.YouTubePlaybackTracker.onProgress(currentId, posSec)
+                    }
+                }
+            }
         } else {
+            playbackProgressTrackingJob = null
             simultaneousAudioProcessor.onPause()
         }
         secondaryCrossfadePlayer?.let { secondaryPlayer ->
@@ -4441,6 +4461,8 @@ class MusicService :
     override fun onDestroy() {
         offlineBufferingJob?.cancel()
         offlineBufferingJob = null
+        playbackProgressTrackingJob?.cancel()
+        playbackProgressTrackingJob = null
         if (dataStore.get(PersistentQueueKey, true)) {
             saveQueueToDisk()
         }

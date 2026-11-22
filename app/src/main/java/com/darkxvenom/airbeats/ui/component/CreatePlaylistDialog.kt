@@ -37,10 +37,11 @@ fun CreatePlaylistDialog(
     initialTextFieldValue: String? = null,
     allowSyncing: Boolean = true,
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val database = LocalDatabase.current
     val coroutineScope = rememberCoroutineScope()
     val cookie by rememberPreference(InnerTubeCookieKey, "")
-    val loggedIn = "SAPISID" in parseCookieString(cookie)
+    val loggedIn = com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)
     // Signed in: default to Google (YouTube) so the playlist shows up everywhere; user can pick Local.
     var syncedPlaylist by remember(loggedIn) { mutableStateOf(loggedIn) }
     TextFieldDialog(
@@ -50,18 +51,29 @@ fun CreatePlaylistDialog(
         onDismiss = onDismiss,
         onDone = { playlistName ->
             coroutineScope.launch(Dispatchers.IO) {
-                val browseId = if (syncedPlaylist) {
-                    YouTube.createPlaylist(playlistName).getOrNull()
+                if (cookie.isNotBlank()) {
+                    com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.activeCookie = cookie
+                    com.darkxvenom.airbeats.innertube.YouTube.cookie = cookie
+                }
+                val createdBrowseId = if (syncedPlaylist || loggedIn) {
+                    runCatching {
+                        com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.createPlaylist(playlistName, "PRIVATE")
+                    }.getOrNull() ?: YouTube.createPlaylist(playlistName).getOrNull()
                 } else null
+                val cleanId = createdBrowseId?.removePrefix("VL")
                 database.query {
                     insert(
                         PlaylistEntity(
                             name = playlistName,
-                            browseId = browseId,
+                            browseId = cleanId,
                             bookmarkedAt = LocalDateTime.now(),
                             isEditable = true,
                         )
                     )
+                }
+                if (cookie.isNotBlank()) {
+                    com.darkxvenom.airbeats.data.library.HomeFeedRepository.refresh(cookie)
+                    com.darkxvenom.airbeats.utils.SyncUtils(context, database).syncSavedPlaylists()
                 }
             }
         },

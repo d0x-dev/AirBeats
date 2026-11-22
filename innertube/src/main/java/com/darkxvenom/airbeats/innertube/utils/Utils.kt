@@ -98,7 +98,21 @@ fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x
 
 fun sha1(str: String): String = MessageDigest.getInstance("SHA-1").digest(str.toByteArray()).toHex()
 
+/**
+ * Parses a Cookie header. Google now often issues only __Secure-3PAPISID / __Secure-1PAPISID;
+ * both hold the same value as SAPISID, so expose it as SAPISID. Without this every login check and
+ * the SAPISIDHASH header silently fail (anonymous home, empty library, no history).
+ */
 fun parseCookieString(cookie: String): Map<String, String> =
+    parseCookiePairs(cookie).let { map ->
+        if (map["SAPISID"].isNullOrBlank()) {
+            val alias = map["__Secure-3PAPISID"].takeUnless { it.isNullOrBlank() }
+                ?: map["__Secure-1PAPISID"].takeUnless { it.isNullOrBlank() }
+            if (alias != null) map + ("SAPISID" to alias) else map
+        } else map
+    }
+
+private fun parseCookiePairs(cookie: String): Map<String, String> =
     cookie.split(";")
         .map { it.trim() }
         .filter { it.isNotBlank() }

@@ -30,6 +30,32 @@ class SyncUtils @Inject constructor(
     val database: MusicDatabase,
 ) {
     suspend fun syncLikedSongs() {
+        val cookie = context.dataStore.get(com.darkxvenom.airbeats.constants.InnerTubeCookieKey, "")
+        if (com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)) {
+            val remoteTracks = runCatching {
+                val root = com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.browse("FEmusic_liked_videos", anonymous = false)
+                com.darkxvenom.airbeats.data.auth.YouTubeAccountParsers.parseTracks(root).first
+            }.getOrDefault(emptyList()).ifEmpty {
+                runCatching {
+                    val root = com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.browse("VLLM", anonymous = false)
+                    com.darkxvenom.airbeats.data.auth.YouTubeAccountParsers.parseTracks(root).first
+                }.getOrDefault(emptyList())
+            }
+
+            if (remoteTracks.isNotEmpty()) {
+                remoteTracks.forEach { item ->
+                    val songItem = item.toSongItem()
+                    val dbSong = database.song(songItem.id).firstOrNull()
+                    database.transaction {
+                        when (dbSong) {
+                            null -> insert(songItem.toMediaMetadata(), SongEntity::localToggleLike)
+                            else -> if (!dbSong.song.liked) update(dbSong.song.localToggleLike())
+                        }
+                    }
+                }
+            }
+        }
+
         YouTube.playlist("LM").completedPlaylistPage().onSuccess { page ->
             val songs = page.songs.reversed()
 
@@ -96,6 +122,41 @@ class SyncUtils @Inject constructor(
     }
 
     suspend fun syncArtistsSubscriptions() {
+        val cookie = context.dataStore.get(com.darkxvenom.airbeats.constants.InnerTubeCookieKey, "")
+        if (com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)) {
+            val remoteArtists = runCatching {
+                val root = com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.browse("FEmusic_library_corpus_artists", anonymous = false)
+                com.darkxvenom.airbeats.data.auth.YouTubeAccountParsers.parseLibraryArtists(root).first
+            }.getOrDefault(emptyList()).ifEmpty {
+                runCatching {
+                    val root = com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.browse("FEmusic_library_corpus_track_artists", anonymous = false)
+                    com.darkxvenom.airbeats.data.auth.YouTubeAccountParsers.parseLibraryArtists(root).first
+                }.getOrDefault(emptyList())
+            }
+
+            if (remoteArtists.isNotEmpty()) {
+                remoteArtists.forEach { artistItem ->
+                    val id = artistItem.browseId ?: return@forEach
+                    val dbArtist = database.artist(id).firstOrNull()
+                    database.transaction {
+                        if (dbArtist == null) {
+                            insert(
+                                ArtistEntity(
+                                    id = id,
+                                    name = artistItem.title,
+                                    thumbnailUrl = artistItem.thumbnailUrl,
+                                    channelId = id,
+                                    bookmarkedAt = LocalDateTime.now()
+                                )
+                            )
+                        } else if (dbArtist.artist.bookmarkedAt == null) {
+                            update(dbArtist.artist.localToggleLike())
+                        }
+                    }
+                }
+            }
+        }
+
         YouTube.library("FEmusic_library_corpus_artists").completedLibraryPage().onSuccess { page ->
             val artists = page.items.filterIsInstance<ArtistItem>()
 
@@ -127,6 +188,38 @@ class SyncUtils @Inject constructor(
     }
 
     suspend fun syncSavedPlaylists() {
+        val cookie = context.dataStore.get(com.darkxvenom.airbeats.constants.InnerTubeCookieKey, "")
+        if (com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)) {
+            val remotePlaylists = runCatching {
+                val root = com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.browse("FEmusic_liked_playlists", anonymous = false)
+                com.darkxvenom.airbeats.data.auth.YouTubeAccountParsers.parseLibraryPlaylists(root).first
+            }.getOrDefault(emptyList())
+
+            if (remotePlaylists.isNotEmpty()) {
+                val dbPlaylists = database.playlistsByNameAsc().first()
+                remotePlaylists.forEach { item ->
+                    val cleanId = item.watchPlaylistId ?: item.browseId?.removePrefix("VL") ?: return@forEach
+                    val browseId = "VL$cleanId"
+                    var playlistEntity = dbPlaylists.find { cleanId == it.playlist.browseId || browseId == it.playlist.browseId }?.playlist
+                    if (playlistEntity == null) {
+                        playlistEntity = PlaylistEntity(
+                            name = item.title,
+                            browseId = cleanId,
+                            bookmarkedAt = LocalDateTime.now(),
+                            isEditable = false,
+                        )
+                        database.transaction {
+                            insert(playlistEntity)
+                        }
+                    } else if (playlistEntity.bookmarkedAt == null) {
+                        database.transaction {
+                            update(playlistEntity.copy(bookmarkedAt = LocalDateTime.now()))
+                        }
+                    }
+                }
+            }
+        }
+
         YouTube.library("FEmusic_liked_playlists").completedLibraryPage()
             .onSuccess { page ->
                 val playlistList = page.items.filterIsInstance<PlaylistItem>()

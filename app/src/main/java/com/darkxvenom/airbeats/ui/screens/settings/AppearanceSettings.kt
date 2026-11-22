@@ -581,6 +581,7 @@ fun AppearanceSettings(
                                     HomeScreenStyle.SPOTIFY -> "Spotify"
                                     HomeScreenStyle.APPLE -> "Apple"
                                     HomeScreenStyle.MATERIAL -> "Material"
+                                    HomeScreenStyle.UNIVERSAL -> "Universal"
                                 }
                             },
                         )},

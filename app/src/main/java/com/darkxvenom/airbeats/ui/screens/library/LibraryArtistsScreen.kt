@@ -67,10 +67,15 @@ import com.darkxvenom.airbeats.ui.component.SortHeader
 import com.darkxvenom.airbeats.utils.rememberEnumPreference
 import com.darkxvenom.airbeats.utils.rememberPreference
 import com.darkxvenom.airbeats.viewmodels.LibraryArtistsViewModel
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryArtistsScreen(
     navController: NavController,
@@ -133,6 +138,13 @@ fun LibraryArtistsScreen(
     val artists by viewModel.allArtists.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var showCreatePlaylistDialog by remember { mutableStateOf(false) }
+
+    var isRefreshing by remember { mutableStateOf(false) }
+    val pullRefreshState = rememberPullToRefreshState()
+
+    LaunchedEffect(Unit) {
+        viewModel.sync()
+    }
 
     val lazyListState = rememberLazyListState()
     val lazyGridState = rememberLazyGridState()
@@ -199,7 +211,21 @@ fun LibraryArtistsScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .pullToRefresh(
+                isRefreshing = isRefreshing,
+                state = pullRefreshState,
+                onRefresh = {
+                    if (ytmSync) {
+                        isRefreshing = true
+                        coroutineScope.launch {
+                            viewModel.sync()
+                            isRefreshing = false
+                        }
+                    }
+                }
+            ),
     ) {
         when (viewType) {
             LibraryViewType.LIST ->
@@ -310,6 +336,16 @@ fun LibraryArtistsScreen(
             onCreatePlaylist = {
                 showCreatePlaylistDialog = true
             },
+        )
+
+        PullToRefreshDefaults.LoadingIndicator(
+            isRefreshing = isRefreshing,
+            state = pullRefreshState,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
         )
     }
 

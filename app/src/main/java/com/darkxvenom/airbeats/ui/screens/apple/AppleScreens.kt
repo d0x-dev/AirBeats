@@ -52,6 +52,7 @@ import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -96,6 +97,7 @@ import com.darkxvenom.airbeats.ui.screens.library.LibraryArtistsScreen
 import com.darkxvenom.airbeats.ui.screens.library.LibraryPlaylistsScreen
 import com.darkxvenom.airbeats.ui.screens.library.LibrarySongsScreen
 import com.darkxvenom.airbeats.ui.screens.library.LocalSongsScreen
+import com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections
 import com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey
 import com.darkxvenom.airbeats.constants.MaterialHomeSection
 import com.darkxvenom.airbeats.ui.component.HomeFloatingActions
@@ -534,6 +536,9 @@ fun AppleHomeScreen(
     val isLoggedIn = remember(innerTubeCookie) {
         "SAPISID" in com.darkxvenom.airbeats.innertube.utils.parseCookieString(innerTubeCookie)
     }
+    LaunchedEffect(innerTubeCookie) {
+        viewModel.onAccountChanged(innerTubeCookie)
+    }
     val url = if (isLoggedIn) accountImageUrl else null
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
@@ -543,7 +548,7 @@ fun AppleHomeScreen(
         similarRecommendations.isNullOrEmpty() &&
         homePage?.sections.isNullOrEmpty()
 
-    val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = emptySet())
+    val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
     fun isSectionVisible(section: MaterialHomeSection): Boolean = section.id !in hiddenSections
 
     val freshPicks = remember(quickPicks) { quickPicks?.drop(6).orEmpty().take(12) }

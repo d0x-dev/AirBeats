@@ -3,6 +3,11 @@ package com.darkxvenom.airbeats.viewmodels
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient
+import com.darkxvenom.airbeats.data.library.HomeFeedRepository
+import com.darkxvenom.airbeats.data.model.HomeFeedItem
+import com.darkxvenom.airbeats.data.model.HomeFeedShelf
+import com.darkxvenom.airbeats.data.model.HomeHeroCard
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.PlaylistItem
 import com.darkxvenom.airbeats.innertube.models.SongItem
@@ -10,7 +15,6 @@ import com.darkxvenom.airbeats.innertube.models.WatchEndpoint
 import com.darkxvenom.airbeats.innertube.models.YTItem
 import com.darkxvenom.airbeats.innertube.pages.ExplorePage
 import com.darkxvenom.airbeats.innertube.pages.HomePage
-import com.darkxvenom.airbeats.innertube.utils.completedLibraryPage
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.db.entities.Album
 import com.darkxvenom.airbeats.db.entities.Artist
@@ -28,14 +32,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 
 data class HeroPlaylistData(
@@ -47,15 +51,20 @@ data class HeroPlaylistData(
     val playlistId: String? = null,
 )
 
-
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     val database: MusicDatabase,
 ) : ViewModel() {
-    private val homeRandom = kotlin.random.Random(System.currentTimeMillis())
     val isRefreshing = MutableStateFlow(false)
-    val isLoading = MutableStateFlow(false)
+    val isLoading = HomeFeedRepository.isLoading
+
+    val remoteShelves: StateFlow<List<HomeFeedShelf>> = HomeFeedRepository.remoteShelves
+    val accountPlaylistsFeed: StateFlow<List<HomeFeedItem>> = HomeFeedRepository.accountPlaylists
+    val subscribedArtistsFeed: StateFlow<List<HomeFeedItem>> = HomeFeedRepository.subscribedArtists
+    val likedSongsFeed: StateFlow<List<HomeFeedItem>> = HomeFeedRepository.likedSongs
+    val historyItemsFeed: StateFlow<List<HomeFeedItem>> = HomeFeedRepository.historyItems
+    val heroCardsFeed: StateFlow<List<HomeHeroCard>> = HomeFeedRepository.heroCards
 
     val quickPicks = MutableStateFlow<List<Song>?>(null)
     val forgottenFavorites = MutableStateFlow<List<Song>?>(null)
@@ -120,7 +129,6 @@ class HomeViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-
     val allLocalItems = MutableStateFlow<List<LocalItem>>(emptyList())
     val allYtItems = MutableStateFlow<List<YTItem>>(emptyList())
 
@@ -142,136 +150,128 @@ class HomeViewModel @Inject constructor(
         )
     }
 
-    private fun filterHomeContent(excludedSet: Set<String>) {
-        if (excludedSet.isEmpty()) return
-
-        quickPicks.value = quickPicks.value?.filter { it.id !in excludedSet }?.takeIf { it.isNotEmpty() }
-        forgottenFavorites.value = forgottenFavorites.value?.filter { it.id !in excludedSet }?.takeIf { it.isNotEmpty() }
-        keepListening.value = keepListening.value?.filter { item ->
-            when (item) {
-                is Song -> item.id !in excludedSet
-                else -> true
-            }
-        }?.takeIf { it.isNotEmpty() }
-
-        similarRecommendations.value = similarRecommendations.value?.mapNotNull { rec ->
-            val filteredItems = rec.items.filter { it.id !in excludedSet }
-            if (filteredItems.isNotEmpty() && (rec.title !is Song || rec.title.id !in excludedSet)) {
-                rec.copy(items = filteredItems)
-            } else {
-                null
-            }
-        }?.takeIf { it.isNotEmpty() }
-
-        homePage.value = homePage.value?.let { page ->
-            val filteredSections = page.sections.mapNotNull { section ->
-                val filteredItems = section.items.filter { it.id !in excludedSet }
-                if (filteredItems.isNotEmpty()) {
-                    section.copy(items = filteredItems)
-                } else {
-                    null
-                }
-            }
-            page.copy(sections = filteredSections)
-        }
-
-        explorePage.value = explorePage.value?.let { page ->
-            page.copy(newReleaseAlbums = page.newReleaseAlbums.filter { it.id !in excludedSet })
-        }
-
-        allLocalItems.value = (quickPicks.value.orEmpty() + forgottenFavorites.value.orEmpty() + keepListening.value.orEmpty()).filter { it is Song || it is Album }
-        allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() + homePage.value?.sections?.flatMap { it.items }.orEmpty() + explorePage.value?.newReleaseAlbums.orEmpty()
-    }
-
-    private suspend fun load() {
-        isLoading.value = true
-        try {
-            val excludedSongIds = runCatching {
-                database.getExcludedSongIds().toHashSet()
-            }.getOrDefault(emptySet())
-
-            // Every presentation consumes the same YouTube Music FEmusic_home feed.
-            // Playback-provider settings do not alter discovery/home content.
-            val savedCookie = context.dataStore.get(
-                com.darkxvenom.airbeats.constants.InnerTubeCookieKey, ""
-            )
-            YouTube.cookie = savedCookie
-            YouTube.useLoginForBrowse = true
-
-            val remote = com.darkxvenom.airbeats.backend.HomeBackend.load(excludedSongIds)
-            homePage.value = remote.page
-            accountPlaylists.value = remote.playlists
-
-            val feedSongs = remote.page?.sections.orEmpty()
-                .flatMap { it.items }
-                .filterIsInstance<SongItem>()
-                .filterNot { it.id in excludedSongIds }
-                .distinctBy { it.id }
-
-            quickPicks.value = feedSongs.take(20).map(::mapToSong).takeIf { it.isNotEmpty() }
-            forgottenFavorites.value = null
-            keepListening.value = null
-            similarRecommendations.value = null
-            explorePage.value = null
-            recentActivity.value = null
-            recentPlaylistsDb.value = null
-            allLocalItems.value = emptyList()
-            allYtItems.value = remote.page?.sections.orEmpty()
-                .flatMap { it.items }
-                .filterNot { it.id in excludedSongIds }
-                .distinctBy { it.id }
-        } catch (error: Throwable) {
-            reportException(error)
-            homePage.value = null
-            accountPlaylists.value = emptyList()
-            allLocalItems.value = emptyList()
-            allYtItems.value = emptyList()
-        } finally {
-            isLoading.value = false
-        }
+    private suspend fun syncFeedBridge() {
+        val savedCookie = context.dataStore.get(
+            com.darkxvenom.airbeats.constants.InnerTubeCookieKey, ""
+        )
+        ArtistInnertubeClient.activeCookie = savedCookie
+        YouTube.cookie = savedCookie
+        YouTube.useLoginForBrowse = true
+        HomeFeedRepository.ensureLoaded(savedCookie)
     }
 
     fun refresh() {
         if (isRefreshing.value) return
         loadJob?.cancel()
-        // Set this before launching. Setting it inside the coroutine leaves a
-        // race where repeated UI events can each cancel and restart Home.
         isRefreshing.value = true
         loadJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                load()
+                val savedCookie = context.dataStore.get(
+                    com.darkxvenom.airbeats.constants.InnerTubeCookieKey, ""
+                )
+                ArtistInnertubeClient.activeCookie = savedCookie
+                YouTube.cookie = savedCookie
+                HomeFeedRepository.refresh(savedCookie)
             } finally {
                 isRefreshing.value = false
             }
         }
     }
 
-    /** Refresh the personalised YouTube Music home feed exactly once per login/logout. */
+    /** Refresh the personalised YouTube Music home feed on login/logout. */
     fun onAccountChanged(cookie: String) {
         val fingerprint = cookie.hashCode()
         if (accountFingerprint == fingerprint) return
         val isFirst = (accountFingerprint == null)
         accountFingerprint = fingerprint
-        // The application collector is asynchronous; set the client now so the
-        // refresh cannot accidentally request the anonymous home feed.
+        ArtistInnertubeClient.activeCookie = cookie
         YouTube.cookie = cookie
         if (!isFirst) {
             loadJob?.cancel()
             loadJob = viewModelScope.launch(Dispatchers.IO) {
-                load()
+                HomeFeedRepository.refresh(cookie)
             }
         }
     }
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            database.observeExcludedSongIds().collect { excludedIds ->
-                val excludedSet = excludedIds.toHashSet()
-                filterHomeContent(excludedSet)
-            }
+            syncFeedBridge()
         }
-        loadJob = viewModelScope.launch(Dispatchers.IO) {
-            load()
+
+        viewModelScope.launch(Dispatchers.IO) {
+            combine(
+                HomeFeedRepository.remoteShelves,
+                HomeFeedRepository.accountPlaylists,
+                HomeFeedRepository.likedSongs,
+                HomeFeedRepository.historyItems,
+            ) { shelves, playlists, liked, history ->
+                val sections = mutableListOf<HomePage.Section>()
+
+                // If account playlists exist, add them as a top section if not already present
+                if (playlists.isNotEmpty()) {
+                    sections.add(
+                        HomePage.Section(
+                            title = "Your Playlists",
+                            label = "YouTube Music",
+                            thumbnail = null,
+                            endpoint = null,
+                            items = playlists.map { it.toPlaylistItem() },
+                        )
+                    )
+                }
+
+                // If liked songs exist, add them as a section
+                if (liked.isNotEmpty()) {
+                    sections.add(
+                        HomePage.Section(
+                            title = "Liked Songs",
+                            label = "YouTube Music",
+                            thumbnail = null,
+                            endpoint = null,
+                            items = liked.take(25).map { it.toSongItem() },
+                        )
+                    )
+                }
+
+                // Add all remote shelves from YouTube Music
+                shelves.forEach { shelf ->
+                    sections.add(
+                        HomePage.Section(
+                            title = shelf.title,
+                            label = shelf.strapline.ifBlank { null },
+                            thumbnail = null,
+                            endpoint = shelf.moreBrowseId?.let {
+                                com.darkxvenom.airbeats.innertube.models.BrowseEndpoint(browseId = it)
+                            },
+                            items = shelf.items.map { it.toYTItem() },
+                        )
+                    )
+                }
+
+                if (sections.isNotEmpty()) {
+                    homePage.value = HomePage(chips = emptyList(), sections = sections)
+                }
+
+                // Quick picks: from song shelf or liked songs
+                val songShelf = shelves.firstOrNull { it.isSongShelf }
+                val songItems = songShelf?.items ?: liked
+                if (songItems.isNotEmpty()) {
+                    quickPicks.value = songItems.map { it.toSongItem() }.map(::mapToSong).take(20)
+                }
+
+                // Account playlists
+                accountPlaylists.value = playlists.map { it.toPlaylistItem() }
+
+                // Keep listening & history
+                if (history.isNotEmpty()) {
+                    keepListening.value = history.take(20).map { it.toSongItem() }.map(::mapToSong)
+                    forgottenFavorites.value = history.drop(5).take(15).map { it.toSongItem() }.map(::mapToSong)
+                }
+
+                // All YT items for local search & suggestions
+                allYtItems.value = sections.flatMap { it.items }
+            }.collect()
         }
     }
 }

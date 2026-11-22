@@ -115,6 +115,14 @@ fun HistoryScreen(
         "SAPISID" in parseCookieString(innerTubeCookie)
     }
 
+    // Logged in: show the account's YouTube Music history and keep it fresh (plays are pushed in real time).
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            viewModel.historySource.value = HistorySource.REMOTE
+            viewModel.fetchRemoteHistory()
+        }
+    }
+
     LaunchedEffect(isSearching) {
         if (isSearching) {
             focusRequester.requestFocus()

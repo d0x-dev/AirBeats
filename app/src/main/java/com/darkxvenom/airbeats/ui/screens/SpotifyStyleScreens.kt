@@ -103,7 +103,9 @@ import com.darkxvenom.airbeats.viewmodels.MoodAndGenresViewModel
 import java.net.URLEncoder
 import com.darkxvenom.airbeats.ui.screens.settings.DarkMode
 import com.darkxvenom.airbeats.constants.DarkModeKey
+import com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections
 import com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
 import com.darkxvenom.airbeats.constants.MaterialHomeSection
 import com.darkxvenom.airbeats.ui.component.HomeFloatingActions
 import com.darkxvenom.airbeats.ui.component.HomeTasteStrip
@@ -201,6 +203,11 @@ fun SpotifyHomeScreen(
     val accountName = rawUserName.takeIf { it.isNotBlank() } ?: "Guest"
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    val innerTubeCookie by com.darkxvenom.airbeats.utils.rememberPreference(InnerTubeCookieKey, "")
+    LaunchedEffect(innerTubeCookie) {
+        viewModel.onAccountChanged(innerTubeCookie)
+    }
     val pullRefreshState = rememberPullToRefreshState()
     val lazyListState = rememberLazyListState()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -214,7 +221,7 @@ fun SpotifyHomeScreen(
     }
 
     val hazeState = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }
-    val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = emptySet())
+    val hiddenSections by com.darkxvenom.airbeats.utils.rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
     fun isSectionVisible(section: MaterialHomeSection): Boolean = section.id !in hiddenSections
 
     Box(Modifier.fillMaxSize()) {

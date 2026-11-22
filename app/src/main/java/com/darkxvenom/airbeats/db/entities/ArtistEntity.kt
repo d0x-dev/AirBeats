@@ -40,13 +40,21 @@ data class ArtistEntity(
         bookmarkedAt = if (bookmarkedAt != null) null else LocalDateTime.now(),
     )
 
-    fun toggleLike() = localToggleLike().also {
+    fun toggleLike() = localToggleLike().also { updated ->
+        val isSubscribed = updated.bookmarkedAt != null
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                if (channelId == null)
-                    YouTube.subscribeChannel(YouTube.getChannelId(id), bookmarkedAt == null)
-                else
-                    YouTube.subscribeChannel(channelId, bookmarkedAt == null)
+                val targetChannelId = channelId ?: YouTube.getChannelId(id)
+                if (!targetChannelId.isNullOrBlank()) {
+                    com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.setSubscribed(targetChannelId, isSubscribed)
+                }
+            }.onFailure {
+                runCatching {
+                    val targetChannelId = channelId ?: YouTube.getChannelId(id)
+                    if (!targetChannelId.isNullOrBlank()) {
+                        YouTube.subscribeChannel(targetChannelId, isSubscribed)
+                    }
+                }
             }
         }
     }

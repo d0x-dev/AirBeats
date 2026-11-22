@@ -10,6 +10,8 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 val DynamicThemeKey = booleanPreferencesKey("dynamicTheme")
+/** User chose "Use locally" on the Google sign-in prompt. */
+val UseLocalOnlyKey = booleanPreferencesKey("loginChoiceLocal")
 val DynamicBackgroundKey = booleanPreferencesKey("dynamicBackground")
 val ThemeAccentColorKey = intPreferencesKey("themeAccentColor")
 val ThemeColorEffectKey = stringPreferencesKey("themeColorEffect")
@@ -68,7 +70,7 @@ enum class SliderStyle {
 }
 
 enum class HomeScreenStyle {
-    CLASSIC, PLAYFUL, SPOTIFY, APPLE, NEW_CLASSIC, MATERIAL, BETTER
+    CLASSIC, PLAYFUL, SPOTIFY, APPLE, NEW_CLASSIC, MATERIAL, BETTER, UNIVERSAL
 }
 
 enum class NavBarStyle {
@@ -98,6 +100,11 @@ enum class MaterialHomeSection(val id: String, val title: String, val subtitle: 
             entries.firstOrNull { it.id == id }
     }
 }
+
+val DefaultHiddenHomeSections: Set<String> = setOf(
+    MaterialHomeSection.HERO.id,
+    MaterialHomeSection.TASTE_STRIP.id,
+)
 
 enum class LyricsScreenStyle {
     LYRICS_1,

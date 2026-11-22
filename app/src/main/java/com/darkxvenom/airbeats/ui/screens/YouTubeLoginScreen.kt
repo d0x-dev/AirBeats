@@ -191,6 +191,9 @@ fun YouTubeLoginScreen(navController: NavController) {
 
                                 if (hasApiSid && hasSession) {
                                     innerTubeCookie = youTubeCookieString
+                                    com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.activeCookie = youTubeCookieString
+                                    com.darkxvenom.airbeats.innertube.YouTube.cookie = youTubeCookieString
+                                    com.darkxvenom.airbeats.data.library.HomeFeedRepository.refresh(youTubeCookieString)
                                     isLoadingAccountInfo = true
 
                                     coroutineScope.launch(Dispatchers.Main) {
@@ -209,7 +212,7 @@ fun YouTubeLoginScreen(navController: NavController) {
                         javaScriptEnabled = true
                         domStorageEnabled = true
                         // Google rejects embedded WebViews ("; wv" marker) -> strip it like iTune does.
-                        userAgentString = userAgentString.replace("; wv", "")
+                        userAgentString = userAgentString.replace("; wv", "").replace(Regex("Version/\\d+\\.\\d+\\s?"), "")
                         setSupportZoom(true)
                         builtInZoomControls = true
                     }

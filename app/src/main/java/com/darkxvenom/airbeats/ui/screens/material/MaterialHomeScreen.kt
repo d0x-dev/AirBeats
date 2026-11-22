@@ -105,7 +105,9 @@ import com.darkxvenom.airbeats.LocalDatabase
 import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
 import com.darkxvenom.airbeats.LocalPlayerConnection
 import com.darkxvenom.airbeats.R
+import com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections
 import com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
 import com.darkxvenom.airbeats.constants.MaterialHomeSection
 import com.darkxvenom.airbeats.ui.component.HomeFloatingActions
 import com.darkxvenom.airbeats.constants.SongSortType
@@ -172,6 +174,11 @@ fun MaterialHomeScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
+    val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
+    LaunchedEffect(innerTubeCookie) {
+        viewModel.onAccountChanged(innerTubeCookie)
+    }
+
     val pullRefreshState = rememberPullToRefreshState()
     val listState = rememberLazyListState()
 
@@ -191,7 +198,7 @@ fun MaterialHomeScreen(
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val headerHeightDp = if (headerHeightPx > 0) with(density) { headerHeightPx.toDp() } else statusBarTop + 72.dp
 
-    val hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = emptySet())
+    val hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
     fun isSectionVisible(section: MaterialHomeSection): Boolean = section.id !in hiddenSections
 
     suspend fun generateAndPlayMix() {

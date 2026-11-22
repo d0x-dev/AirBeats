@@ -65,6 +65,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.darkxvenom.airbeats.LocalPlayerAwareWindowInsets
+import com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections
 import com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey
 import com.darkxvenom.airbeats.constants.MaterialHomeSection
 import com.darkxvenom.airbeats.utils.rememberPreference
@@ -93,7 +94,7 @@ private fun MaterialHomeSection.icon(): ImageVector = when (this) {
 fun MaterialHomeSectionsScreen(
     onBack: () -> Unit,
 ) {
-    var hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = emptySet())
+    var hiddenSections by rememberPreference(HiddenHomeSectionsKey, defaultValue = DefaultHiddenHomeSections)
     val visibleCount = MaterialHomeSection.entries.size - hiddenSections.size
 
     Box(

@@ -86,6 +86,7 @@ fun NavGraphBuilder.navigationBuilder(
                             HomeScreenStyle.NEW_CLASSIC -> NewClassicHomeScreen(navController = navController, onSearchClick = onSearchClick)
                             HomeScreenStyle.BETTER -> BetterHomeScreen(navController = navController, onSearchClick = onSearchClick)
                             HomeScreenStyle.MATERIAL -> com.darkxvenom.airbeats.ui.screens.material.MaterialHomeScreen(navController = navController, onSearchClick = onSearchClick)
+                            HomeScreenStyle.UNIVERSAL -> UniversalHomeScreen(navController = navController, onSearchClick = onSearchClick)
                             else -> HomeScreen(navController = navController, onSearchClick = onSearchClick)
                         }
                     }
@@ -140,6 +141,8 @@ fun NavGraphBuilder.navigationBuilder(
                 BetterHomeScreen(navController = navController, onSearchClick = onSearchClick)
             } else if (homeScreenStyle == HomeScreenStyle.MATERIAL) {
                 com.darkxvenom.airbeats.ui.screens.material.MaterialHomeScreen(navController = navController, onSearchClick = onSearchClick)
+            } else if (homeScreenStyle == HomeScreenStyle.UNIVERSAL) {
+                UniversalHomeScreen(navController = navController, onSearchClick = onSearchClick)
             } else {
                 HomeScreen(navController = navController, onSearchClick = onSearchClick)
             }

@@ -257,7 +257,7 @@ fun HomeScreen(
         label = "HomeScreenBlurAlpha"
     )
 
-    val hiddenSections by rememberPreference(com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey, defaultValue = emptySet())
+    val hiddenSections by rememberPreference(com.darkxvenom.airbeats.constants.HiddenHomeSectionsKey, defaultValue = com.darkxvenom.airbeats.constants.DefaultHiddenHomeSections)
     fun isSectionVisible(section: com.darkxvenom.airbeats.constants.MaterialHomeSection): Boolean = section.id !in hiddenSections
 
     val localGridItem: @Composable (LocalItem) -> Unit = {

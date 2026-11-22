@@ -116,7 +116,11 @@ fun AddToPlaylistDialog(
 
                                 playlist.playlist.browseId?.let { plist ->
                                     songIds?.forEach {
-                                        YouTube.addToPlaylist(plist, it)
+                                        runCatching {
+                                            com.darkxvenom.airbeats.data.artist.ArtistInnertubeClient.addToPlaylist(plist, listOf(it))
+                                        }.onFailure { _ ->
+                                            YouTube.addToPlaylist(plist, it)
+                                        }
                                     }
                                 }
                             }

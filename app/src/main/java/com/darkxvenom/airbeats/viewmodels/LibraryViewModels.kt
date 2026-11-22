@@ -33,6 +33,7 @@ import com.darkxvenom.airbeats.constants.SongSortDescendingKey
 import com.darkxvenom.airbeats.constants.SongSortType
 import com.darkxvenom.airbeats.constants.SongSortTypeKey
 import com.darkxvenom.airbeats.constants.SpotifyCookieKey
+import com.darkxvenom.airbeats.constants.InnerTubeCookieKey
 import com.darkxvenom.airbeats.constants.TopSize
 import com.darkxvenom.airbeats.db.MusicDatabase
 import com.darkxvenom.airbeats.extensions.reversed
@@ -163,6 +164,16 @@ constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
+            context.dataStore.data
+                .map { it[InnerTubeCookieKey] }
+                .distinctUntilChanged()
+                .collect { cookie ->
+                    if (com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)) {
+                        sync()
+                    }
+                }
+        }
+        viewModelScope.launch(Dispatchers.IO) {
             allArtists.collect { artists ->
                 artists
                     .map { it.artist }
@@ -264,6 +275,16 @@ constructor(
     }
 
     init {
+        viewModelScope.launch(Dispatchers.IO) {
+            context.dataStore.data
+                .map { it[InnerTubeCookieKey] }
+                .distinctUntilChanged()
+                .collect { cookie ->
+                    if (!cookie.isNullOrBlank() && com.darkxvenom.airbeats.data.auth.hasApiSid(cookie)) {
+                        syncUtils.syncSavedPlaylists()
+                    }
+                }
+        }
         viewModelScope.launch(Dispatchers.IO) {
             context.dataStore.data
                 .map { it[SpotifyCookieKey] }

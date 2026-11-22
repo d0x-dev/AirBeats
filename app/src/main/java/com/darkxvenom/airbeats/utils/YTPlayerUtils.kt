@@ -10,6 +10,8 @@ import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.YouTube
 import com.darkxvenom.airbeats.innertube.models.YouTubeClient
 import com.darkxvenom.airbeats.innertube.models.response.PlayerResponse
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeoutOrNull
 
 object YTPlayerUtils {
@@ -32,10 +34,16 @@ object YTPlayerUtils {
         connectivityManager: ConnectivityManager,
         networkMetered: Boolean? = null,
         avoidCodecs: Set<String> = emptySet(),
-    ): Result<PlaybackData> = runCatching {
+    ): Result<PlaybackData> = runCatching { coroutineScope {
+        // Metadata (loudness, history-tracking URLs) runs IN PARALLEL with stream resolving and is
+        // only awaited briefly, so it can never delay the first audio byte.
+        val metaJob = async {
+            if (videoId.startsWith("JS:")) null
+            else withTimeoutOrNull(3_000L) { playerResponseForMetadata(videoId, playlistId).getOrNull() }
+        }
         val r = StreamBackend.resolve(videoId, audioQuality, avoidCodecs).getOrThrow()
-        // Metadata (title, loudness, history-tracking URLs) is best effort and never blocks playback.
-        val meta = withTimeoutOrNull(4_000L) { playerResponseForMetadata(videoId, playlistId).getOrNull() }
+        val meta = withTimeoutOrNull(800L) { metaJob.await() }
+        if (meta == null) metaJob.cancel()
         val mime = if (r.codec != null) "${r.mimeType}; codecs=\"${r.codec}\"" else r.mimeType
         PlaybackData(
             audioConfig = meta?.playerConfig?.audioConfig,
@@ -52,7 +60,7 @@ object YTPlayerUtils {
             streamUrl = r.url,
             streamExpiresInSeconds = r.expiresInSeconds,
         )
-    }
+    } }
 
     /** Metadata only: stream URLs of this response must not be used. */
     suspend fun playerResponseForMetadata(videoId: String, playlistId: String? = null): Result<PlayerResponse> =
