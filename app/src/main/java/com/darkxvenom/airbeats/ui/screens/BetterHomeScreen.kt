@@ -181,26 +181,19 @@ fun BetterHomeScreen(
 
     val emptyHeroTitle = stringResource(R.string.ui_heading_midnight_air)
     val emptyHeroSubtitle = stringResource(R.string.ui_heading_editorial_12_tracks_41_min)
-    val effectiveHero: HeroPlaylistData = remember(heroPlaylist, quickPicks, emptyHeroTitle, emptyHeroSubtitle) {
-        heroPlaylist ?: quickPicks?.firstOrNull()?.let { firstSong ->
-            val topArtist = firstSong.artists.firstOrNull()?.name ?: "Top Hits"
-            HeroPlaylistData(
-                title = firstSong.song.title.ifBlank { "Midnight Air" },
-                subtitle = firstSong.artists.joinToString { it.name }.ifEmpty { "Editorial · 12 tracks · 41 min" },
-                tag = "FEATURED MIX",
-                thumbnailUrl = firstSong.thumbnailUrl,
-                songs = quickPicks.orEmpty(),
-                playlistId = null
-            )
-        } ?: HeroPlaylistData(
-            title = emptyHeroTitle,
-            subtitle = emptyHeroSubtitle,
-            tag = "FEATURED MIX",
-            thumbnailUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800",
+    val effectiveHero: HeroPlaylistData = remember(homePage) {
+        val firstSection = homePage?.sections?.firstOrNull()
+        val firstSong = firstSection?.items?.filterIsInstance<SongItem>()?.firstOrNull()
+        HeroPlaylistData(
+            title = firstSection?.title ?: stringResource(R.string.ui_heading_midnight_air),
+            subtitle = firstSong?.artists?.joinToString { it.name }.orEmpty(),
+            tag = "YOUTUBE MUSIC",
+            thumbnailUrl = firstSong?.thumbnail,
             songs = emptyList(),
-            playlistId = null
+            playlistId = null,
         )
     }
+
 
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val screenBg = if (isDark) Color.Black else MaterialTheme.colorScheme.background
@@ -326,9 +319,7 @@ fun BetterHomeScreen(
                     onSeeAllClick = { navController.navigate("history") }
                 )
 
-                val firstKeepSong = keepListening?.firstOrNull()
                 val displayTitle = currentPlayingMedia?.title
-                    ?: (firstKeepSong as? Song)?.title
                     ?: trendingSongs.firstOrNull()?.title
                     ?: "Glasshouse"
                 val displayArtist = currentPlayingMedia?.artists?.joinToString { it.name }
@@ -432,7 +423,7 @@ fun BetterHomeScreen(
             }
 
             // 04. Recently
-            val recentList = keepListening?.filterIsInstance<Song>().orEmpty().ifEmpty { trendingSongs.drop(1) }
+            val recentList = emptyList<Song>()
             if (recentList.isNotEmpty()) {
                 item(key = "section_04_recently") {
                     Spacer(Modifier.height(24.dp))
