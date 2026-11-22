@@ -1695,20 +1695,6 @@ fun ScrobblerStatsHubCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Button(
-                    onClick = { navController.navigate("settings/scrobbler/apps") },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.music_note),
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.ui_text_select_apps))
-                }
-
                 androidx.compose.material3.OutlinedButton(
                     onClick = { navController.navigate("settings/scrobbler") },
                     modifier = Modifier.weight(1f),

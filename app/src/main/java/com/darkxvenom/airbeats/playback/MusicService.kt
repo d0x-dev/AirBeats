@@ -3034,7 +3034,7 @@ class MusicService :
         if (playbackState == Player.STATE_BUFFERING) {
             val isDeviceOffline = !isNetworkAvailable()
             val isSkipUncached = dataStore.get(SkipUncachedPartKey, false)
-            val autoSkipOnError = dataStore.get(AutoSkipNextOnErrorKey, false)
+            val autoSkipOnError = dataStore.get(AutoSkipNextOnErrorKey, true)
             if (isDeviceOffline && isSkipUncached && autoSkipOnError) {
                 val currentMediaId = player.currentMediaItem?.mediaId
                 offlineBufferingJob = scope.launch(Dispatchers.Main) {
@@ -3392,7 +3392,7 @@ class MusicService :
 
         val isDeviceOffline = !isNetworkAvailable()
         val skipUncachedPart = dataStore.get(SkipUncachedPartKey, false)
-        val autoSkipOnError = dataStore.get(AutoSkipNextOnErrorKey, false)
+        val autoSkipOnError = dataStore.get(AutoSkipNextOnErrorKey, true)
 
         // Mid-track playback recovery: if the song was already playing (>3s), NEVER auto-skip it!
         // Stalls or expired stream URLs should be refreshed and resumed from current position.
@@ -3656,7 +3656,7 @@ class MusicService :
     private fun createDataSourceFactory(): DataSource.Factory {
         val directFactory = createResolvedUpstreamDataSourceFactory()
         val streamingFactory = DataSource.Factory {
-            createPlayerCacheDataSourceFactory(cacheWriteEnabled = true).createDataSource()
+            createPlayerCacheDataSourceFactory(cacheWriteEnabled = false).createDataSource()
         }
         val downloadedFactory =
             CacheDataSource.Factory()

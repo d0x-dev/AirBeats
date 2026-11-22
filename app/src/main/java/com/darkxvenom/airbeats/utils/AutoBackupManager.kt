@@ -382,33 +382,12 @@ object AutoBackupManager {
             .apply()
     }
 
-    fun hasStoragePermission(context: Context): Boolean {
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            android.os.Environment.isExternalStorageManager()
-        } else {
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        }
-    }
+    /** All-files access is no longer requested (Play Protect flags it); backups use the system file picker. */
+    @Suppress("UNUSED_PARAMETER")
+    fun hasStoragePermission(context: Context): Boolean = true
 
-    fun requestStoragePermission(context: Context) {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            try {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } catch (_: Exception) {
-                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            }
-        }
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun requestStoragePermission(context: Context) = Unit
 
     fun setAutoBackupToStorageEnabled(context: Context, enabled: Boolean) {
         context.getSharedPreferences("backup_settings", Context.MODE_PRIVATE)

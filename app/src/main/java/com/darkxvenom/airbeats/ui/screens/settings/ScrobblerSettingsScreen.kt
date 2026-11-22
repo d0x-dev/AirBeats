@@ -408,19 +408,8 @@ fun ScrobblerSettingsScreen(
                         icon = { Icon(painterResource(R.drawable.graphic_eq), null) },
                         checked = settings.enabled,
                         onCheckedChange = { enabled ->
-                            if (enabled && !isNotificationAccessGranted(context)) {
-                                openNotificationAccessSettings(context)
-                            }
                             viewModel.setEnabled(enabled)
                         },
-                    )
-                },
-                {
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.ui_text_choose_apps)) },
-                        description = if (settings.selectedPackages.isEmpty()) "None selected yet" else "${settings.selectedPackages.size} app(s) selected",
-                        icon = { Icon(painterResource(R.drawable.music_note), null) },
-                        onClick = { navController.navigate("settings/scrobbler/apps") },
                     )
                 },
                 {

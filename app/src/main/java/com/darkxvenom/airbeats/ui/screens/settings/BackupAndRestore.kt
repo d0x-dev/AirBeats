@@ -217,54 +217,6 @@ fun BackupAndRestore(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SettingsGeneralCategory(
-            title = stringResource(R.string.ui_heading_device_storage_backup_documents_airbeats),
-            items = listOf(
-                {
-                    SwitchPreference(
-                        title = { Text(stringResource(R.string.ui_remaining_auto_backup_to_storage)) },
-                        description = stringResource(R.string.ui_extra_automatically_save_a_complete_backup_to_documents_airbeats_on_every_),
-                        icon = { Icon(painterResource(R.drawable.save_to_storage), null) },
-                        checked = isAutoBackupToStorage,
-                        onCheckedChange = { enabled ->
-                            viewModel.setAutoBackupToStorage(context, enabled)
-                        }
-                    )
-                },
-                {
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.ui_remaining_backup_to_documents_airbeats_now)) },
-                        icon = { Icon(painterResource(R.drawable.backup), null) },
-                        description = stringResource(R.string.ui_extra_save_an_immediate_backup_file_to_documents_airbeats_airbeats_backup_),
-                        onClick = {
-                            viewModel.backupToStorageNow(context) { success ->
-                                Toast.makeText(
-                                    context,
-                                    if (success) "Backup saved to Documents/AirBeats" else "Could not save backup to storage",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    )
-                },
-                {
-                    PreferenceEntry(
-                        title = { Text(stringResource(R.string.ui_remaining_restore_from_documents_airbeats)) },
-                        icon = { Icon(painterResource(R.drawable.restore), null) },
-                        description = stringResource(R.string.ui_extra_restore_full_profile_playlists_and_settings_from_documents_airbeats),
-                        onClick = {
-                            val backupFile = AutoBackupManager.findStorageBackupFile(context)
-                            if (backupFile != null && backupFile.exists() && backupFile.length() > 0L) {
-                                showStorageRestoreConfirmDialog = true
-                            } else {
-                                Toast.makeText(context, "No backup file found in Documents/AirBeats", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
-                }
-            )
-        )
-
-        SettingsGeneralCategory(
             title = stringResource(R.string.backup_restore),
             items = listOf(
                 {PreferenceEntry(
