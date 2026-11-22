@@ -216,7 +216,6 @@ fun MaterialHomeScreen(
             // 2. Personal taste-driven radio mix from user's history / favorites
             val candidateSeeds = mutableListOf<com.darkxvenom.airbeats.models.MediaMetadata>()
             quickPicks?.take(15)?.forEach { candidateSeeds.add(it.toMediaMetadata()) }
-            forgottenFavorites?.take(15)?.forEach { candidateSeeds.add(it.toMediaMetadata()) }
 
             if (candidateSeeds.isEmpty()) {
                 withContext(Dispatchers.IO) {
@@ -351,8 +350,6 @@ fun MaterialHomeScreen(
                                         playerConnection = playerConnection,
                                         currentSongId = mediaMetadata?.id,
                                         quickPicks = quickPicks,
-                                        forgottenFavorites = forgottenFavorites,
-                                        keepListening = keepListening,
                                         homeSongs = homePage?.sections?.flatMap { it.items }?.filterIsInstance<com.darkxvenom.airbeats.innertube.models.SongItem>()
                                     )
                                 }
@@ -466,45 +463,8 @@ fun MaterialHomeScreen(
                 }
 
                 // 4. QUICK PICKS SECTION
-                if (isSectionVisible(MaterialHomeSection.QUICK_PICKS)) {
-                    quickPicks?.takeIf { it.isNotEmpty() }?.let { picks ->
-                        item(key = "quick_picks") {
-                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                MaterialSectionHeader(
-                                    title = stringResource(R.string.ui_text_quick_picks),
-                                    subtitle = stringResource(R.string.ui_heading_trending_songs_picked_for_you),
-                                    actionText = stringResource(R.string.ui_extra_play_all),
-                                    actionIcon = Icons.Filled.PlayArrow,
-                                    onActionClick = {
-                                        picks.firstOrNull()?.let {
-                                            playerConnection.playQueue(YouTubeQueue.radio(it.toMediaMetadata()))
-                                        }
-                                    },
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    items(picks.take(12)) { item ->
-                                        MaterialMediaCard(
-                                            title = item.song.title,
-                                            subtitle = item.artists.joinToString { it.name },
-                                            thumbnailUrl = item.song.thumbnailUrl,
-                                            onClick = {
-                                                playerConnection.playQueue(YouTubeQueue.radio(item.toMediaMetadata()))
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Shared YouTube Music shelves are rendered below.
 
-                // Discovery sections below are populated only by the shared YouTube Music FEmusic_home response.
-
-                // 12. ALBUMS SECTION & 13. CHARTS & 14. NEW RELEASES from homePage
                 homePage?.sections?.forEachIndexed { index, section ->
                     val isNewRelease = section.title.contains("New", ignoreCase = true) || section.title.contains("Release", ignoreCase = true)
                     val isChart = section.title.contains("Chart", ignoreCase = true) || section.title.contains("Top", ignoreCase = true)
