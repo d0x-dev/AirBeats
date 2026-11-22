@@ -7,6 +7,7 @@ package com.darkxvenom.airbeats.backend
 import android.util.Base64
 import com.darkxvenom.airbeats.constants.AudioQuality
 import com.darkxvenom.airbeats.innertube.NewPipeUtils
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
