@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
@@ -68,15 +67,12 @@ fun ShimmerBox(
     Box(
         modifier
             .clip(shape)
-            .drawWithCache {
-                val band = size.width * 0.5f
-                val startX = -band + sweep.value * (size.width + band * 2)
-                val brush = Brush.horizontalGradient(
+            .background(
+                brush = Brush.horizontalGradient(
                     colors = listOf(base, highlight, base),
-                    startX = startX,
-                    endX = startX + band,
+                    startX = -150f + sweep.value * 500f,
+                    endX = 150f + sweep.value * 500f,
                 )
-                onDrawBehind { drawRect(brush) }
-            },
+            ),
     )
 }
