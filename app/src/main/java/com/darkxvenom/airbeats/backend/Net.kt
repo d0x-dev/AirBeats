@@ -9,7 +9,7 @@
  * terms of the project LICENSE file and retain full author credit.
  */
 
-package com.darkxvenom.itune.backend
+package com.darkxvenom.airbeats.backend
 
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
