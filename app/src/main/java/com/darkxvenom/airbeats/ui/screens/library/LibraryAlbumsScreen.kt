@@ -58,6 +58,7 @@ import com.darkxvenom.airbeats.constants.GridThumbnailHeight
 import com.darkxvenom.airbeats.constants.LibraryViewType
 import com.darkxvenom.airbeats.constants.YtmSyncKey
 import com.darkxvenom.airbeats.ui.component.ChipsRow
+import com.darkxvenom.airbeats.ui.component.LibraryFilterRow
 import com.darkxvenom.airbeats.ui.component.CreatePlaylistDialog
 import com.darkxvenom.airbeats.ui.component.EmptyPlaceholder
 import com.darkxvenom.airbeats.ui.component.LibraryAlbumGridItem
@@ -96,41 +97,16 @@ fun LibraryAlbumsScreen(
     val (ytmSync) = rememberPreference(YtmSyncKey, true)
 
     val filterContent = @Composable {
-        Row {
-            val isFrosted = com.darkxvenom.airbeats.ui.component.isFrostedGlassUiEnabled()
-            FilterChip(
-                label = { Text(stringResource(R.string.albums)) },
-                selected = true,
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = if (isFrosted) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface,
-                    selectedContainerColor = if (isFrosted) androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f) else MaterialTheme.colorScheme.surface,
-                    labelColor = MaterialTheme.colorScheme.onSurface,
-                    selectedLabelColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                border = if (isFrosted) {
-                    androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.35f))
-                } else {
-                    FilterChipDefaults.filterChipBorder(enabled = true, selected = true)
-                },
-                onClick = onDeselect,
-                shape = RoundedCornerShape(16.dp),
-                leadingIcon = {
-                    Icon(painter = painterResource(R.drawable.close), contentDescription = "")
-                },
-            )
-            ChipsRow(
-                chips =
-                    listOf(
+        LibraryFilterRow(
+            selectedLabel = stringResource(R.string.albums),
+            onDeselect = onDeselect,
+            chips = listOf(
                         AlbumFilter.LIKED to stringResource(R.string.filter_liked),
                         AlbumFilter.LIBRARY to stringResource(R.string.filter_library)
                     ),
-                currentValue = filter,
-                onValueUpdate = {
-                    filter = it
-                },
-                modifier = Modifier.weight(1f),
-            )
-        }
+            currentValue = filter,
+            onValueUpdate = { filter = it },
+        )
     }
 
 

@@ -1,5 +1,6 @@
 package com.darkxvenom.airbeats.ui.screens
 
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -235,6 +236,13 @@ fun SpotifyHomeScreen(
         return section.id !in hiddenSections
     }
 
+    // Measured header height (status bar + title + chips) so list content never sits under it,
+    // regardless of font scale / display size.
+    var headerHeightPx by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val headerTopPadding = if (headerHeightPx > 0) with(density) { headerHeightPx.toDp() } + 8.dp
+        else WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 145.dp
+
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -265,7 +273,7 @@ fun SpotifyHomeScreen(
                 LazyColumn(
                 state = lazyListState,
                 contentPadding = PaddingValues(
-                    top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 145.dp,
+                    top = headerTopPadding,
                     bottom = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding(),
                     start = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateStartPadding(androidx.compose.ui.unit.LayoutDirection.Ltr),
                     end = LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateEndPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)
@@ -439,11 +447,11 @@ fun SpotifyHomeScreen(
             PullToRefreshDefaults.LoadingIndicator(
                 isRefreshing = isRefreshing,
                 state = pullRefreshState,
-                containerColor = Color(0xFFEAEAEA),
-                color = Color(0xFF333333),
+                containerColor = SpotifyCard,
+                color = SpotifyGreen,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 145.dp),
+                    .padding(top = headerTopPadding),
             )
         } // Close BoxWithConstraints
         } // Close hazeSource Box
@@ -465,7 +473,9 @@ fun SpotifyHomeScreen(
             subtitle = greeting(accountName),
             isAtTop = isAtTop,
             hazeState = hazeState,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .onSizeChanged { headerHeightPx = it.height },
             bottomContent = {
                 if (isSectionVisible(MaterialHomeSection.QUICK_TILES)) {
                     LazyRow(
@@ -495,13 +505,13 @@ fun SpotifyHomeScreen(
                                 label = { Text(label, maxLines = 1) },
                                 shape = CircleShape,
                                 colors = androidx.compose.material3.FilterChipDefaults.elevatedFilterChipColors(
-                                    containerColor = Color.Transparent,
-                                    labelColor = Color.LightGray,
+                                    containerColor = SpotifyText.copy(alpha = 0.06f),
+                                    labelColor = SpotifyText.copy(alpha = 0.9f),
                                 ),
                                 border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
                                     enabled = true,
                                     selected = false,
-                                    borderColor = Color.Gray.copy(alpha = 0.8f),
+                                    borderColor = SpotifyText.copy(alpha = 0.28f),
                                 ),
                             )
                         }
@@ -763,6 +773,13 @@ fun SpotifyLibraryScreen(navController: NavController) {
         playerInsets.getBottom(density),
     )
 
+    // Measure header + chip row so nothing overlaps at any font scale / display size.
+    var headerHeightPx by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    var chipsHeightPx by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val headerDp = if (headerHeightPx > 0) with(density) { headerHeightPx.toDp() }
+        else WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 76.dp
+    val chipsDp = if (chipsHeightPx > 0) with(density) { chipsHeightPx.toDp() } else 44.dp
+
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -777,9 +794,7 @@ fun SpotifyLibraryScreen(navController: NavController) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(
-                            top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 144.dp,
-                        ),
+                        .padding(top = headerDp + chipsDp + 8.dp),
                 ) {
                     when (filterType) {
                         com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS ->
@@ -801,8 +816,9 @@ fun SpotifyLibraryScreen(navController: NavController) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 76.dp),
+                .padding(top = headerDp)
+                .padding(bottom = 4.dp)
+                .onSizeChanged { chipsHeightPx = it.height },
         ) {
             item {
                 SpotifyChip(text = stringResource(R.string.playlists), isSelected = filterType == com.darkxvenom.airbeats.constants.LibraryFilter.PLAYLISTS) {
@@ -839,7 +855,7 @@ fun SpotifyLibraryScreen(navController: NavController) {
         SpotifyHeader(
             title = stringResource(R.string.library),
             subtitle = stringResource(R.string.saved_music_airbeats),
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { headerHeightPx = it.height },
             actions = {
                 SpotifyHeaderActions(navController)
             },
@@ -858,7 +874,11 @@ private fun SpotifyScaffold(
     val lazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
     val hazeState = androidx.compose.runtime.remember { dev.chrisbanes.haze.HazeState() }
     val isBlurDisabled = com.darkxvenom.airbeats.utils.isBlurDisabled()
-    
+    var headerHeightPx by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val headerTopPadding = if (headerHeightPx > 0) with(density) { headerHeightPx.toDp() } + 8.dp
+        else WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 90.dp
+
     Box(Modifier.fillMaxSize()) {
         Box(
             modifier = Modifier
@@ -870,7 +890,7 @@ private fun SpotifyScaffold(
             LazyColumn(
             state = lazyListState,
             contentPadding = PaddingValues(
-                top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding() + 90.dp,
+                top = headerTopPadding,
                 bottom = if (reservePlayerInset) {
                     LocalPlayerAwareWindowInsets.current.asPaddingValues().calculateBottomPadding()
                 } else {
@@ -892,7 +912,7 @@ private fun SpotifyScaffold(
         SpotifyHeader(
             title = title,
             subtitle = subtitle,
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier.align(Alignment.TopCenter).onSizeChanged { headerHeightPx = it.height },
             isAtTop = isAtTop,
             actions = actions
         )
@@ -925,7 +945,7 @@ private fun SpotifyHeader(
             animationSpec = androidx.compose.animation.core.tween(300),
             label = "SpotifyHeaderBlurAlpha"
         )
-        if (hazeState != null) {
+        if (hazeState != null && !com.darkxvenom.airbeats.utils.isBlurDisabled()) {
             val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
             val headerContentHeight = if (title == "AirBeats") 118.dp else 64.dp
             com.darkxvenom.airbeats.ui.component.TopFadeBlur(
@@ -943,7 +963,7 @@ private fun SpotifyHeader(
                 exit = androidx.compose.animation.fadeOut(),
                 modifier = Modifier.matchParentSize()
             ) {
-                Box(modifier = Modifier.fillMaxSize().background(SpotifyBg.copy(alpha = 0.95f)))
+                Box(modifier = Modifier.fillMaxSize().background(SpotifyBg))
             }
         }
 
@@ -1213,7 +1233,7 @@ private fun SpotifyChip(
                 if (isFrosted) {
                     Modifier.border(
                         1.dp,
-                        if (isSelected) SpotifyGreen.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.15f),
+                        if (isSelected) SpotifyGreen.copy(alpha = 0.5f) else SpotifyText.copy(alpha = 0.18f),
                         shape
                     )
                 } else Modifier
@@ -1222,7 +1242,7 @@ private fun SpotifyChip(
                 if (isSelected) {
                     SpotifyGreen
                 } else {
-                    if (isFrosted) Color.White.copy(alpha = 0.08f) else SpotifyText.copy(alpha = 0.12f)
+                    if (isFrosted) SpotifyText.copy(alpha = 0.08f) else SpotifyText.copy(alpha = 0.12f)
                 }
             )
             .clickable(onClick = onClick)

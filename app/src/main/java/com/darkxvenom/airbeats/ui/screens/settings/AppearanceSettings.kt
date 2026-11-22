@@ -553,6 +553,53 @@ fun AppearanceSettings(
                         )
                     )
             ) {
+                // App Mode (Lite / Normal) - moved here from the main Settings screen
+                run {
+                    val (appMode, onAppModeChange) = rememberPreference(AppModeKey, defaultValue = APP_MODE_LITE)
+                    val isLiteMode = appMode == APP_MODE_LITE
+                    val isFrosted = isFrostedGlassUiEnabled()
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = settingsCardContainerColor(isFrosted)
+                        ),
+                        border = settingsCardBorder(isFrosted),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(
+                                    text = "App Mode",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (isLiteMode) "Lite Mode • Clean & fast" else "Normal Mode • Full features",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                )
+                            }
+                            AppleSegmentedSwitch(
+                                options = listOf("Lite", "Normal"),
+                                selectedOption = if (isLiteMode) "Lite" else "Normal",
+                                onSelect = { selected -> onAppModeChange(selected) },
+                                modifier = Modifier.width(152.dp)
+                            )
+                        }
+                    }
+                }
+
                 // Theme Category
                 SettingsGeneralCategory(
                     title = stringResource(R.string.theme),

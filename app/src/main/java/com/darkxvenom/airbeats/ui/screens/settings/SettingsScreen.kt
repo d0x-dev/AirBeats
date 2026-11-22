@@ -957,49 +957,6 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // App Mode Switcher (Apple Styled Segmented Switch)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = settingsCardContainerColor(isFrosted)
-                        ),
-                        border = settingsCardBorder(isFrosted),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 18.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                                Text(
-                                    text = "App Mode",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.SemiBold
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (isLiteMode) "Lite Mode • Clean & fast" else "Normal Mode • Full features",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
-                                )
-                            }
-
-                            AppleSegmentedSwitch(
-                                options = listOf("Lite", "Normal"),
-                                selectedOption = if (isLiteMode) "Lite" else "Normal",
-                                onSelect = { selected ->
-                                    onAppModeChange(selected)
-                                },
-                                modifier = Modifier.width(152.dp)
-                            )
-                        }
-                    }
-
                     // General Settings
                     val generalSettingsItems = listOfNotNull(
                         SettingsCategoryItem(

@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import com.darkxvenom.airbeats.constants.RotateBackgroundKey
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.compositeOver
 import com.darkxvenom.airbeats.ui.component.LocalMenuState
 import com.darkxvenom.airbeats.ui.component.BigSeekBar
 import androidx.navigation.NavController
@@ -206,7 +207,8 @@ fun AirBeatsLyricsScreen(
     }
     
     // Track loading state: when buffering or when user is seeking
-    val isLoading = playbackState == STATE_BUFFERING || sliderPosition != null
+    // Only show the spinner while the player is actually buffering (not on every seek/drag).
+    val isLoading = playbackState == STATE_BUFFERING
 
     val textBackgroundColor = Color.White
     val icBackgroundColor = Color.Black
@@ -243,7 +245,24 @@ fun AirBeatsLyricsScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        if (!isBlurDisabled) {
+        if (isBlurDisabled) {
+            // Lite mode / blur disabled: lyrics text is always white, so the screen needs a
+            // dark, theme-tinted backdrop. Without it the screen is white-on-white in light theme.
+            val backdropBase = MaterialTheme.colorScheme.primary
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(
+                                backdropBase.copy(alpha = 0.55f).compositeOver(Color(0xFF101014)),
+                                Color(0xFF101014),
+                                Color(0xFF08080A)
+                            )
+                        )
+                    )
+            )
+        } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

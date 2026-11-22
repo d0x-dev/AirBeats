@@ -63,6 +63,8 @@ fun <E> ChipsRow(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     icons: Map<E, Int> = emptyMap(),
+    startPadding: androidx.compose.ui.unit.Dp = 12.dp,
+    verticalPadding: androidx.compose.ui.unit.Dp = 8.dp,
 ) {
     val isFrosted = isFrostedGlassUiEnabled()
     val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -73,10 +75,11 @@ fun <E> ChipsRow(
         modifier =
         modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = verticalPadding)
             .horizontalScroll(rememberScrollState()),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(startPadding))
 
         chips.forEach { (value, label) ->
             val isSelected = currentValue == value
@@ -275,3 +278,81 @@ fun <Int> ChoiceChipsRow(
     }
 }
 
+
+/**
+ * The "selected category" chip (with a close icon) used on the Library sub-screens.
+ * Colors work in both light and dark themes.
+ */
+@Composable
+fun DeselectFilterChip(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val isFrosted = isFrostedGlassUiEnabled()
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    val container = if (isFrosted) {
+        if (isDark) Color.White.copy(alpha = 0.22f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+    } else {
+        MaterialTheme.colorScheme.secondaryContainer
+    }
+    FilterChip(
+        selected = true,
+        onClick = onClick,
+        modifier = modifier,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                painter = painterResource(R.drawable.close),
+                contentDescription = null,
+                modifier = Modifier.size(FilterChipDefaults.IconSize),
+            )
+        },
+        shape = RoundedCornerShape(16.dp),
+        border = if (isFrosted) {
+            BorderStroke(
+                1.dp,
+                if (isDark) Color.White.copy(alpha = 0.35f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)
+            )
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = container,
+            selectedLabelColor = if (isFrosted && !isDark) MaterialTheme.colorScheme.primary
+                else if (isFrosted) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
+            selectedLeadingIconColor = if (isFrosted && !isDark) MaterialTheme.colorScheme.primary
+                else if (isFrosted) Color.White else MaterialTheme.colorScheme.onSecondaryContainer,
+        ),
+    )
+}
+
+/**
+ * One aligned row: [x Category] [sub chips...]. Replaces the hand-rolled Row blocks that
+ * left the close chip and the other chips on different baselines / paddings.
+ */
+@Composable
+fun <E> LibraryFilterRow(
+    selectedLabel: String,
+    onDeselect: () -> Unit,
+    chips: List<Pair<E, String>>,
+    currentValue: E,
+    onValueUpdate: (E) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        DeselectFilterChip(label = selectedLabel, onClick = onDeselect)
+        Spacer(Modifier.width(8.dp))
+        ChipsRow(
+            chips = chips,
+            currentValue = currentValue,
+            onValueUpdate = onValueUpdate,
+            modifier = Modifier.weight(1f),
+            startPadding = 0.dp,
+            verticalPadding = 0.dp,
+        )
+    }
+}
