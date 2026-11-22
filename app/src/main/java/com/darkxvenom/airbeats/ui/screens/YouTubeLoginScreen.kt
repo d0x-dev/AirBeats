@@ -165,10 +165,31 @@ fun YouTubeLoginScreen(navController: NavController) {
                         override fun onPageFinished(view: WebView, url: String?) {
                             if (url != null && url.startsWith(YOUTUBE_MUSIC_URL)) {
                                 runCatching { CookieManager.getInstance().flush() }
-                                val youTubeCookieString = CookieManager.getInstance().getCookie(url)
+                                val cookieManager = CookieManager.getInstance()
+                                val cookieParts = mutableListOf<String>()
+                                val origins = listOf(
+                                    "https://music.youtube.com/",
+                                    "https://www.youtube.com/",
+                                    "https://youtube.com/",
+                                    "https://accounts.google.com/"
+                                )
+                                origins.forEach { origin ->
+                                    cookieManager.getCookie(origin)?.split(';')?.forEach { part ->
+                                        val cleaned = part.trim()
+                                        if (cleaned.isNotEmpty() && cookieParts.none { it.substringBefore('=').trim() == cleaned.substringBefore('=').trim() }) {
+                                            cookieParts += cleaned
+                                        }
+                                    }
+                                }
+                                val youTubeCookieString = cookieParts.joinToString("; ")
+                                    .ifBlank { cookieManager.getCookie(url).orEmpty() }
                                 val parsedCookies = parseCookieString(youTubeCookieString)
+                                val hasApiSid = listOf("SAPISID", "__Secure-3PAPISID", "__Secure-1PAPISID")
+                                    .any { !parsedCookies[it].isNullOrBlank() }
+                                val hasSession = listOf("SID", "__Secure-1PSID", "__Secure-3PSID", "LOGIN_INFO")
+                                    .any { !parsedCookies[it].isNullOrBlank() }
 
-                                if ("SAPISID" in parsedCookies) {
+                                if (hasApiSid && hasSession) {
                                     innerTubeCookie = youTubeCookieString
                                     isLoadingAccountInfo = true
 
