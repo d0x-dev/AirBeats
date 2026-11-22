@@ -534,48 +534,7 @@ fun BetterHomeScreen(
                 }
             }
 
-            // New Releases Albums
-            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { newReleases ->
-                item(key = "section_better_new_releases") {
-                    Spacer(Modifier.height(24.dp))
-                    BetterSectionHeader(
-                        number = "06",
-                        title = stringResource(R.string.new_release_albums),
-                        onSeeAllClick = { navController.navigate("new_release") }
-                    )
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(newReleases, key = { "nr_${it.id}" }) { album ->
-                            BetterMixCard(
-                                title = album.title,
-                                subtitle = album.artists?.joinToString { it.name } ?: "Album",
-                                thumbnailUrl = album.thumbnail,
-                                onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    navController.navigate("album/${album.id}")
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    menuState.show {
-                                        YouTubeAlbumMenu(
-                                            albumItem = album,
-                                            navController = navController,
-                                            onDismiss = menuState::dismiss
-                                        )
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            item(key = "better_bottom_spacer") {
-                Spacer(Modifier.height(40.dp))
-            }
+            // All discovery shelves are rendered above from the shared YouTube Music home feed.
         }
 
 
