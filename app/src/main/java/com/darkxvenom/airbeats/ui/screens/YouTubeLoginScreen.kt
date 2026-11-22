@@ -190,6 +190,10 @@ fun YouTubeLoginScreen(navController: NavController) {
                                     .any { !parsedCookies[it].isNullOrBlank() }
 
                                 if (hasApiSid && hasSession) {
+                                    // Apply the captured session immediately; DataStore persistence and
+                                    // the Application observer are asynchronous and must not race login validation.
+                                    YouTube.cookie = youTubeCookieString
+                                    YouTube.useLoginForBrowse = true
                                     innerTubeCookie = youTubeCookieString
                                     isLoadingAccountInfo = true
 
