@@ -18,7 +18,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/d0x-dev/airbeats?style=for-the-badge\&logo=github\&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/stargazers)
 [![GitHub Forks](https://img.shields.io/github/forks/d0x-dev/airbeats?style=for-the-badge\&logo=github\&labelColor=161B22)](https://github.com/d0x-dev/AirBeats/network)
 [![Crowdin](https://img.shields.io/badge/🌍_Translations-Crowdin-2E3340?style=for-the-badge\&logo=crowdin\&logoColor=white\&labelColor=161B22)](https://crowdin.com/project/airbeats)
-
+[![Downloads](https://img.shields.io/github/downloads/d0x-dev/AirBeats/total?style=flat-square)](https://github.com/d0x-dev/AirBeats/releases)
 <br>
 
 <a href="https://snapcraft.io/airbeats"><img alt="Get it from the Snap Store" src="https://snapcraft.io/static/images/badges/en/snap-store-black.svg" height="42"/></a> <a href="https://airbeats.en.uptodown.com/android"><img alt="Download on Uptodown" src="https://stc.utdstc.com/img/mediakit/download-gio-big.png" height="42"/></a>
